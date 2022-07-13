@@ -1,0 +1,10 @@
+
+[class~='ant-row'] {
+	background: '#3d36277a';
+}
+
+.site-page-header {
+	border: 1px solid rgb(235, 237, 240);
+	margin-top : 10px;
+	padding : 10px;
+}
