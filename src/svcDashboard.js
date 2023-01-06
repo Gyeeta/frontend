@@ -3331,8 +3331,16 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 			}
 			catch(e) {
 				setApiData({data : [], isloading : false, isapierror : true});
-				notification.error({message : "Data Fetch Exception Error", 
+
+				if (e.response && (e.response.status === 401)) {
+					notification.error({message : "Authentication Failure", 
+						description : `Authentication Error occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				}
+				else {
+					notification.error({message : "Data Fetch Exception Error", 
 						description : `Exception occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+				}
 
 				console.log(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
 
@@ -3537,7 +3545,7 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 				contentCB={() => (
 					<SearchTimeFilter callback={onStateSearch} title={searchtitle} 
 						timecompcb={timecb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} 
-						rangefiltermandatory={parid === undefined} ismaxrecs={true} defaultmaxrecs={50000} />
+						ismaxrecs={true} defaultmaxrecs={50000} />
 				)} />
 					
 			<Button onClick={() => (

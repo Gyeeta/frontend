@@ -8,7 +8,7 @@ import moment from 'moment';
 import axios from 'axios';
 import {format} from "d3-format";
 
-import {useFetchApi, ComponentLife, ButtonModal, safetypeof, CreateLinkTab, CreateTab, validateApi, mergeMultiMadhava, 
+import {useFetchApi, ComponentLife, ButtonModal, safetypeof, CreateLinkTab, CreateTab, validateApi, mergeMultiMadhava, msecStrFormat,
 	capitalFirstLetter, fixedArrayAddItems, stateEnum, ButtonJSONDescribe, LoadingAlert, getErrorString, JSONDescription} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
 import {SearchTimeFilter} from './multiFilters.js';
@@ -36,6 +36,9 @@ export const hoststatefields = [
 	{ field : 'nprocissue',		desc : '# Process Issues',	type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'nprocsevere',	desc : '# Severe Processes',	type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'nproc',		desc : '# Total Processes',	type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'cpudelms',		desc : 'Host CPU Delay msec',	type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'vmdelms',		desc : 'Memory Delay msec',	type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'iodelms',		desc : 'Block IO Delay msec',	type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'cpuissue',		desc : 'Host CPU Issue',	type : 'boolean',	subsys : 'hoststate',	valid : null, },
 	{ field : 'severecpu',		desc : 'Host Severe CPU',	type : 'boolean',	subsys : 'hoststate',	valid : null, },
 	{ field : 'memissue',		desc : 'Host Memory Issue',	type : 'boolean',	subsys : 'hoststate',	valid : null, },
@@ -50,6 +53,9 @@ export const aggrhoststatefields = [
 	{ field : 'nprocissue',		desc : '# Process Issues',		type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'nprocsevere',	desc : '# Severe Processes',		type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'nproc',		desc : '# Total Processes',		type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'cpudelms',		desc : 'Host CPU Delay msec',		type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'vmdelms',		desc : 'Memory Delay msec',		type : 'number',	subsys : 'hoststate',	valid : null, },
+	{ field : 'iodelms',		desc : 'Block IO Delay msec',		type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'issue',		desc : '# Times Host Issue',		type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'cpuissue',		desc : '# Times CPU Issue',		type : 'number',	subsys : 'hoststate',	valid : null, },
 	{ field : 'severecpu',		desc : '# Times Severe CPU',		type : 'number',	subsys : 'hoststate',	valid : null, },
@@ -99,12 +105,16 @@ const hostColumns = (isglob = true) => {
 		dataIndex :	'host',
 		gytype : 	'string',
 		render : 	text => <Button type="link">{text}</Button>,
+		fixed : 	'left',
+		width :		150,
 	},	
 	{
 		title :		'Cluster Name',
 		key :		'cluster',
 		dataIndex :	'cluster',
 		gytype :	'string',
+		fixed : 	'left',
+		width :		150,
 	},
 	] : [];
 
@@ -116,6 +126,7 @@ const hostColumns = (isglob = true) => {
 		key :		'state',
 		dataIndex :	'state',
 		gytype :	'string',
+		width : 	100,
 		render : 	state => StateBadge(state, state),
 	},	
 	{
@@ -123,29 +134,50 @@ const hostColumns = (isglob = true) => {
 		key :		'nlistissue',
 		dataIndex :	'nlistissue',
 		gytype :	'number',
+		width : 	100,
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
 	},
 	{
-		title :		'# Severe Services',
-		key :		'nlistsevere',
-		dataIndex :	'nlistsevere',
+		title :		'# Process Issues',
+		key :		'nprocissue',
+		dataIndex :	'nprocissue',
 		gytype :	'number',
-		responsive : 	['lg'],
+		width : 	100,
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
 	},
 	{
-		title :		'# Total Services',
-		key :		'nlisten',
-		dataIndex :	'nlisten',
+		title :		'Host CPU Delays',
+		key :		'cpudelms',
+		dataIndex :	'cpudelms',
 		gytype :	'number',
+		width : 	120,
+		render :	(num) => msecStrFormat(num),
 		responsive : 	['lg'],
-		render : 	!isglob ? ((num) => <Button type="link">{num}</Button>) : undefined,
+	},
+	{
+		title :		'Memory Delays',
+		key :		'vmdelms',
+		dataIndex :	'vmdelms',
+		gytype :	'number',
+		width : 	120,
+		render :	(num) => msecStrFormat(num),
+		responsive : 	['lg'],
+	},
+	{
+		title :		'Disk IO Delays',
+		key :		'iodelms',
+		dataIndex :	'iodelms',
+		gytype :	'number',
+		width : 	120,
+		render :	(num) => msecStrFormat(num),
+		responsive : 	['lg'],
 	},
 	{
 		title :		'Host CPU Issue',
 		key :		'cpuissue',
 		dataIndex :	'cpuissue',
 		gytype :	'boolean',
+		width : 	100,
 		render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor={rec.severecpu ? 'bold red' : 'red'}  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
 		responsive : 	['lg'],
 	},
@@ -154,22 +186,36 @@ const hostColumns = (isglob = true) => {
 		key :		'memissue',
 		dataIndex :	'memissue',
 		gytype :	'boolean',
+		width : 	100,
 		render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor={rec.severecpu ? 'bold red' : 'red'}  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
 		responsive : 	['lg'],
 	},
 	{
-		title :		'# Process Issues',
-		key :		'nprocissue',
-		dataIndex :	'nprocissue',
+		title :		'# Severe Services',
+		key :		'nlistsevere',
+		dataIndex :	'nlistsevere',
 		gytype :	'number',
+		responsive : 	['lg'],
+		width : 	100,
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
 	},
+	{
+		title :		'# Total Services',
+		key :		'nlisten',
+		dataIndex :	'nlisten',
+		gytype :	'number',
+		responsive : 	['lg'],
+		width : 	100,
+		render : 	!isglob ? ((num) => <Button type="link">{num}</Button>) : undefined,
+	},
+
 	{
 		title :		'# Severe Processes',
 		key :		'nprocsevere',
 		dataIndex :	'nprocsevere',
 		gytype :	'number',
 		responsive : 	['lg'],
+		width : 	100,
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
 	},
 	{
@@ -177,6 +223,7 @@ const hostColumns = (isglob = true) => {
 		key :		'nproc',
 		dataIndex :	'nproc',
 		gytype :	'number',
+		width : 	100,
 		responsive : 	['lg'],
 	},
 
@@ -191,6 +238,7 @@ export const hostTimeColumns = (isglob = true) => {
 		dataIndex :	'time',
 		gytype :	'string',
 		width :		140,
+		fixed : 	'left',
 	},
 	...hostColumns(isglob),
 
@@ -207,12 +255,16 @@ const hostRangeColumns = (aggrType) => {
 		dataIndex :	'host',
 		gytype : 	'string',
 		render : 	text => <Button type="link">{text}</Button>,
+		fixed : 	'left',
+		width :		150,
 	},	
 	{
 		title :		'Cluster Name',
 		key :		'cluster',
 		dataIndex :	'cluster',
 		gytype :	'string',
+		fixed : 	'left',
+		width :		150,
 	},
 	{
 		title :		'# Bad States',
@@ -220,6 +272,7 @@ const hostRangeColumns = (aggrType) => {
 		dataIndex :	'detailissues',
 		gytype :	'number',
 		render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.detailrecs}</span>,
+		width : 	100,
 	},	
 	{
 		title :		`${aggrType} Service Issues`,
@@ -227,14 +280,7 @@ const hostRangeColumns = (aggrType) => {
 		dataIndex :	'listissue',
 		gytype :	'number',
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
-	},
-	{
-		title :		`${aggrType} Severe Service Issues`,
-		key :		'listsevere',
-		dataIndex :	'listsevere',
-		gytype :	'number',
-		responsive : 	['lg'],
-		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} Process Issues`,
@@ -242,14 +288,34 @@ const hostRangeColumns = (aggrType) => {
 		dataIndex :	'procissue',
 		gytype :	'number',
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
 	{
-		title :		`${aggrType} Severe Process Issues`,
-		key :		'procsevere',
-		dataIndex :	'procsevere',
+		title :		`${aggrType} CPU Delays`,
+		key :		'cpudelms',
+		dataIndex :	'cpudelms',
 		gytype :	'number',
 		responsive : 	['lg'],
-		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Memory Delays`,
+		key :		'vmdelms',
+		dataIndex :	'vmdelms',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Disk IO Delays`,
+		key :		'iodelms',
+		dataIndex :	'iodelms',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} CPU Issues`,
@@ -258,6 +324,7 @@ const hostRangeColumns = (aggrType) => {
 		gytype :	'number',
 		responsive : 	['lg'],
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} Memory Issues`,
@@ -266,7 +333,27 @@ const hostRangeColumns = (aggrType) => {
 		gytype :	'number',
 		responsive : 	['lg'],
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
+	{
+		title :		`${aggrType} Severe Service Issues`,
+		key :		'listsevere',
+		dataIndex :	'listsevere',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Severe Process Issues`,
+		key :		'procsevere',
+		dataIndex :	'procsevere',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
+	},
+
 	];
 };	
 
@@ -278,12 +365,16 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		dataIndex :	'host',
 		gytype : 	'string',
 		render : 	text => <Button type="link">{text}</Button>,
+		fixed : 	'left',
+		width :		150,
 	},	
 	{
 		title :		'Cluster Name',
 		key :		'cluster',
 		dataIndex :	'cluster',
 		gytype :	'string',
+		fixed : 	'left',
+		width :		150,
 	},
 	] : [];
 
@@ -297,6 +388,7 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		dataIndex :	'issue',
 		gytype :	'number',
 		render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.inrecs}</span>,
+		width : 	120,
 	},	
 	{
 		title :		`${aggrType} Service Issues`,
@@ -304,14 +396,7 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		dataIndex :	'nlistissue',
 		gytype :	'number',
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
-	},
-	{
-		title :		`${aggrType} Total Services`,
-		key :		'nlisten',
-		dataIndex :	'nlisten',
-		gytype :	'number',
-		responsive : 	['lg'],
-		render : 	!isglob ? ((num) => <Button type="link">{num}</Button>) : undefined,
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} Process Issues`,
@@ -319,13 +404,34 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		dataIndex :	'nprocissue',
 		gytype :	'number',
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
 	{
-		title :		`${aggrType} Total Processes`,
-		key :		'nproc',
-		dataIndex :	'nproc',
+		title :		`${aggrType} CPU Delays`,
+		key :		'cpudelms',
+		dataIndex :	'cpudelms',
 		gytype :	'number',
 		responsive : 	['lg'],
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Memory Delays`,
+		key :		'vmdelms',
+		dataIndex :	'vmdelms',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Disk IO Delays`,
+		key :		'iodelms',
+		dataIndex :	'iodelms',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render :	(num) => msecStrFormat(num),
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} CPU Issues`,
@@ -334,6 +440,7 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		gytype :	'number',
 		responsive : 	['lg'],
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
 	{
 		title :		`${aggrType} Mem Issues`,
@@ -342,7 +449,26 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		gytype :	'number',
 		responsive : 	['lg'],
 		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		width : 	100,
 	},
+	{
+		title :		`${aggrType} Total Services`,
+		key :		'nlisten',
+		dataIndex :	'nlisten',
+		gytype :	'number',
+		responsive : 	['lg'],
+		render : 	!isglob ? ((num) => <Button type="link">{num}</Button>) : undefined,
+		width : 	100,
+	},
+	{
+		title :		`${aggrType} Total Processes`,
+		key :		'nproc',
+		dataIndex :	'nproc',
+		gytype :	'number',
+		responsive : 	['lg'],
+		width : 	100,
+	},
+
 	];
 };	
 
@@ -355,6 +481,8 @@ export const hostRangeTimeColumns = (aggrType, isglob = true) => {
 		dataIndex :	'time',
 		gytype :	'string',
 		render : 	!isglob ? ((text) => <Button type="link">{text}</Button>) : undefined,
+		width :		140,
+		fixed : 	'left',
 	},
 	...hostRangeNoSummColumns(aggrType, isglob),
 	];
@@ -512,6 +640,9 @@ function getInitNormData()
 			nlisten		: 0,
 			nlisten_issue	: 0,
 			nlisten_severe	: 0,
+			ncpudelms_hosts : 0,
+			nvmdelms_hosts	: 0,
+			niodelms_hosts	: 0,
 			nhosts_offline	: 0,
 		},
 	};	
@@ -568,6 +699,18 @@ export function getNormParthaHostState(apidata)
 				summ.nlistissue_hosts++;
 			}	
 
+			if (partha.cpudelms > 0) {
+				summ.ncpudelms_hosts++;
+			}	
+
+			if (partha.vmdelms > 0) {
+				summ.nvmdelms_hosts++;
+			}	
+
+			if (partha.iodelms > 0) {
+				summ.niodelms_hosts++;
+			}	
+
 			summ.nlisten 		+= partha.nlisten;
 			summ.nlisten_issue 	+= partha.nlistissue;
 			summ.nlisten_severe 	+= partha.nlistsevere;
@@ -597,6 +740,9 @@ export function getNormParthaHostState(apidata)
 		ndata.summary.nlisten	 	+= summ.nlisten;
 		ndata.summary.nlisten_issue	+= summ.nlisten_issue;
 		ndata.summary.nlisten_severe 	+= summ.nlisten_severe;
+		ndata.summary.ncpudelms_hosts 	+= summ.ncpudelms_hosts;
+		ndata.summary.nvmdelms_hosts 	+= summ.nvmdelms_hosts;
+		ndata.summary.niodelms_hosts 	+= summ.niodelms_hosts;
 	}	
 
 	return ndata;
@@ -617,6 +763,9 @@ function getInitNormRange(starttime, endtime, isaggr)
 			nhosts_badstate		: 0,
 			nlistissue_hosts	: 0,
 			nprocissue_hosts	: 0,
+			ncpudelms_hosts		: 0,
+			nvmdelms_hosts		: 0,
+			niodelms_hosts		: 0,
 			nmemissue_hosts		: 0,
 			ncpuissue_hosts		: 0,
 		},
@@ -666,6 +815,10 @@ export function getNormParthaHostRange(apidata, starttime, endtime, isaggr)
 					memissue	: 0,
 					severecpu	: 0,
 					severemem	: 0,
+
+					cpudelms	: 0,
+					vmdelms		: 0,
+					iodelms		: 0,
 
 					detailissues	: 0,
 					detailrecs	: 0,
@@ -755,6 +908,19 @@ export function getNormParthaHostRange(apidata, starttime, endtime, isaggr)
 					parsum.severemem++;
 				}	
 			}	
+
+			if (partha.cpudelms > 0) {
+				parsum.ncpudelms_hosts++;
+			}	
+
+			if (partha.vmdelms > 0) {
+				parsum.nvmdelms_hosts++;
+			}	
+
+			if (partha.iodelms > 0) {
+				parsum.niodelms_hosts++;
+			}	
+
 		}	
 
 		ndata.nmadhava++;
@@ -1279,11 +1445,11 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em># Service Issues</em>}>
-			{rec.nlistissue > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistissue)}</span>, `({ state in 'Bad','Severe' })`) : 0}
+			{rec.nlistissue > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistissue)}</span>, `{ state in 'Bad','Severe' }`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em># Severe Services</em>}>
-			{rec.nlistsevere > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistsevere)}</span>, `({ state = 'Severe' })`) : 0}
+			{rec.nlistsevere > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistsevere)}</span>, `{ state = 'Severe' }`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em># Total Services</em>}>
@@ -1293,12 +1459,32 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em># Process Issues</em>}>
-			{rec.nprocissue > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocissue)}</span>, `({ state in 'Bad','Severe' })`) : 0}
+			{rec.nprocissue > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocissue)}</span>, `{ state in 'Bad','Severe' }`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em># Severe Processes</em>}>
-			{rec.nprocsevere > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocsevere)}</span>, `({ state = 'Severe' })`) : 0}
+			{rec.nprocsevere > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocsevere)}</span>, `{ state = 'Severe' }`) : 0}
 		</Descriptions.Item>
+
+		<Descriptions.Item label={<em>Host CPU Delays</em>}>
+			{rec.cpudelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
+		</Descriptions.Item>
+
+		<Descriptions.Item label={<em>Host Memory Delays</em>}>
+			{rec.vmdelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
+		</Descriptions.Item>
+
+		<Descriptions.Item label={<em>Disk IO Delays</em>}>
+			{rec.iodelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
+		</Descriptions.Item>
+
+		{rec.cpuissue && <Descriptions.Item label={<em>Host CPU State</em>}>
+			{getCpumemStateTable(StateBadge(rec.severecpu ? 'Severe' : 'Bad'), `{ cpumem.cpu_state in 'Bad','Severe' }`)}
+		</Descriptions.Item>}
+		
+		{rec.memissue && <Descriptions.Item label={<em>Host Memory State</em>}>
+			{getCpumemStateTable(StateBadge(rec.severemem ? 'Severe' : 'Bad'), `{ cpumem.mem_state in 'Bad','Severe' }`)}
+		</Descriptions.Item>}
 
 		<Descriptions.Item label={<em># Total Grouped Processes</em>}>
 			<Space align='center'>
@@ -1306,13 +1492,6 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 			</Space>
 		</Descriptions.Item>
 		
-		{rec.cpuissue && <Descriptions.Item label={<em>Host CPU State</em>}>
-			{getCpumemStateTable(StateBadge(rec.severecpu ? 'Severe' : 'Bad'), `({ cpumem.cpu_state in 'Bad','Severe' })`)}
-		</Descriptions.Item>}
-		
-		{rec.memissue && <Descriptions.Item label={<em>Host Memory State</em>}>
-			{getCpumemStateTable(StateBadge(rec.severemem ? 'Severe' : 'Bad'), `({ cpumem.mem_state in 'Bad','Severe' })`)}
-		</Descriptions.Item>}
 
 		<Descriptions.Item label={<em>Complete Record</em>}>{ButtonJSONDescribe({record : rec, fieldCols : hoststatefields})}</Descriptions.Item>
 
@@ -1398,7 +1577,7 @@ export function HostSummary({normdata, onRow, modalCount, addTabCB, remTabCB, is
 					<>
 					<ComponentLife stateCB={modalCount} />
 					{typeof filt === 'function' ?
-					<GyTable columns={hostColumns(true)} modalCount={modalCount} onRow={onRow} dataSource={normdata.hoststate.filter(filt)} rowKey="parid" /> :
+					<GyTable columns={hostColumns(true)} modalCount={modalCount} onRow={onRow} dataSource={normdata.hoststate.filter(filt)} rowKey="parid" scroll={getTableScroll()} /> :
 					null}
 					</>
 					),
@@ -1482,20 +1661,37 @@ export function HostSummary({normdata, onRow, modalCount, addTabCB, remTabCB, is
 			</Descriptions.Item>
 			
 			<Descriptions.Item 
+				label={<em># Hosts with CPU Delays</em>}>
+				{summary.ncpudelms_hosts > 0 ? createLinkModal(<Statistic valueStyle={{ fontSize: 14 }} value={summary.ncpudelms_hosts} />,
+					'CPU Delay Hosts', (item) => item.cpudelms > 0) : 0}
+			</Descriptions.Item>
+
+			<Descriptions.Item 
+				label={<em># Hosts with Memory Delays</em>}>
+				{summary.nvmdelms_hosts > 0 ? createLinkModal(<Statistic valueStyle={{ fontSize: 14, color : 'red' }} value={summary.nvmdelms_hosts} />,
+					'Memory Delay Hosts', (item) => item.vmdelms > 0) : 0}
+			</Descriptions.Item>
+
+			<Descriptions.Item 
+				label={<em># Hosts with IO Delays</em>}>
+				{summary.niodelms_hosts > 0 ? createLinkModal(<Statistic valueStyle={{ fontSize: 14 }} value={summary.niodelms_hosts} />,
+					'IO Delay Hosts', (item) => item.iodelms > 0) : 0}
+			</Descriptions.Item>
+
+
+			<Descriptions.Item 
 				label={<em># Total Services</em>}>
 				{format(",")(summary.nlisten)}
 			</Descriptions.Item>
 
 			<Descriptions.Item 
 				label={<em># Service Issues</em>}>
-				{summary.nlisten_issue > 0 ? createLinkModal(<Statistic valueStyle={{ fontSize: 14, color : 'red' }} value={summary.nlisten_issue} />,
-					'# Service Issues', null) : 0}
+				{summary.nlisten_issue > 0 ? <Statistic valueStyle={{ fontSize: 14, color : 'red' }} value={summary.nlisten_issue} /> : 0}
 			</Descriptions.Item>
 			
 			<Descriptions.Item 
 				label={<em># Severe Service Issues</em>}>
-				{summary.nlisten_severe > 0 ? createLinkModal(<Statistic valueStyle={{ fontSize: 14, color : 'red' }} value={summary.nlisten_severe} />,
-					'# Severe Service Issues', null) : 0}
+				{summary.nlisten_severe > 0 ? <Statistic valueStyle={{ fontSize: 14, color : 'red' }} value={summary.nlisten_severe} /> : 0}
 			</Descriptions.Item>
 		</Descriptions>
 	);		
@@ -1633,19 +1829,22 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
+			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
 			}} >{linktext}</Button>;
 	};
 
@@ -1702,6 +1901,24 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 		<Descriptions.Item label={<em># Host Memory Issues</em>}>
 			{rec.memissue > 0 ? getCpumemStateTable(<span style={{ color : 'red' }}>{format(",")(rec.memissue)}</span>, `({ cpumem.mem_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
+
+		{rec.cpudelms >= 0 &&
+		<Descriptions.Item label={<em>Host CPU Delays</em>}>
+			{rec.cpudelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
+
+		{rec.vmdelms >= 0 &&
+		<Descriptions.Item label={<em>Host Memory Delays</em>}>
+			{rec.vmdelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
+
+		{rec.iodelms >= 0 &&
+		<Descriptions.Item label={<em>Disk IO Delays</em>}>
+			{rec.iodelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
 
 
 		</Descriptions>
@@ -1893,19 +2110,22 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
+			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
 			}} >{linktext}</Button>;
 	};
 
@@ -1968,6 +2188,24 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 		<Descriptions.Item label={<em>Aggr Host Memory Issues</em>}>
 			{rec.memissue > 0 ? getCpumemStateTable(format(",")(rec.memissue), `({ cpumem.mem_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
+
+		{rec.cpudelms >= 0 &&
+		<Descriptions.Item label={<em>Aggr CPU Delays</em>}>
+			{rec.cpudelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
+
+		{rec.vmdelms >= 0 &&
+		<Descriptions.Item label={<em>Aggr Memory Delays</em>}>
+			{rec.vmdelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
+
+		{rec.iodelms >= 0 &&
+		<Descriptions.Item label={<em>Aggr IO Delays</em>}>
+			{rec.iodelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
+		</Descriptions.Item>
+		}
 
 
 		</Descriptions>
@@ -2047,7 +2285,8 @@ export function HostRangeSummary({normdata, aggrType, onRow, modalCount, addTabC
 					<>
 					<ComponentLife stateCB={modalCount} />
 					{typeof filt === 'function' ?
-					<GyTable columns={hostRangeColumns(aggrType)} modalCount={modalCount} onRow={onRow} dataSource={normdata.hoststate.filter(filt)} rowKey="parid" /> :
+					<GyTable columns={hostRangeColumns(aggrType)} modalCount={modalCount} onRow={onRow} dataSource={normdata.hoststate.filter(filt)} 
+									rowKey="parid"  scroll={getTableScroll()} /> :
 					null}
 					</>
 					),
@@ -2859,8 +3098,15 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 			setApiData({data : [], isloading : false, isapierror : true});
 
 			console.error(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
-			notification.error({message : "Data Fetch Exception Error", 
+
+			if (e.response && (e.response.status === 401)) {
+				notification.error({message : "Authentication Failure", 
+					description : `Authentication Error occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+			}
+			else {
+				notification.error({message : "Data Fetch Exception Error", 
 					description : `Exception occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+			}
 		}	
 	}, [objref, getaxiosconf, starttime, endtime, aggrType, maxrecs, setApiData]);	
 
@@ -2966,6 +3212,8 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		setFilterStr();
 	}, []);	
 
+	// Currently not used
+	// eslint-disable-next-line
 	const onHistorical = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
 		if (!date || !dateString) {
 			return;
@@ -3055,6 +3303,8 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 
 
+	// Currently not used
+	// eslint-disable-next-line
 	const timecb = useCallback((ontimecb) => {
 		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
 	}, []);
@@ -3063,6 +3313,8 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
+	// Currently not used
+	// eslint-disable-next-line
 	const hostfiltercb = useCallback((onfiltercb) => {
 		return <HostMultiFilters filterCB={onfiltercb} />;
 	}, []);	
@@ -3116,10 +3368,6 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		</Popover>
 		)}
 
-		<ButtonModal buttontext='Search Host States' width={800} okText="Cancel"
-			contentCB={() => <SearchTimeFilter callback={onSearch} title='Search Host States' ismaxrecs={true} defaultmaxrecs={50000}
-							timecompcb={timesearchcb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} />} />
-
 		{!starttime && <Button onClick={() => (
 			Modal.confirm({
 				title : <span style={{ fontSize : 16 }} ><strong>Apply Optional Host Info Filters</strong></span>,
@@ -3151,14 +3399,16 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		</div>}
 
 		<ButtonModal buttontext='Get Historical Data' width={800} okText="Cancel"
-			contentCB={() => <SearchTimeFilter callback={onHistorical} title='Get Historical Data' timecompcb={timecb} filtercompcb={hostfiltercb} />} />
+			contentCB={() => <SearchTimeFilter callback={onSearch} title='Historical Host States' ismaxrecs={true} defaultmaxrecs={50000}
+							timecompcb={timesearchcb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} />} />
+
 		</div>
 
 		</div>
 		</>
 		);
 
-	}, [autoRefresh, isAutoRefresh, objref, filterStr, onFilterCB, onResetFilters, onHistorical, onSearch, timesearchcb, timecb, filtercb, aggrfiltercb, hostfiltercb, hostinfocb, starttime]);	
+	}, [autoRefresh, isAutoRefresh, objref, filterStr, onFilterCB, onResetFilters, onSearch, timesearchcb, filtercb, aggrfiltercb, hostinfocb, starttime]);	
 
 	let			hdrtag = null, filtertag = null, bodycont = null, slidercont = null;
 
@@ -3189,7 +3439,7 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 
 						<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 16 }} >
 						<Title level={4}>List of Hosts</Title>
-						<GyTable columns={hostColumns(true)} modalCount={modalCount} onRow={tableOnRow} dataSource={data.hoststate} rowKey="parid" />
+						<GyTable columns={hostColumns(true)} modalCount={modalCount} onRow={tableOnRow} dataSource={data.hoststate} rowKey="parid" scroll={getTableScroll()}  />
 						</div>
 						</>
 					);
@@ -3204,7 +3454,7 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 
 						<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 16 }} >
 						<Title level={4}>List of Hosts</Title>
-						<GyTable columns={hostRangeColumns(aggrType)} modalCount={modalCount} onRow={tableOnRow} dataSource={data.hoststate} rowKey="parid" />
+						<GyTable columns={hostRangeColumns(aggrType)} modalCount={modalCount} onRow={tableOnRow} dataSource={data.hoststate} rowKey="parid" scroll={getTableScroll()} />
 						</div>
 						</>
 					);
@@ -3296,14 +3546,12 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		
 		</div>
 		
-		<div style={{ maxWidth : 1920, marginLeft : 'auto', marginRight : 'auto' }} >
+		<div style={{ marginLeft : 'auto', marginRight : 'auto' }} >
 
-		<Space direction="vertical">
-			<ErrorBoundary>
-			{slidercont}
-			{bodycont}
-			</ErrorBoundary>
-		</Space>
+		<ErrorBoundary>
+		{slidercont}
+		{bodycont}
+		</ErrorBoundary>
 		
 		</div>
 

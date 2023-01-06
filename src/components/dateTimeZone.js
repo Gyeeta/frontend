@@ -299,7 +299,7 @@ export function TimeRangeButton({onChange, linktext, title = "Select Time Range"
 }	
 
 
-export function TimeRangeAggrModal({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, ...props})
+export function TimeRangeAggrModal({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, buttonType = "default",  ...props})
 {
 	const		objref = useRef(null);
 	const		[isTimeRange, setShowTimeRange]	= useState(showRange || !showTime ? 'range' : 'time');
@@ -309,6 +309,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 
 	const		[maxAggr, setMaxAggr]	= useState(0);
 	const		[useAggr, setUseAggr] = useState(true);
+	const		[singleAggr, setSingleAggr] = useState(false);
 	const		[aggrMin, setAggrMin] = useState(5);
 	const		[aggrType, setAggrType] = useState(defaultaggrtype ?? 'avg');
 
@@ -408,15 +409,17 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 			}	
 		}
 		else {
-			if (safetypeof(rangeObjs) === 'array' && rangeObjs.length && safetypeof(rangeStrings) === 'array' && (!useAggr || (aggrMin && aggrMin <= maxAggr && aggrType))) {
-				onChange(rangeObjs, rangeStrings, useAggr, aggrMin, aggrType);
+			if (safetypeof(rangeObjs) === 'array' && rangeObjs.length && safetypeof(rangeStrings) === 'array' && 
+				(!useAggr || (aggrMin && aggrMin <= maxAggr && aggrType) || (singleAggr && aggrType))) {
+				
+				onChange(rangeObjs, rangeStrings, useAggr, singleAggr ? maxAggr : aggrMin, aggrType);
 				onCancel();
 			}	
 			else {
 				message.error(`Please select a proper time range or press Cancel...`);
 			}	
 		}
-	}, [onChange, onCancel, isTimeRange, timeObj, timeString, rangeObjs, rangeStrings, maxAggr, useAggr, aggrMin, aggrType]);	
+	}, [onChange, onCancel, isTimeRange, timeObj, timeString, rangeObjs, rangeStrings, maxAggr, useAggr, singleAggr, aggrMin, aggrType]);	
 
 
 	const onAggrTypeChange = useCallback((value) => {
@@ -520,16 +523,33 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 				<>
 				<div style={{ marginTop : 20, marginBottom : 20, display : 'block' }}>
 				<Space>	
+				
+				<>
+				<Space>	
 				<span><Text><i>Apply DB Aggregation</i></Text></span>
 				<Switch checked={useAggr} onChange={(checked) => { setUseAggr(checked); }} />	
+				</Space>
+				</>
+
+				{useAggr && 
+				<>
+				<Space style={{ marginLeft: 15 }}>	
+				<span><Text><i>DB Aggregation with no Step Interval</i></Text></span>
+				<Switch checked={singleAggr} onChange={(checked) => { setSingleAggr(checked); }} />	
+				</Space>
+				</>
+				}
+
+
 				</Space>
 				</div>
 				{useAggr && 
 					<>
 					<div style={{ marginTop : 20, marginBottom : 20, display : 'block' }}>
 					<Space>	
-					<span><Text><i>Aggregate Records every </i></Text></span>
-					<InputNumber min={minAggrRangeMin} max={maxAggr} defaultValue={5} value={aggrMin ?? 5} onChange={(val) => {objref.current.aggrMin = val; setAggrMin(val);} } /> 
+					<span><Text><i>Aggregate Step Interval </i></Text></span>
+					<InputNumber min={minAggrRangeMin} max={maxAggr} defaultValue={5} disabled={singleAggr}
+						value={aggrMin ?? 5} onChange={(val) => {objref.current.aggrMin = val; setAggrMin(val);} } /> 
 					<span><Text><i>minutes using </i></Text></span> 
 
 					<Select style={{ width: 250 }} onChange={onAggrTypeChange} defaultValue={defaultaggrtype ?? 'avg'} >	
@@ -564,7 +584,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 			</div>
 			</>
 		);
-	}, [objref, isTimeRange, preset, onRangeChange, disableFuture, useAggr, minAggrRangeMin, maxAggr, aggrMin, onAggrTypeChange, defaultaggrtype, alwaysShowAggrType, props]);	
+	}, [objref, isTimeRange, preset, onRangeChange, disableFuture, useAggr, singleAggr, minAggrRangeMin, maxAggr, aggrMin, onAggrTypeChange, defaultaggrtype, alwaysShowAggrType, props]);	
 
 	const modalcontent = useMemo(() => {
 		return (
@@ -610,7 +630,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 		});
 	}	
 	
-	return <Button onClick={modonclick} >{title}</Button>;
+	return <Button type={buttonType} onClick={modonclick} >{title}</Button>;
 
 }
 

@@ -2954,8 +2954,15 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			catch(e) {
 				objref.current.isprocessing = false;
 
-				notification.error({message : "Data Fetch Exception Error", 
+				if (e.response && (e.response.status === 401)) {
+					notification.error({message : "Authentication Failure", 
+						description : `Authentication Error occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				}
+				else {
+					notification.error({message : "Data Fetch Exception Error", 
 						description : `Exception occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+				}
 
 				setApiData({data : objref.current.prevdata, isloading : false, isapierror : true});
 

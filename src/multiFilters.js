@@ -1559,7 +1559,8 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 
 		<div style={{ marginTop : 60, marginBottom : 30 }}>
 		<Popover content={`Please select the time point or range and ${rangefiltermandatory === true ? 'mandatory' : 'optional'} filters`} title="Search">
-		<Button onClick={onsearch} disabled={((timeobj === null) || (rangefiltermandatory === true && (safetypeof(timeobj.date) === 'array') && filterstr.length === 0))}>Search</Button>
+		<Button type="primary" onClick={onsearch} 
+				disabled={((timeobj === null) || (rangefiltermandatory === true && (safetypeof(timeobj.date) === 'array') && filterstr.length === 0))}>Search</Button>
 		</Popover>
 		</div>
 
@@ -1624,7 +1625,10 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		let		aggrMin;
 
 		if (values.useAggr && Number(values.aggrdur) > 0) {
-			if (values.aggrunit === 'day') {
+			if (values.aggrunit === 'nostep') {
+				aggrMin = 365 * 24 * 60;
+			}	
+			else if (values.aggrunit === 'day') {
 				aggrMin = Number(values.aggrdur) * 1440;
 			}	
 			else if (values.aggrunit === 'hrs') {
@@ -1887,7 +1891,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 
 			{canaggr && useAggr && 
-			<Form.Item label="Select Aggregation Intervals">
+			<Form.Item label="Aggregation Step Interval">
 				<Space>
 				<Form.Item name="aggrdur" noStyle initialValue="5">
 					<InputNumber min={1} />
@@ -1898,6 +1902,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					<Radio.Button value="min">Minutes</Radio.Button>
 					<Radio.Button value="hrs">Hours</Radio.Button>
 					<Radio.Button value="day">Days</Radio.Button>
+					<Radio.Button value="nostep">No Step</Radio.Button>
 					</Radio.Group>
 				</Form.Item>	
 

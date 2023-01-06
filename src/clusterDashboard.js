@@ -1770,8 +1770,16 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 			}
 			catch(e) {
 				setApiData({data : [], isloading : false, isapierror : true});
-				notification.error({message : "Data Fetch Exception Error", 
+
+				if (e.response && (e.response.status === 401)) {
+					notification.error({message : "Authentication Failure", 
+						description : `Authentication Error occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				}
+				else {
+					notification.error({message : "Data Fetch Exception Error", 
 						description : `Exception occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+				}
 
 				console.log(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
 

@@ -2045,7 +2045,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 	
 	return (
 		<>
-		<div style={{ marginLeft : 10, marginTop : 10, marginRight : 10, marginBottom : 20, width: objref.current.tabwidth + 10, maxWidth : 1920 }} >
+		<div style={{ marginLeft : 10, marginTop : 10, marginRight : 10, marginBottom : 20, width: objref.current.tabwidth + 10 }} >
 
 		<Space direction="vertical">
 		
