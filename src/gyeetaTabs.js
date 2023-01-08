@@ -1963,7 +1963,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 	const pgMenu = useMemo(() => {
 		return (
 			<PageHeader backIcon={false} ghost={false} 
-				title={<><span style={{ fontSize : 24, color : '#c193c3e6' }}><em>G</em></span><span style={{ fontSize : 18, color : '#a0c1d3ba' }}><em>yeeta</em></span></>} 
+				title={<><span style={{ fontSize : 24, color : '#d4a785' }}><em>G</em></span><span style={{ fontSize : 18, color : '#a0c1d3ba' }}><em>yeeta</em></span></>} 
 				avatar={{ src: '/gyeeta.png', size : 'large' }} 
 				extra={
 					<>

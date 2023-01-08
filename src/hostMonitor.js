@@ -31,6 +31,9 @@ const realtimesec	= 5;
 
 const svcTitle 		= "Service Issues vs Total Services";
 const procTitle 	= "Process Issues vs Total Processes";
+const cpuDelayTitle 	= "Host Process CPU Delays";
+const vmDelayTitle 	= "Host Process Memory Delays";
+const ioDelayTitle 	= "Host Process IO Delays";
 
 
 const cpuIssueCol 	= new ColumnInfo("cpuissue", "CPU Issue", getStateColor("Bad"), 1, "", true /* isextra */, true /* enableLegend */, true /* isnumber */,
@@ -51,6 +54,22 @@ const procColumns = [
 	cpuIssueCol, memIssueCol,
 	new ColumnInfo("nproc", "# Total Processes", "cyan", 2, ",.0f"), 
 ];
+
+const cpuDelayColumns = [
+	new ColumnInfo("cpudelms", "Host CPU Delays (msec)", "Tomato", 1, ","), 
+	cpuIssueCol, 
+];
+
+const vmDelayColumns = [
+	new ColumnInfo("vmdelms", "Host Memory Delays (msec)", "DarkSeaGreen", 1, ","), 
+	memIssueCol, 
+];
+
+const ioDelayColumns = [
+	new ColumnInfo("iodelms", "Host IO Delays (msec)", "steelblue", 1, ","), 
+	memIssueCol, 
+];
+
 
 
 function hostStateColorStyle(column, event, statecolumn, opacity = 1.0)
@@ -624,6 +643,34 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 				<Statistic valueStyle={{ fontSize: 16 }} value={format(",.0f")(lastitem.nproc)} />
 			</Descriptions.Item>
 
+			<Descriptions.Item 
+				label={<em>{avgstr}Host CPU Delays</em>}>
+				{lastitem.cpudelms > 0 ? 
+					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.cpudelms)} />, 
+					`{ procstate.cpudel > 0 }`,
+					moment(lastitem.time, moment.ISO_8601).subtract(5, 'seconds').format(), 
+					moment(lastitem.time, moment.ISO_8601).add(isaggregated ? aggregatesec : 7, 'seconds').format()) : 0}							
+			</Descriptions.Item>
+
+			<Descriptions.Item 
+				label={<em>{avgstr}Host Memory Delays</em>}>
+				{lastitem.vmdelms > 0 ? 
+					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.vmdelms)} />, 
+					`{ procstate.vmdel > 0 }`,
+					moment(lastitem.time, moment.ISO_8601).subtract(5, 'seconds').format(), 
+					moment(lastitem.time, moment.ISO_8601).add(isaggregated ? aggregatesec : 7, 'seconds').format()) : 0}							
+			</Descriptions.Item>
+
+			<Descriptions.Item 
+				label={<em>{avgstr}Host IO Delays</em>}>
+				{lastitem.iodelms > 0 ? 
+					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.iodelms)} />, 
+					`{ procstate.iodel > 0 }`,
+					moment(lastitem.time, moment.ISO_8601).subtract(5, 'seconds').format(), 
+					moment(lastitem.time, moment.ISO_8601).add(isaggregated ? aggregatesec : 7, 'seconds').format()) : 0}							
+			</Descriptions.Item>
+
+
 			{lastitem.cpuissue &&
 				<Descriptions.Item 
 					label={<em>{avgstr}CPU State</em>}>
@@ -652,7 +699,7 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
 {
 	const 		objref = useRef(null);
-	const		svcRef = useRef(null), procRef = useRef(null);
+	const		svcRef = useRef(null), procRef = useRef(null), cpuDelayRef = useRef(null), vmDelayRef = useRef(null), ioDelayRef = useRef(null);
 
 	const		[{data, isloading, isapierror}, setApiData] = useState({data : [], isloading : true, isapierror : false});
 	const		[realtimePaused, setrealtimePaused] = useState(false);
@@ -684,6 +731,9 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 
 		objref.current[svcTitle] 	= new ChartInfo(svcTitle, svcColumns); 	
 		objref.current[procTitle] 	= new ChartInfo(procTitle, procColumns); 	
+		objref.current[cpuDelayTitle] 	= new ChartInfo(cpuDelayTitle, cpuDelayColumns); 	
+		objref.current[vmDelayTitle] 	= new ChartInfo(vmDelayTitle, vmDelayColumns); 	
+		objref.current[ioDelayTitle] 	= new ChartInfo(ioDelayTitle, ioDelayColumns); 	
 
 		objref.current.realtimearray	=	[];
 
@@ -970,6 +1020,155 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 		);
 	}, [procRef, objref, parid, addTabCB, remTabCB, isActiveTabCB]);	
 
+	const cpuDelayRescaleComps = useMemo(() => {
+		return (
+			<>
+			<Space style={{ marginLeft: 10 }}>
+
+			<Button onClick={() => {
+					if (!cpuDelayRef.current) return;
+
+					const			tref = cpuDelayRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						filter 		:	`{ cpudel > 0 }`,
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get Processes with CPU Delays</Button>
+			
+			<Button onClick={() => {
+					if (!procRef.current) return;
+
+					const			tref = procRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get All Processes State</Button>
+
+			</Space>
+			</>
+		);
+	}, [cpuDelayRef, objref, parid, addTabCB, remTabCB, isActiveTabCB]);	
+
+	const vmDelayRescaleComps = useMemo(() => {
+		return (
+			<>
+			<Space style={{ marginLeft: 10 }}>
+
+			<Button onClick={() => {
+					if (!vmDelayRef.current) return;
+
+					const			tref = vmDelayRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						filter 		:	`{ vmdel > 0 }`,
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get Processes with Memory Delays</Button>
+			
+			<Button onClick={() => {
+					if (!procRef.current) return;
+
+					const			tref = procRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get All Processes State</Button>
+
+			</Space>
+			</>
+		);
+	}, [vmDelayRef, objref, parid, addTabCB, remTabCB, isActiveTabCB]);	
+
+
+	const ioDelayRescaleComps = useMemo(() => {
+		return (
+			<>
+			<Space style={{ marginLeft: 10 }}>
+
+			<Button onClick={() => {
+					if (!ioDelayRef.current) return;
+
+					const			tref = ioDelayRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						filter 		:	`{ iodel > 0 }`,
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get Processes with IO Delays</Button>
+			
+			<Button onClick={() => {
+					if (!procRef.current) return;
+
+					const			tref = procRef;
+
+					procTableTab({
+						parid,
+						starttime 	:	moment(tref.current.getRescaleTimerange()[0]).format(), 
+						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
+						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
+						aggrType	:	'sum',
+						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
+						isext 		: 	true,
+						name 		: 	`Host ${objref.current?.summary.hostname}`,
+						addTabCB,
+						remTabCB,
+						isActiveTabCB,
+					})}} >Get All Processes State</Button>
+
+			</Space>
+			</>
+		);
+	}, [ioDelayRef, objref, parid, addTabCB, remTabCB, isActiveTabCB]);	
+
+
 
 	const onRescaleComps = useCallback((title, isrescale) => {
 
@@ -991,9 +1190,15 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 
 			case procTitle 		: return procRescaleComps;
 
+			case cpuDelayTitle 	: return cpuDelayRescaleComps;
+
+			case vmDelayTitle 	: return vmDelayRescaleComps;
+
+			case ioDelayTitle 	: return ioDelayRescaleComps;
+
 			default			: return null;
 		}
-	}, [objref, svcRescaleComps, procRescaleComps]);
+	}, [objref, svcRescaleComps, procRescaleComps, cpuDelayRescaleComps, vmDelayRescaleComps, ioDelayRescaleComps]);
 
 	const getRefFromTitle = useCallback((title) => {
 		switch (title) {
@@ -1002,10 +1207,16 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 
 			case procTitle		:	return procRef;
 
+			case cpuDelayTitle	:	return cpuDelayRef;
+
+			case vmDelayTitle	:	return vmDelayRef;
+
+			case ioDelayTitle	:	return ioDelayRef;
+
 			default			:	return null;
 		};	
 
-	}, [svcRef, procRef]);	
+	}, [svcRef, procRef, cpuDelayRef, vmDelayRef, ioDelayRef]);	
 
 	const timeRangeCB = useCallback((title, newtimerange) => {
 
@@ -1015,7 +1226,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 
 		if (!chartinfo) return null;
 
-		[svcTitle, procTitle].forEach((item) => {
+		[svcTitle, procTitle, cpuDelayTitle, vmDelayTitle, ioDelayTitle].forEach((item) => {
 			if (item !== title) {
 				const		ref = getRefFromTitle(item);
 
@@ -1029,7 +1240,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 
 	const timeTrackerCB = useCallback((newdate) => {
 
-		[svcTitle, procTitle].forEach((item) => {
+		[svcTitle, procTitle, cpuDelayTitle, vmDelayTitle, ioDelayTitle].forEach((item) => {
 			const		ref = getRefFromTitle(item);
 
 			if (ref && ref.current) {
@@ -1133,6 +1344,107 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 		return chart;		
 
 	}, [objref, onRescaleComps, timeRangeCB]);	
+
+
+	const getCPUDelayChart = useCallback(() =>
+	{
+		const		obj = objref.current[cpuDelayTitle];
+		
+		if (!obj) {
+			return null;
+		}	
+
+		const		cobj1 = obj.chartobj_[0];
+
+		if (!cobj1.timeseries_) {
+			return null;
+		}	
+
+		const 		scatterArray = getScatterArray(cpuDelayColumns[0].col, 1, cpuRadiusCb, memRadiusCb);
+
+		const chart = (
+				<>
+				<GyLineChart ref={cpuDelayRef} chartTitle={cpuDelayTitle} columnInfoArr={cpuDelayColumns} 
+					seriesy1={cobj1.timeseries_} 
+					enableTracker={true} chartHeight={350} y1AxisType="linear"
+					scatterArray={scatterArray}
+					y1AxisTitle="Host CPU Delays msec" 
+					y1AxisFormat=",.0f" onRescaleComps={onRescaleComps} timeRangeCB={timeRangeCB} />
+				<div style={{ marginBottom: 30 }}>
+				</div>
+				</>
+				);
+
+		return chart;		
+
+	}, [objref, onRescaleComps, timeRangeCB]);	
+
+	const getVMDelayChart = useCallback(() =>
+	{
+		const		obj = objref.current[vmDelayTitle];
+		
+		if (!obj) {
+			return null;
+		}	
+
+		const		cobj1 = obj.chartobj_[0];
+
+		if (!cobj1.timeseries_) {
+			return null;
+		}	
+
+		const 		scatterArray = getScatterArray(vmDelayColumns[0].col, 1, cpuRadiusCb, memRadiusCb);
+
+		const chart = (
+				<>
+				<GyLineChart ref={vmDelayRef} chartTitle={vmDelayTitle} columnInfoArr={vmDelayColumns} 
+					seriesy1={cobj1.timeseries_} 
+					enableTracker={true} chartHeight={350} y1AxisType="linear"
+					scatterArray={scatterArray}
+					y1AxisTitle="Host Memory Delays msec" 
+					y1AxisFormat=",.0f" onRescaleComps={onRescaleComps} timeRangeCB={timeRangeCB} />
+				<div style={{ marginBottom: 30 }}>
+				</div>
+				</>
+				);
+
+		return chart;		
+
+	}, [objref, onRescaleComps, timeRangeCB]);	
+
+	const getIODelayChart = useCallback(() =>
+	{
+		const		obj = objref.current[ioDelayTitle];
+		
+		if (!obj) {
+			return null;
+		}	
+
+		const		cobj1 = obj.chartobj_[0];
+
+		if (!cobj1.timeseries_) {
+			return null;
+		}	
+
+		const 		scatterArray = getScatterArray(ioDelayColumns[0].col, 1, cpuRadiusCb, memRadiusCb);
+
+		const chart = (
+				<>
+				<GyLineChart ref={ioDelayRef} chartTitle={ioDelayTitle} columnInfoArr={ioDelayColumns} 
+					seriesy1={cobj1.timeseries_} 
+					enableTracker={true} chartHeight={350} y1AxisType="linear"
+					scatterArray={scatterArray}
+					y1AxisTitle="Host IO Delays msec" 
+					y1AxisFormat=",.0f" onRescaleComps={onRescaleComps} timeRangeCB={timeRangeCB} />
+				<div style={{ marginBottom: 30 }}>
+				</div>
+				</>
+				);
+
+		return chart;		
+
+	}, [objref, onRescaleComps, timeRangeCB]);	
+
 
 	const getTimeSliderMarks = useCallback(() => {
 		let		markobj = {};
@@ -1352,6 +1664,19 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 				const		procchart = procvalid === true ? getProcChart() : 
 							(<Alert type="error" showIcon message={`Exception occured while showing Process Issue chart : ${procvalid}`} />);
 		
+				const		cpudelayvalid = getChartSeries(objref.current[cpuDelayTitle].chartobj_[0], newdata, isRealTime);
+				const		cpudelaychart = cpudelayvalid === true ? getCPUDelayChart() : 
+							(<Alert type="error" showIcon message={`Exception occured while showing CPU Delay chart : ${cpudelayvalid}`} />);
+		
+				const		vmdelayvalid = getChartSeries(objref.current[vmDelayTitle].chartobj_[0], newdata, isRealTime);
+				const		vmdelaychart = vmdelayvalid === true ? getVMDelayChart() : 
+							(<Alert type="error" showIcon message={`Exception occured while showing Memory Delay chart : ${vmdelayvalid}`} />);
+		
+				const		iodelayvalid = getChartSeries(objref.current[ioDelayTitle].chartobj_[0], newdata, isRealTime);
+				const		iodelaychart = iodelayvalid === true ? getIODelayChart() : 
+							(<Alert type="error" showIcon message={`Exception occured while showing IO Delay chart : ${iodelayvalid}`} />);
+		
+		
 				let		darr;
 
 				if (isRealTime) {
@@ -1368,6 +1693,9 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 					<>
 					{svcchart}
 					{procchart}
+					{cpudelaychart}
+					{vmdelaychart}
+					{iodelaychart}
 					</>
 				);
 

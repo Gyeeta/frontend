@@ -1352,7 +1352,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	const getHostMonitorLink = () => {
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Realtime Host State</i></span>, 'Monitor Host State',
+		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Monitor Host State',
 					() => { return <HostMonitor parid={paridin} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							/> }, tabKey, addTabCB);
