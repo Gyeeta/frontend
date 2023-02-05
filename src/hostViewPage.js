@@ -991,7 +991,7 @@ export function HostInfoDesc({parid, addTabCB, remTabCB, isActiveTabCB, hostInfo
 	const getHostMonitorLink = () => {
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Monitor Host State</i></span>, 'Monitor Host State',
+		return CreateLinkTab(<span><i>Host State Monitor</i></span>, 'Host State Monitor',
 					() => { return <HostMonitor parid={parid} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							/> }, tabKey, addTabCB);
@@ -1352,7 +1352,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	const getHostMonitorLink = () => {
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Monitor Host State',
+		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Host State Monitor',
 					() => { return <HostMonitor parid={paridin} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							/> }, tabKey, addTabCB);
@@ -1784,7 +1784,7 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 	const getHostMonitorLink = () => {
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Monitor Host State',
+		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Host State Monitor',
 					() => { return <HostMonitor parid={paridin} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							/> }, tabKey, addTabCB);
@@ -2065,7 +2065,7 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 	const getHostMonitorLink = () => {
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Monitor Host State',
+		return CreateLinkTab(<span><i>Host State Realtime</i></span>, 'Host State Monitor',
 					() => { return <HostMonitor parid={paridin} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							/> }, tabKey, addTabCB);
