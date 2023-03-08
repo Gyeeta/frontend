@@ -12,7 +12,7 @@ import 			{safetypeof, validateApi, useFetchApi, CreateTab, LoadingAlert, fetchV
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc} from './svcDashboard.js';
-import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
+import 			{TimeRangeAggrModal, TimeRangeButton} from './components/dateTimeZone.js';
 import 			{MultiFilters, SearchTimeFilter} from './multiFilters.js';
 
 const 			{Title} = Typography;
@@ -21,21 +21,31 @@ const 			{ErrorBoundary} = Alert;
 export const svcmeshclustfields = [
 	{ field : 'name',		desc : 'Service Name',			type : 'string',	subsys : 'svcmeshclust',	valid : null, },
 	{ field : 'cluster',		desc : 'Cluster Name',			type : 'string',	subsys : 'svcmeshclust',	valid : null, },
-	{ field : 'nsvc',		desc : '# Service Instances in Group',	type : 'number',	subsys : 'svcmeshclust',	valid : null, },
+	{ field : 'nsvc',		desc : '# Relative Services in Group',	type : 'number',	subsys : 'svcmeshclust',	valid : null, },
 	{ field : 'time',		desc : 'Timestamp of Record',		type : 'timestamptz',	subsys : 'svcmeshclust',	valid : null, },
 	{ field : 'clustid',		desc : 'Service Group ID',		type : 'string',	subsys : 'svcmeshclust',	valid : null, },
 	{ field : 'relidarr',		desc : 'Individual Service Info',	type : 'string',	subsys : 'svcmeshclust',	valid : null, },
 ];
 
-const svcmeshCol = [
-	{
-		title :		'Time',
-		key :		'time',
-		dataIndex :	'time',
-		gytype :	'string',
-		width :		130,
-		fixed : 	'left',
-	},
+function onSvcTimeChange(component, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)
+{
+	if (safetypeof(dateObjs) !== 'array') {
+		return;
+	}
+
+	const			tabKey = `Svcstate_${Date.now()}`;
+	const			Comp = component;
+
+	CreateTab('Service State', 
+		() => (
+			<Comp record={record} starttime={dateObjs[0].format()} endtime={dateObjs[1].format()} 
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
+		), tabKey, addTabCB);
+}
+
+function svcmeshCol(addTabCB, remTabCB, isActiveTabCB)
+{
+	return [
 	{
 		title :		'Service Name',
 		key :		'name',
@@ -52,7 +62,7 @@ const svcmeshCol = [
 		width : 	160,
 	},	
 	{
-		title :		'# Services in Group',
+		title :		'# Related Services in Group',
 		key :		'nsvc',
 		dataIndex :	'nsvc',
 		gytype :	'number',
@@ -64,10 +74,12 @@ const svcmeshCol = [
 		dataIndex :	'oper',
 		gytype :	'number',
 		width : 	100,
-		render : 	text => <Button type="link">Get 5 min Service States</Button>,
+		render : 	(_, record) => <TimeRangeButton onChange={(dateObjs) => onSvcTimeChange(MeshSvcStateTable, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)} 
+									linktext="Get Service State Summary" title="Select Time Range for Service States"
+									disableFuture={true} buttontype="link" />,
 	},
-
-];	
+	];
+}	
 
 export const svcipclustfields = [
 	{ field : 'name',		desc : 'Service Name',			type : 'string',	subsys : 'svcipclust',	valid : null, },
@@ -80,15 +92,9 @@ export const svcipclustfields = [
 	{ field : 'relidarr',		desc : 'Individual Service Info',	type : 'string',	subsys : 'svcipclust',	valid : null, },
 ];
 
-const svcipCol = [
-	{
-		title :		'Time',
-		key :		'time',
-		dataIndex :	'time',
-		gytype :	'string',
-		width :		130,
-		fixed : 	'left',
-	},
+function svcipCol(addTabCB, remTabCB, isActiveTabCB)
+{	
+	return [
 	{
 		title :		'Service Name',
 		key :		'name',
@@ -131,10 +137,12 @@ const svcipCol = [
 		dataIndex :	'oper',
 		gytype :	'number',
 		width : 	100,
-		render : 	text => <Button type="link">Get 5 min Service States</Button>,
+		render : 	(_, record) => <TimeRangeButton onChange={(dateObjs) => onSvcTimeChange(VirtualIPSvcStateTable, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)} 
+									linktext="Get Service State Summary" title="Select Time Range for Service States"
+									disableFuture={true} buttontype="link" />,
 	},
-
-];	
+	];
+}	
 
 export function SvcMeshFilter({filterCB, linktext})
 {
@@ -273,7 +281,7 @@ function getMeshStateProms(record, starttime, endtime)
 					endtime,
 					options		:	{
 						aggregate	:	starttime && endtime ? true : false,
-						aggrsec		:	3600,		// Single record
+						aggrsec		:	3600000,	// Single record
 						aggroper	:	'sum',
 						filter		:	filter,
 						timeoutsec 	: 	60,
@@ -379,6 +387,94 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 	);
 }	
 
+function mergeMeshTimestamps(data)
+{
+	if (!data || !Array.isArray(data.svcmeshclust) || data.svcmeshclust.length <= 1) {
+		return;
+	}	
+
+	let			svcmeshclust = data.svcmeshclust;
+	let			omap = new Map();
+
+	for (let tclust of svcmeshclust) {
+		let			trel = omap.get(tclust.clustid);
+
+		if (!trel) {
+			trel = tclust;
+
+			omap.set(tclust.clustid, tclust);
+
+			tclust.relidset = new Set();
+		}	
+
+		for (let relid of tclust.relidarr) {
+			trel.relidset.add(JSON.stringify(relid));
+		}
+	}	
+
+	data.svcmeshclust = [];
+	svcmeshclust = data.svcmeshclust;
+
+	for (let tclust of omap.values()) {
+		svcmeshclust.push(tclust);
+
+		tclust.relidarr = [];
+
+		for (let trelid of tclust.relidset) {
+			tclust.relidarr.push(JSON.parse(trelid));
+		}	
+
+		tclust.nsvc = tclust.relidset.size;
+
+		delete tclust.relidset;
+	}
+}	
+
+function mergeSvcIPTimestamps(data)
+{
+	if (!data || !Array.isArray(data.svcipclust) || data.svcipclust.length <= 1) {
+		return;
+	}	
+
+	let			svcipclust = data.svcipclust;
+	let			omap = new Map();
+
+	for (let tclust of svcipclust) {
+		let			tsvc = omap.get(tclust.clustid);
+
+		if (!tsvc) {
+			tsvc = tclust;
+
+			omap.set(tclust.clustid, tclust);
+
+			tclust.svcidset = new Set();
+		}	
+
+		for (let relid of tclust.svcidarr) {
+			tsvc.svcidset.add(JSON.stringify(relid));
+		}
+	}	
+
+	data.svcipclust = [];
+	svcipclust = data.svcipclust;
+
+	for (let tclust of omap.values()) {
+		svcipclust.push(tclust);
+
+		tclust.svcidarr = [];
+
+		for (let tsvcid of tclust.svcidset) {
+			tclust.svcidarr.push(JSON.parse(tsvcid));
+		}	
+
+		tclust.nsvc = tclust.svcidset.size;
+
+		delete tclust.svcidset;
+	}
+}	
+
+
+
 export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, sortColumns, sortDir})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -410,6 +506,8 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 				throw new Error("Invalid Data Format seen");
 			}	
 
+			mergeMeshTimestamps(apidata[0]);
+
 			return apidata[0];
 		};
 
@@ -434,24 +532,6 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 		}
 		else {
 
-			if (typeof tableOnRow !== 'function') {
-				tableOnRow = (record, rowIndex) => {
-					return {
-						onClick: event => {
-							const 			tstart = moment(record.time, moment.ISO_8601).subtract(4, 'minute').format();
-							const 			tend = moment(record.time, moment.ISO_8601).add(1, 'minute').format();
-							const			tabKey = `Svcstate_${Date.now()}`;
-							
-							CreateTab('Service State', 
-								() => (
-									<MeshSvcStateTable record={record} starttime={tstart} endtime={tend} 
-											addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
-								), tabKey, addTabCB);
-						}
-					};		
-				};
-			}	
-
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
@@ -460,7 +540,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 				{starttime && endtime && <span style={{ marginBottom : 30 }}><strong>from {starttime} to {endtime}</strong></span>}
 				{!(starttime && endtime) && <span style={{ marginBottom : 30 }}><strong>at {starttime ? starttime : moment().format()}</strong></span>}
 				
-				<GyTable columns={svcmeshCol} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
+				<GyTable columns={svcmeshCol(addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
 				
 				</div>
 				</>
@@ -596,7 +676,7 @@ function getVirtIPStateProms(record, starttime, endtime)
 					endtime,
 					options		:	{
 						aggregate	:	starttime && endtime ? true : false,
-						aggrsec		:	3600,		// Single record
+						aggrsec		:	3600000,	// Single record
 						aggroper	:	'sum',
 						filter		:	filter,
 						timeoutsec 	: 	60,
@@ -734,6 +814,8 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 				throw new Error("Invalid Data Format seen");
 			}	
 
+			mergeSvcIPTimestamps(apidata[0]);
+
 			return apidata[0];
 		};
 
@@ -758,24 +840,6 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 		}
 		else {
 
-			if (typeof tableOnRow !== 'function') {
-				tableOnRow = (record, rowIndex) => {
-					return {
-						onClick: event => {
-							const 			tstart = moment(record.time, moment.ISO_8601).subtract(4, 'minute').format();
-							const 			tend = moment(record.time, moment.ISO_8601).add(1, 'minute').format();
-							const			tabKey = `Svcstate_${Date.now()}`;
-							
-							CreateTab('Service State', 
-								() => (
-									<VirtualIPSvcStateTable record={record} starttime={tstart} endtime={tend} 
-											addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
-								), tabKey, addTabCB);
-						}
-					};		
-				};
-			}	
-
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
@@ -784,7 +848,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 				{starttime && endtime && <span style={{ marginBottom : 30 }}><strong>from {starttime} to {endtime}</strong></span>}
 				{!(starttime && endtime) && <span style={{ marginBottom : 30 }}><strong>at {starttime ? starttime : moment().format()}</strong></span>}
 				
-				<GyTable columns={svcipCol} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
+				<GyTable columns={svcipCol(addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
 				
 				</div>
 				</>

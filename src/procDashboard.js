@@ -683,7 +683,6 @@ const hostCpuRssCol = [
 		dataIndex :	'name',
 		gytype : 	'string',
 		width : 	120,
-		render : 	text => <Button type="link">{text}</Button>,
 	},	
 	{
 		title :		'CPU %',
@@ -728,7 +727,6 @@ const hostPgCpuCol = [
 		dataIndex :	'pgname',
 		gytype : 	'string',
 		width : 	100,
-		render : 	text => <Button type="link">{text}</Button>,
 	},	
 	{
 		title :		'# Child Processes',
@@ -788,7 +786,6 @@ const hostForkCol = [
 		dataIndex :	'name',
 		gytype : 	'string',
 		width : 	100,
-		render : 	text => <Button type="link">{text}</Button>,
 	},	
 	{
 		title :		'New Processes/sec',

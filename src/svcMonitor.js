@@ -1840,7 +1840,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 		let			fstr;
 
 		if (newfilter) {
-			fstr = `( ({ svcid = '${svcid}' }) and ${newfilter} )`;
+			fstr = `( { svcid = '${svcid}' } and ${newfilter} )`;
 		}
 		else {
 			fstr = `({ svcid = '${svcid}' })`;

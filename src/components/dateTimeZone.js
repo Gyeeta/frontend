@@ -271,7 +271,7 @@ export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder})
 	}	
 }	
 
-export function TimeRangeButton({onChange, linktext, title = "Select Time Range", placeholder, ...props})
+export function TimeRangeButton({onChange, linktext, buttontype, title = "Select Time Range", placeholder, ...props})
 {
 	const onPresetRangeChange = useCallback((value) => {
 		const		now = moment();
@@ -282,7 +282,7 @@ export function TimeRangeButton({onChange, linktext, title = "Select Time Range"
 
 
 	return (
-		<ButtonModal buttontext={linktext ?? "Select Time Range"} okText="Cancel" 
+		<ButtonModal buttontext={linktext ?? "Select Time Range"} okText="Cancel" buttontype={buttontype}
 			title={typeof title === 'string' ? <Title level={4}><em>{title}</em></Title> : title} maskClosable={false} width={800}
 			contentCB={(modal) => (
 				<Space>

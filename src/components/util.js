@@ -689,7 +689,8 @@ export function useDebounce(value, timeout)
 	return state;
 }
 
-export function useDebouncedEffect(callback, delay, deps = []) {
+export function useDebouncedEffect(callback, delay, deps = []) 
+{
 	const firstUpdate = useRef(true);
 
 	useEffect(() => {
