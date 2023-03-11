@@ -10,30 +10,20 @@ import 		{DateTimeZonePicker, RangeTimeZonePicker, PresetTimesOrRanges} from './
 
 import		{svcstatefields, aggrsvcstatefields, svcTableTab, svcInfoTab, svcSummTab, extsvcfields, svcinfofields, svcsummfields, 
 		SvcStateMultiQuickFilter, SvcStateAggrFilter, SvcinfoFilter, SvcSummFilter} from './svcDashboard.js';
-
 import		{procstatefields, aggrprocstatefields, procTableTab, procInfoTab, extprocfields, procinfofields, 
 		ProcStateMultiQuickFilter, ProcStateAggrFilter, ProcinfoFilter} from './procDashboard.js';
-
 import		{activeconnfields, extactiveconnfields, clientconnfields, extclientconnfields, ActiveConnFilter, ClientConnFilter,
 		activeConnTab, clientConnTab} from './netDashboard.js';
-		
 import		{clusterstatefields, aggrclusterstatefields, ClusterStateMultiQuickFilter, ClusterStateAggrFilter, clusterTableTab} from './clusterDashboard.js';
-
 import		{hoststatefields, aggrhoststatefields, HostStateMultiQuickFilter, HostStateAggrFilter, hostTableTab,
 		hostinfofields, HostInfoFilters, hostinfoTableTab} from './hostViewPage.js';
-
 import		{cpumemfields, aggrcpumemfields, CpuMemMultiQuickFilter, CpuMemAggrFilter, cpumemTableTab} from './cpuMemPage.js';
-
 import		{svcmeshclustfields, SvcMeshFilter, svcMeshTab, svcipclustfields, SvcVirtIPFilter, svcVirtIPTab} from './svcClusterGroups.js';
 
 import		{alertsfields, aggralertsfields, AlertMultiQuickFilter, AlertAggrFilter, alertsTableTab} from './alertDashboard.js';
-
 import		{alertdeffields, AlertdefMultiQuickFilter, alertdefTableTab} from './alertDefs.js';
-
 import		{actionfields, ActionMultiQuickFilter, actionsTableTab} from './alertActions.js';
-
 import		{silencefields, SilenceMultiQuickFilter, silencesTableTab} from './alertSilences.js';
-
 import		{inhibitfields, InhibitMultiQuickFilter, inhibitsTableTab} from './alertInhibits.js';
 
 const 		{Search, TextArea} = Input;
@@ -668,6 +658,7 @@ export function CustomAggrColumns({subsysFields, aggrsubsysFields, addtime, addi
 					dataIndex 	:	colname,
 					gytype 		:	fieldToTableType[type],
 					render 		:	type === 'number' ? ((num) => format(",")(num)) : undefined,
+					width 		:	120,
 				},
 			);
 		}	
@@ -681,6 +672,7 @@ export function CustomAggrColumns({subsysFields, aggrsubsysFields, addtime, addi
 						key 		:	'time',
 						dataIndex 	:	'time',
 						gytype 		:	'string',
+						width 		:	120,
 					},
 				);
 			}	
@@ -695,6 +687,7 @@ export function CustomAggrColumns({subsysFields, aggrsubsysFields, addtime, addi
 						key 		:	'inrecs',
 						dataIndex 	:	'inrecs',
 						gytype 		:	'number',
+						width 		:	120,
 					},
 				);
 			}	

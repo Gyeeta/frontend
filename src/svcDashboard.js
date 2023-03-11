@@ -3091,7 +3091,6 @@ export function SvcSummary({normdata, parid, filter, name, hostname, starttime, 
 	);		
 }
 
-
 export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime, filter, name, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
 {
 	const 		objref = useRef(null);

@@ -8,11 +8,11 @@ import 			{Button, Space, Modal, message, Typography, Empty, Alert, notification
 import 			{format} from "d3-format";
 
 import 			{safetypeof, validateApi, useFetchApi, CreateTab, LoadingAlert, fetchValidate, mergeMultiFetchMadhava,
-			ButtonModal} from './components/util.js';
+			ButtonModal, sortTimeArray, onRowJSONDescribe} from './components/util.js';
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
-import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc} from './svcDashboard.js';
-import 			{TimeRangeAggrModal, TimeRangeButton} from './components/dateTimeZone.js';
+import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc, aggrsvcstatefields, extsvcfields} from './svcDashboard.js';
+import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import 			{MultiFilters, SearchTimeFilter} from './multiFilters.js';
 
 const 			{Title} = Typography;
@@ -27,23 +27,19 @@ export const svcmeshclustfields = [
 	{ field : 'relidarr',		desc : 'Individual Service Info',	type : 'string',	subsys : 'svcmeshclust',	valid : null, },
 ];
 
-function onSvcTimeChange(component, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)
+function svcTimeComp(component, tstart, tend, record, addTabCB, remTabCB, isActiveTabCB)
 {
-	if (safetypeof(dateObjs) !== 'array') {
-		return;
-	}
-
 	const			tabKey = `Svcstate_${Date.now()}`;
 	const			Comp = component;
 
 	CreateTab('Service State', 
 		() => (
-			<Comp record={record} starttime={dateObjs[0].format()} endtime={dateObjs[1].format()} 
+			<Comp record={record} starttime={tstart} endtime={tend} 
 					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
 		), tabKey, addTabCB);
 }
 
-function svcmeshCol(addTabCB, remTabCB, isActiveTabCB)
+function svcmeshCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)
 {
 	return [
 	{
@@ -74,9 +70,8 @@ function svcmeshCol(addTabCB, remTabCB, isActiveTabCB)
 		dataIndex :	'oper',
 		gytype :	'number',
 		width : 	100,
-		render : 	(_, record) => <TimeRangeButton onChange={(dateObjs) => onSvcTimeChange(MeshSvcStateTable, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)} 
-									linktext="Get Service State Summary" title="Select Time Range for Service States"
-									disableFuture={true} buttontype="link" />,
+		render : 	(_, record) => <Button onClick={() => svcTimeComp(MeshSvcStateTable, tstart, tend, record, addTabCB, remTabCB, isActiveTabCB)} 
+									type="link">Get Service State Summary</Button>,
 	},
 	];
 }	
@@ -92,7 +87,7 @@ export const svcipclustfields = [
 	{ field : 'relidarr',		desc : 'Individual Service Info',	type : 'string',	subsys : 'svcipclust',	valid : null, },
 ];
 
-function svcipCol(addTabCB, remTabCB, isActiveTabCB)
+function svcipCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)
 {	
 	return [
 	{
@@ -137,9 +132,8 @@ function svcipCol(addTabCB, remTabCB, isActiveTabCB)
 		dataIndex :	'oper',
 		gytype :	'number',
 		width : 	100,
-		render : 	(_, record) => <TimeRangeButton onChange={(dateObjs) => onSvcTimeChange(VirtualIPSvcStateTable, dateObjs, record, addTabCB, remTabCB, isActiveTabCB)} 
-									linktext="Get Service State Summary" title="Select Time Range for Service States"
-									disableFuture={true} buttontype="link" />,
+		render : 	(_, record) => <Button onClick={() => svcTimeComp(VirtualIPSvcStateTable, tstart, tend, record, addTabCB, remTabCB, isActiveTabCB)} 
+									type="link">Get Service State Summary</Button>,
 	},
 	];
 }	
@@ -227,6 +221,162 @@ export function SvcVirtIPFilter({filterCB, linktext})
 }
 
 
+/*
+ * Combine already aggregated svcstate stats (1 min aggr) to cumulative stats both grouped by svcid and overall across all svcs
+ */
+export function svcStateAggrStats(dataarr)
+{
+	function initall() 
+	{
+		return {
+			time 		: '',
+			qps5s 		: 0,
+			nqry5s		: 0,
+			resp5s		: 0,
+			nconns		: 0,
+			nactive		: 0,
+			kbin15s		: 0,
+			kbout15s 	: 0,
+			sererr		: 0,
+			clierr		: 0,
+			delayus		: 0,
+			cpudelus	: 0,
+			iodelus		: 0,
+			vmdelus		: 0,
+			
+			// The following are to be calculated by summing the svc specfic avgs
+			usercpu		: 0,
+			syscpu		: 0,
+			rssmb		: 0,
+
+			svcissue	: 0,
+			inproc		: 0,
+			inqps		: 0,
+			inaconn		: 0,
+			inhttperr	: 0,
+			inoscpu		: 0,
+			inosmem		: 0,
+			indepsvc	: 0,
+			inunknown	: 0,
+			
+			ishttp		: false,
+			inrecs		: 0,	
+		};
+	};
+
+
+	const odata = {
+		summrec		: initall(),
+		timearr		: [],
+		svcarr		: [], 
+		svc1marr	: dataarr, 
+		svcmap		: new Map(),
+
+		addrec(orec, trec, inrecs) {
+			orec.qps5s	+= trec.qps5s;
+			orec.nqry5s	+= trec.nqry5s;
+			orec.resp5s	+= trec.resp5s;
+			orec.nconns	+= trec.nconns;
+			orec.nactive	+= trec.nactive;
+			orec.kbin15s	+= trec.kbin15s;
+			orec.kbout15s	+= trec.kbout15s;
+			orec.sererr	+= trec.sererr;
+			orec.clierr	+= trec.clierr;
+			orec.delayus	+= trec.delayus;
+			orec.cpudelus	+= trec.cpudelus;
+			orec.iodelus	+= trec.iodelus;
+			orec.vmdelus	+= trec.vmdelus;
+			orec.usercpu	+= trec.usercpu;
+			orec.syscpu	+= trec.syscpu;
+			orec.rssmb	+= trec.rssmb;
+			orec.svcissue	+= trec.svcissue;
+			orec.inproc	+= trec.inproc;
+			orec.inqps	+= trec.inqps;
+			orec.inaconn	+= trec.inaconn;
+			orec.inhttperr	+= trec.inhttperr;
+			orec.inoscpu	+= trec.inoscpu;
+			orec.indepsvc	+= trec.indepsvc;
+			orec.inunknown	+= trec.inunknown;
+			
+			orec.ishttp	= orec.ishttp || trec.ishttp;
+			orec.inrecs	+= inrecs;
+		},	
+
+		recaggr(orec) {
+			if (!orec.inrecs) return;
+
+			orec.qps5s 	/= orec.inrecs;
+			orec.resp5s	/= orec.inrecs;
+			orec.nconns	/= orec.inrecs;
+			orec.nactive	/= orec.inrecs;
+			orec.usercpu	/= orec.inrecs;
+			orec.syscpu	/= orec.inrecs;
+			orec.rssmb	/= orec.inrecs;
+		},	
+
+		finalaggr() {
+			if (this.timearr[0]) {
+				this.addrec(this.summrec, this.timearr[this.timearr.length - 1], 1);
+				this.recaggr(this.summrec);
+			
+				for (let srec of this.svcmap.values()) {
+					this.recaggr(srec);
+
+					this.svcarr.push(srec);
+				}	
+
+				this.summrec.time = this.timearr[0].time;
+			}	
+
+			delete this.svcmap;
+		},	
+
+		updrec(rec) {
+			let			trec = this.timearr[this.timearr.length - 1];
+			let			srec = this.svcmap.get(rec.svcid);
+
+			if (!srec) {
+				srec = { ...rec };
+				srec.inrecs = 1;
+
+				this.svcmap.set(rec.svcid, srec);
+			}	
+			else {
+				this.addrec(srec, rec, 1);
+			}	
+
+			if (!trec || trec.time !== rec.time) {
+				if (trec) {
+					// Summary last min stats
+					this.addrec(this.summrec, trec, 1);
+				}	
+
+				trec 		= initall();
+				trec.time 	= rec.time;
+
+				this.timearr.push(trec);
+			}	
+			
+			this.addrec(trec, rec, rec.inrecs);	
+		},	
+	};
+
+	if (!Array.isArray(dataarr)) {
+		throw new Error("Invalid response received from server. Missing extsvcstate...");
+	}	
+
+	sortTimeArray(dataarr);
+
+	for (let rec of dataarr) {
+		odata.updrec(rec);
+	}	
+
+	odata.finalaggr();
+
+	return odata;
+}
+
+
 // Returns an array of axios configs
 function getMeshStateProms(record, starttime, endtime)
 {
@@ -281,7 +431,7 @@ function getMeshStateProms(record, starttime, endtime)
 					endtime,
 					options		:	{
 						aggregate	:	starttime && endtime ? true : false,
-						aggrsec		:	3600000,	// Single record
+						aggrsec		:	60,
 						aggroper	:	'sum',
 						filter		:	filter,
 						timeoutsec 	: 	60,
@@ -318,7 +468,7 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 				const			res = await Promise.all(getMeshStateProms(record, starttime, endtime));
 				const			mres = mergeMultiFetchMadhava(res, 'extsvcstate');
 
-				setApiData({data : mres, isloading : false, isapierror : false});
+				setApiData({data : svcStateAggrStats(mres.extsvcstate), isloading : false, isapierror : false});
 			}
 			catch(e) {
 				setApiData({data : [], isloading : false, isapierror : true});
@@ -332,32 +482,76 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 	}, [record, isloading, starttime, endtime]);	
 	
 	if (isloading === false && isapierror === false) { 
-		const			field = "extsvcstate";
-
-		if (!data || !data[field]) {
-			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
-			closetab = 30000;
-		}
-		else if (data[field].length === 0) {
+		if (data.timearr.length === 0) {
 			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
 			closetab = 10000;
 		}	
 		else {
 
 			const			columns = getSvcStateColumns({isrange : true, useAggr : true, aggrType : 'sum', isext : true});
+			const			summcolumns = getSvcStateColumns({isrange : true, useAggr : true, aggrType : 'sum', isext : false}).filter((col) => {
+							switch (col.dataIndex) {
+							
+							case 'host' :
+							case 'cluster' :
+							case 'name' :
+							case 'p95resp5s' :
+							case 'p95resp5m' :
+							case 'inrecs' :
+								return false;
+
+							default : return true;	
+							}	
+						});
+			const			svccolumns = columns.filter((col) => {
+							switch (col.dataIndex) {
+							
+							case 'p95resp5s' :
+							case 'p95resp5m' :
+							case 'inrecs' :
+								return false;
+
+							default : return true;	
+							}
+						});
+
 			const			tableOnRow = svcStateOnRow({useAggr : true, aggrMin : 5, addTabCB, remTabCB, isActiveTabCB});
+			const			summOnRow = onRowJSONDescribe({titlestr : "Interconnected Service Group Summary Statistics", 
+								fieldCols : [...aggrsvcstatefields, ...extsvcfields]});
 
 			const 			expandedRowRender = (rec) => <ExtSvcDesc rec={rec} />;
 
-			const			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+			const			timestr = <span style={{ fontSize : 14, marginTop : 20, marginBottom : 30 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>Interconnected Grouped Services Aggregated States</Title>
+				<Title level={3}>Interconnected Grouped Services Aggregated States</Title>
 				{timestr}
-				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
+
+				<div style={{ marginTop : 30 }}>
+				<Title level={4}>Overall Service Statistics</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={[data.summrec]} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Overall 1 minute Service Statistics</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Overall Individual Service Level Statistics</Title>
+				<GyTable columns={svccolumns} onRow={tableOnRow} dataSource={data.svcarr} 
+					expandable={{ expandedRowRender }} rowKey="svcid" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Individual Service Level 1min Aggregated Statistics</Title>
+				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svc1marr} 
 					expandable={{ expandedRowRender }} rowKey="rowid" scroll={getTableScroll()} />
+				</div>
+
+
 				</div>
 				</>
 			);
@@ -524,23 +718,26 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir]);
 
 	if (isloading === false && isapierror === false) { 
-		const			field = "svcmeshclust";
+		const				field = "svcmeshclust";
 
 		if (!data || !data[field]) {
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
 		else {
+			let				tstart, tend;
+
+			tstart = moment(starttime, starttime ? moment.ISO_8601 : undefined).subtract(4, 'minute').format();
+			tend = moment(endtime ?? starttime, (starttime || endtime) ? moment.ISO_8601 : undefined).add(1, 'minute').format();
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 
 				<Title level={4}>List of Interconnected Service Groups</Title>
-				{starttime && endtime && <span style={{ marginBottom : 30 }}><strong>from {starttime} to {endtime}</strong></span>}
-				{!(starttime && endtime) && <span style={{ marginBottom : 30 }}><strong>at {starttime ? starttime : moment().format()}</strong></span>}
+				<span style={{ marginBottom : 30 }}><strong>from {tstart} to {tend}</strong></span>
 				
-				<GyTable columns={svcmeshCol(addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
+				<GyTable columns={svcmeshCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
 				
 				</div>
 				</>
@@ -839,16 +1036,19 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 			closetab = 30000;
 		}
 		else {
+			let				tstart, tend;
+
+			tstart = moment(starttime, starttime ? moment.ISO_8601 : undefined).subtract(4, 'minute').format();
+			tend = moment(endtime ?? starttime, (starttime || endtime) ? moment.ISO_8601 : undefined).add(1, 'minute').format();
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 
 				<Title level={4}>List of Virtual IP Based Service Groups</Title>
-				{starttime && endtime && <span style={{ marginBottom : 30 }}><strong>from {starttime} to {endtime}</strong></span>}
-				{!(starttime && endtime) && <span style={{ marginBottom : 30 }}><strong>at {starttime ? starttime : moment().format()}</strong></span>}
+				<span style={{ marginBottom : 30 }}><strong>from {tstart} to {tend}</strong></span>
 				
-				<GyTable columns={svcipCol(addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
+				<GyTable columns={svcipCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
 				
 				</div>
 				</>

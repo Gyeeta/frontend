@@ -447,6 +447,22 @@ export function ButtonModal({buttontext, buttontype, title, contentCB, width = '
 	return <Button type={buttontype} onClick={modonclick} >{buttontext}</Button>;
 }
 
+// Sorts in-place
+export function sortTimeArray(arr, field = 'time')
+{
+	const comparator = (a, b) => {
+		if (a[field] < b[field]) {
+			return -1;
+		}
+		if (a[field] > b[field]) {
+			return 1;
+		}
+		return 0;			
+	};	
+
+	arr.sort(comparator);
+}	
+
 /*
  * Supports 3 level of objects : e.g.  { a : 1, o : { x : 1, y : { p : 1 } } }
  * Either of keyNames or fieldCols can be supplied to xlate the key to Desc. keyNames.key is needed.
@@ -568,6 +584,30 @@ export function ButtonJSONDescribe({record, buttontext = 'View Complete Record D
 				contentCB={() => <JSONDescription jsondata={record} titlestr={titlestr} column={column} keyNames={keyNames} fieldCols={fieldCols}
 								xfrmDataCB={xfrmDataCB}/>} />	
 }	
+
+export function onRowJSONDescribe({titlestr = 'Record', column, keyNames, fieldCols, xfrmDataCB})
+{
+	return (record, rowIndex) => {
+		return {
+			onClick: event => {
+				Modal.info({
+					title : <span><strong>Service {record.name} State</strong></span>,
+					content : (
+						<>
+						<JSONDescription jsondata={record} titlestr={titlestr} column={column} keyNames={keyNames} fieldCols={fieldCols}
+								xfrmDataCB={xfrmDataCB} />	
+						</>
+						),
+
+					width : '90%',	
+					closable : true,
+					destroyOnClose : true,
+					maskClosable : true,
+				});
+			}
+		};		
+	};
+}					
 
 export function LoadingAlert({message = "Fetching Data..."})
 {
