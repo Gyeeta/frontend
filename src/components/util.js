@@ -95,6 +95,11 @@ export const stateEnum = [
 	{ name : 'Down',		value : 'Down' },
 ];
 
+export function formatFloat(fval, nDecimal = 3)
+{
+	return +parseFloat(fval).toFixed(nDecimal);
+}
+
 export function usecStrFormat(usec)
 {
 	if ((usec === undefined) || (true === isNaN(usec))) {

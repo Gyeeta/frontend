@@ -64,8 +64,8 @@ export const svcstatefields = [
 export const aggrsvcstatefields = [
 	{ field : 'name',		desc : 'Service Name',			type : 'string',	subsys : 'svcstate',	valid : null, },
 	{ field : 'qps5s',		desc : 'Queries/sec QPS',		type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'nqry5s',		desc : '# Queries per 5 sec',		type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'resp5s',		desc : 'Avg 5 sec Response ms',		type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'nqry5s',		desc : 'Total Queries',			type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'resp5s',		desc : 'Avg Response ms',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'p95resp5s',		desc : 'p95 5 sec Response ms',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'p95resp5m',		desc : 'p95 5 min Response ms',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'nactive',		desc : '# Active Connections',		type : 'number',	subsys : 'svcstate',	valid : null, },
@@ -595,7 +595,7 @@ export const hostAggrCol = (aggrType) => {
 		render :	(num) => format(",")(num),
 	},
 	{
-		title :		`5 sec ${ignsum} Response`,
+		title :		`${ignsum} Response`,
 		key :		'resp5s',
 		dataIndex :	'resp5s',
 		gytype :	'number',
@@ -630,7 +630,7 @@ export const hostAggrCol = (aggrType) => {
 		render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : 'green' }} >{num} of {rec.inrecs}</span>,
 	},
 	{
-		title :		`5 sec ${astr} Queries`,
+		title :		`${astr} Total Queries`,
 		key :		'nqry5s',
 		dataIndex :	'nqry5s',
 		gytype :	'number',

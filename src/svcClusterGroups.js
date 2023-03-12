@@ -8,7 +8,7 @@ import 			{Button, Space, Modal, message, Typography, Empty, Alert, notification
 import 			{format} from "d3-format";
 
 import 			{safetypeof, validateApi, useFetchApi, CreateTab, LoadingAlert, fetchValidate, mergeMultiFetchMadhava,
-			ButtonModal, sortTimeArray, onRowJSONDescribe} from './components/util.js';
+			ButtonModal, sortTimeArray, onRowJSONDescribe, formatFloat} from './components/util.js';
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc, aggrsvcstatefields, extsvcfields} from './svcDashboard.js';
@@ -305,13 +305,13 @@ export function svcStateAggrStats(dataarr)
 		recaggr(orec) {
 			if (!orec.inrecs) return;
 
-			orec.qps5s 	/= orec.inrecs;
-			orec.resp5s	/= orec.inrecs;
-			orec.nconns	/= orec.inrecs;
-			orec.nactive	/= orec.inrecs;
-			orec.usercpu	/= orec.inrecs;
-			orec.syscpu	/= orec.inrecs;
-			orec.rssmb	/= orec.inrecs;
+			orec.qps5s 	= formatFloat(orec.qps5s/orec.inrecs);
+			orec.resp5s	= formatFloat(orec.resp5s/orec.inrecs);
+			orec.nconns	= formatFloat(orec.nconns/orec.inrecs);
+			orec.nactive	= formatFloat(orec.nactive/orec.inrecs);
+			orec.usercpu	= formatFloat(orec.usercpu/orec.inrecs);
+			orec.syscpu	= formatFloat(orec.syscpu/orec.inrecs);
+			orec.rssmb	= formatFloat(orec.rssmb/orec.inrecs);
 		},	
 
 		finalaggr() {
@@ -473,7 +473,7 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 			catch(e) {
 				setApiData({data : [], isloading : false, isapierror : true});
 				notification.error({message : "Data Fetch Exception Error", 
-						description : `Exception occured while waiting for Service data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+						description : `Exception occured while waiting for Service Mesh data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
 
 				console.log(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
 			}	
@@ -514,6 +514,19 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 							default : return true;	
 							}
 						});
+
+			const			chgsvcissue = (colarr) => {
+							for (let i = 0; i < colarr.length; ++i) {
+								let		col = colarr[i];
+
+								if (col.dataIndex === 'svcissue') {
+									colarr[i] = { ...col, render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : 'green' }} >{num}</span> };
+									break;
+								}	
+							}	
+						};
+			chgsvcissue(summcolumns);
+			chgsvcissue(svccolumns);
 
 			const			tableOnRow = svcStateOnRow({useAggr : true, aggrMin : 5, addTabCB, remTabCB, isActiveTabCB});
 			const			summOnRow = onRowJSONDescribe({titlestr : "Interconnected Service Group Summary Statistics", 
@@ -873,7 +886,7 @@ function getVirtIPStateProms(record, starttime, endtime)
 					endtime,
 					options		:	{
 						aggregate	:	starttime && endtime ? true : false,
-						aggrsec		:	3600000,	// Single record
+						aggrsec		:	60,
 						aggroper	:	'sum',
 						filter		:	filter,
 						timeoutsec 	: 	60,
@@ -910,12 +923,12 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 				const			res = await Promise.all(getVirtIPStateProms(record, starttime, endtime));
 				const			mres = mergeMultiFetchMadhava(res, 'extsvcstate');
 
-				setApiData({data : mres, isloading : false, isapierror : false});
+				setApiData({data : svcStateAggrStats(mres.extsvcstate), isloading : false, isapierror : false});
 			}
 			catch(e) {
 				setApiData({data : [], isloading : false, isapierror : true});
 				notification.error({message : "Data Fetch Exception Error", 
-						description : `Exception occured while waiting for Service data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+						description : `Exception occured while waiting for Service IP data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
 
 				console.log(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
 			}	
@@ -924,32 +937,88 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 	}, [record, isloading, starttime, endtime]);	
 	
 	if (isloading === false && isapierror === false) { 
-		const			field = "extsvcstate";
-
-		if (!data || !data[field]) {
-			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
-			closetab = 30000;
-		}
-		else if (data[field].length === 0) {
+		if (data.timearr.length === 0) {
 			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
 			closetab = 10000;
 		}	
 		else {
-
 			const			columns = getSvcStateColumns({isrange : true, useAggr : true, aggrType : 'sum', isext : true});
+			const			summcolumns = getSvcStateColumns({isrange : true, useAggr : true, aggrType : 'sum', isext : false}).filter((col) => {
+							switch (col.dataIndex) {
+							
+							case 'host' :
+							case 'cluster' :
+							case 'name' :
+							case 'p95resp5s' :
+							case 'p95resp5m' :
+							case 'inrecs' :
+								return false;
+
+							default : return true;	
+							}	
+						});
+			const			svccolumns = columns.filter((col) => {
+							switch (col.dataIndex) {
+							
+							case 'p95resp5s' :
+							case 'p95resp5m' :
+							case 'inrecs' :
+								return false;
+
+							default : return true;	
+							}
+						});
+
+			const			chgsvcissue = (colarr) => {
+							for (let i = 0; i < colarr.length; ++i) {
+								let		col = colarr[i];
+
+								if (col.dataIndex === 'svcissue') {
+									colarr[i] = { ...col, render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : 'green' }} >{num}</span> };
+									break;
+								}	
+							}	
+						};
+			chgsvcissue(summcolumns);
+			chgsvcissue(svccolumns);
+
 			const			tableOnRow = svcStateOnRow({useAggr : true, aggrMin : 5, addTabCB, remTabCB, isActiveTabCB});
+			const			summOnRow = onRowJSONDescribe({titlestr : "Virtual IP Group Summary Statistics", 
+								fieldCols : [...aggrsvcstatefields, ...extsvcfields]});
 
 			const 			expandedRowRender = (rec) => <ExtSvcDesc rec={rec} />;
 
-			const			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+			const			timestr = <span style={{ fontSize : 14, marginTop : 20, marginBottom : 30 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>Virtual IP Grouped Services Aggregated States</Title>
+				<Title level={3}>Virtual IP Grouped Services Aggregated States</Title>
 				{timestr}
-				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
+
+				<div style={{ marginTop : 30 }}>
+				<Title level={4}>Overall Service Statistics</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={[data.summrec]} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Overall 1 minute Service Statistics</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Overall Individual Service Level Statistics</Title>
+				<GyTable columns={svccolumns} onRow={tableOnRow} dataSource={data.svcarr} 
+					expandable={{ expandedRowRender }} rowKey="svcid" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Individual Service Level 1min Aggregated Statistics</Title>
+				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svc1marr} 
 					expandable={{ expandedRowRender }} rowKey="rowid" scroll={getTableScroll()} />
+				</div>
+
+
 				</div>
 				</>
 			);
@@ -1300,7 +1369,7 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 			<div style={{ marginLeft : 20 }}>
 			<Space>
 
-			{!starttime && <Button onClick={() => setStart(moment().startOf('minute').format())} >Refresh Service Group Info</Button>}
+			{!starttime && <Button onClick={() => setStart(moment().startOf('minute').format())} >Refresh Service Groups Info</Button>}
 
 			<TimeRangeAggrModal onChange={onHistorical} title='Historical Service Groups'
 					showTime={true} showRange={true} minAggrRangeMin={0} disableFuture={true} />
@@ -1313,7 +1382,7 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 	
 	return (
 		<>
-		<Title level={4}><em>{starttime ? 'Historical ' : ''}Service {starttime ? '' : 'Deployment '}Groups</em></Title>
+		<Title level={4}><em>{starttime ? 'Historical ' : ''}Service Groups Dashboard</em></Title>
 		{optionDiv()}
 		
 		<SvcMeshGroups starttime={tstart} endtime={endtime} filter={filter} 

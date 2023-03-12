@@ -1871,7 +1871,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
 			<Space>
 
-			<ButtonModal buttontext={`Search Service '${objref.current.svcname}' State`} isconfirm={true} width={800}
+			<ButtonModal buttontext={`Search Service '${objref.current.svcname}' State`} okText="Cancel" width={800}
 				contentCB={() => (
 					<SearchTimeFilter callback={onStateSearch} title='Search Service State' 
 						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={50000} />

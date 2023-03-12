@@ -995,6 +995,48 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 			}	
 			break;
 
+		case svcGroupKey :
+			
+			try {
+
+				const		tabKey = svcGroupKey + ((filterobj && !isEmptyObj(filterobj, true)) ? `_dashfiltered${Date.now()}` : '');
+
+				const		svcGroups = () => (
+					<>
+					<ErrorBoundary>
+					<SvcClusterGroups starttime={filterobj?.starttime} endtime={filterobj?.endtime} filter={filterobj?.filter} 
+								addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+					</ErrorBoundary>
+					</>
+				);	
+
+				if (filterobj && !isEmptyObj(filterobj, true)) {
+					addTabCB('Filtered Svc Groups', svcGroups, tabKey);
+				}	
+				else {
+					addTabCB('Service Groups', svcGroups, tabKey);
+				}	
+			}
+			catch(e) {
+				let		emsg;
+
+				console.log(`Exception seen while fetching Service Groups data : ${e.message}`);
+
+				if (e.response && e.response.data) {
+					emsg = e.response.data;
+				}	
+				else if (e.message) {
+					emsg = e.message;
+				}	
+				else {
+					emsg = 'Exception Caught while fetching Service Groups';
+				}	
+
+				notification.error({message : "Service Groups", description : `Exception during data fetch : ${emsg}`});
+			}	
+			break;
+
+
 		case svcMonitorKey :
 
 			try {
@@ -1144,47 +1186,6 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 				}	
 
 				notification.error({message : "Service Netflow Monitor", description : `Exception during data fetch : ${emsg}`});
-			}	
-			break;
-
-		case svcGroupKey :
-			
-			try {
-
-				const		tabKey = svcGroupKey + ((filterobj && !isEmptyObj(filterobj, true)) ? `_dashfiltered${Date.now()}` : '');
-
-				const		svcGroups = () => (
-					<>
-					<ErrorBoundary>
-					<SvcClusterGroups starttime={filterobj?.starttime} endtime={filterobj?.endtime} filter={filterobj?.filter} 
-								addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
-					</ErrorBoundary>
-					</>
-				);	
-
-				if (filterobj && !isEmptyObj(filterobj, true)) {
-					addTabCB('Filtered Svc Groups', svcGroups, tabKey);
-				}	
-				else {
-					addTabCB('Service Groups', svcGroups, tabKey);
-				}	
-			}
-			catch(e) {
-				let		emsg;
-
-				console.log(`Exception seen while fetching Service Groups data : ${e.message}`);
-
-				if (e.response && e.response.data) {
-					emsg = e.response.data;
-				}	
-				else if (e.message) {
-					emsg = e.message;
-				}	
-				else {
-					emsg = 'Exception Caught while fetching Service Groups';
-				}	
-
-				notification.error({message : "Service Groups", description : `Exception during data fetch : ${emsg}`});
 			}	
 			break;
 
@@ -1997,17 +1998,17 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 
 				<SubMenu key="SvcMenu" icon={<CloudServerOutlined />} title="Services">
 					<Menu.Item key={svcDashKey} icon={<GlobalOutlined />} >Global Service Dashboard</Menu.Item>
-					<Menu.Item key={svcClusterKey} icon={<ClusterOutlined />}>Service Dashboard for Cluster</Menu.Item>
-					<Menu.Item key={svcHostKey} icon={<LaptopOutlined />}>Service Dashboard for Host</Menu.Item>
+					<Menu.Item key={svcClusterKey} icon={<ClusterOutlined />}>Cluster Service Dashboard</Menu.Item>
+					<Menu.Item key={svcHostKey} icon={<LaptopOutlined />}>Host Service Dashboard</Menu.Item>
+					<Menu.Item key={svcGroupKey} icon={<DeploymentUnitOutlined />} >Service Groups Dashboard</Menu.Item>
 					<Menu.Item key={svcMonitorKey} icon={<LineChartOutlined />} >Specific Service Monitor</Menu.Item>
 					<Menu.Item key={svcNetFlowKey} icon={<BranchesOutlined />} >Service Network Flow Dashboard</Menu.Item>
-					<Menu.Item key={svcGroupKey} icon={<DeploymentUnitOutlined />} >Service Deployment Groups</Menu.Item>
 				</SubMenu>
 				
 				<SubMenu key="ProcMenu" icon={<ContainerOutlined />} title="Processes">
 					<Menu.Item key={procDashKey} icon={<GlobalOutlined />} >Global Process Dashboard</Menu.Item>
-					<Menu.Item key={procClusterKey} icon={<ClusterOutlined />}>Process Dashboard for Cluster</Menu.Item>
-					<Menu.Item key={procHostKey} icon={<LaptopOutlined />}>Process Dashboard for Host</Menu.Item>
+					<Menu.Item key={procClusterKey} icon={<ClusterOutlined />}>Cluster Process Dashboard</Menu.Item>
+					<Menu.Item key={procHostKey} icon={<LaptopOutlined />}>Host Process Dashboard</Menu.Item>
 					<Menu.Item key={procMonitorKey} icon={<LineChartOutlined />} >Specific Process Monitor</Menu.Item>
 					<Menu.Item key={procNetFlowKey} icon={<BranchesOutlined />} >Process Network Flow Dashboard</Menu.Item>
 				</SubMenu>
