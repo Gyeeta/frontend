@@ -543,13 +543,8 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 				{timestr}
 
 				<div style={{ marginTop : 30 }}>
-				<Title level={4}>Overall Service Statistics</Title>
+				<Title level={4}>Overall Statistics for all Services in Group</Title>
 				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={[data.summrec]} rowKey="time" scroll={getTableScroll()} />
-				</div>
-
-				<div>
-				<Title level={4}>Overall 1 minute Service Statistics</Title>
-				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
 				</div>
 
 				<div>
@@ -559,7 +554,12 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 				</div>
 
 				<div>
-				<Title level={4}>Individual Service Level 1min Aggregated Statistics</Title>
+				<Title level={4}>Overall per minute Statistics for all Services</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+				<div>
+				<Title level={4}>Individual Service Level per minute Statistics</Title>
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svc1marr} 
 					expandable={{ expandedRowRender }} rowKey="rowid" scroll={getTableScroll()} />
 				</div>
@@ -997,13 +997,8 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 				{timestr}
 
 				<div style={{ marginTop : 30 }}>
-				<Title level={4}>Overall Service Statistics</Title>
+				<Title level={4}>Overall Statistics for all Services in Group</Title>
 				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={[data.summrec]} rowKey="time" scroll={getTableScroll()} />
-				</div>
-
-				<div>
-				<Title level={4}>Overall 1 minute Service Statistics</Title>
-				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
 				</div>
 
 				<div>
@@ -1013,7 +1008,13 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 				</div>
 
 				<div>
-				<Title level={4}>Individual Service Level 1min Aggregated Statistics</Title>
+				<Title level={4}>Overall per minute Statistics for all Services</Title>
+				<GyTable columns={summcolumns} onRow={summOnRow} dataSource={data.timearr} rowKey="time" scroll={getTableScroll()} />
+				</div>
+
+
+				<div>
+				<Title level={4}>Individual Service Level per minute Statistics</Title>
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svc1marr} 
 					expandable={{ expandedRowRender }} rowKey="rowid" scroll={getTableScroll()} />
 				</div>
