@@ -2152,7 +2152,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Process State";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (!isrange) {
 				columns = parid ? hostAggrCol : globAggrCol;
@@ -2183,7 +2183,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 					columns = !useAggr ? globAggrRangeCol : globAggrGlobAggrCol(aggrType);
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Process State`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 
 			if (isext && !customColumns) {
@@ -2392,7 +2392,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Process Info";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getProcinfoColumns(true, false);
@@ -2408,7 +2408,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Process Info `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 
 			if (name) {

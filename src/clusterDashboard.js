@@ -750,7 +750,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 									content : (
 										<>
 										<ClusterModalCard rec={record} aggrType={useAggr ? aggrType : undefined} 
-											recintervalsec={useAggr && aggrMin ? aggrMin * 60 : undefined} 
+											recintervalsec={useAggr && aggrMin ? aggrMin * 60 : undefined} endtime={endtime}
 											addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 										</>
 										),
@@ -1048,9 +1048,24 @@ export function ClusterModalCard({rec, starttime, endtime, aggrType, recinterval
 	titlestr += `Cluster '${rec.cluster}' State for `;
 
 	if (rec.time && isaggr && recintervalsec > 0) {
-		tstart = rec.time;
-		tend = moment(rec.time, moment.ISO_8601).add(recintervalsec, 'seconds').format();
-		
+		tstart = moment(rec.time, moment.ISO_8601).format();
+
+		const				rt = moment(rec.time, moment.ISO_8601).add(recintervalsec, 'seconds');
+
+		if (endtime) {
+			const				em = moment(endtime, moment.ISO_8601);
+			
+			if (+em < +rt) {
+				tend = em.format();
+			}	
+			else {
+				tend = rt.format();
+			}	
+		}	
+		else {
+			tend = rt.format();
+		}
+
 		titlestr += `Time range between ${rec.time} and ${tend}`;
 
 		if (recintervalsec > 3600) {

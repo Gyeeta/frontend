@@ -891,7 +891,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				titlestr = "Service Active Connection";
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
 			}	
 			else if (!isrange) {
 				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext});
@@ -919,7 +919,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				else {
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Active Connections`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
 			}	
 
 			const 			expandedRowRender = (rec) => <ExtActiveConnDesc rec={rec} />;
@@ -1191,7 +1191,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				titlestr = "Client Connection";
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
 			}
 			else if (!isrange) {
 				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext});
@@ -2695,8 +2695,8 @@ export function NetSummary({objref, summary, addTabCB, remTabCB, isActiveTabCB, 
 	return (
 		<Descriptions title={titlestr} bordered={true} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} style={{ textAlign: 'center' }}>
 		
-		<Descriptions.Item label={<em>Start Time</em>}>{summary.starttime}</Descriptions.Item>
-		<Descriptions.Item label={<em>End Time</em>}>{summary.endtime}</Descriptions.Item>
+		<Descriptions.Item label={<em>Start Time</em>}>{moment(summary.starttime, moment.ISO_8601).format()}</Descriptions.Item>
+		<Descriptions.Item label={<em>End Time</em>}>{moment(summary.endtime, moment.ISO_8601).format()}</Descriptions.Item>
 		<Descriptions.Item label={<em>Get Info / Monitor</em>}>
 		{issvc && <Button type='dashed' onClick={() => getSvcInfo(objref.current.svcsibling === true && objref.current.svcprocmap[0]?.svcidarr ? 
 							objref.current.svcprocmap[0].svcidarr.split(',') : [objref.current.svcid], objref.current.parid, objref.current.starttime, 

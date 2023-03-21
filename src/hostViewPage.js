@@ -1980,16 +1980,37 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 	);		
 }
 
-export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, isActiveTabCB})
+// Specify starttime if rec.time is to be ignored. Also endtime should be specified in case no step aggregation is on
+export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, aggrType, addTabCB, remTabCB, isActiveTabCB})
 {
 	const 		isTabletOrMobile = useMediaQuery({ maxWidth: 1224 });
 	const		paridin = rec.parid ?? parid;
-	let		aggregatesec, startmom, endmom, starttime, endtime;
+	let		aggregatesec, startmom, endmom, aggrtypestr = aggrType ? capitalFirstLetter(aggrType) : '';
 
-	startmom = moment(rec.time, moment.ISO_8601); 
-	endmom = moment(rec.time, moment.ISO_8601).add(aggrMin, 'minutes');
+	if (!aggrMin || aggrMin < 0) {
+		aggrMin = 5;
+	}
+
+	startmom = moment(starttime ?? rec.time, moment.ISO_8601); 
+
+	const				rt = moment(rec.time, moment.ISO_8601).add(aggrMin, 'minutes');
+
+	if (endtime) {
+		const				em = moment(endtime, moment.ISO_8601);
+		
+		if (+em < +rt) {
+			endmom = em;
+		}	
+		else {
+			endmom = rt;
+		}	
+	}	
+	else {
+		endmom = rt;
+	}
 
 	starttime = startmom.format();
+
 	endtime = endmom.format();
 
 	if (endmom.unix() >= startmom.unix() + 2 * 3600) {
@@ -2152,11 +2173,11 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 		</Descriptions.Item>}
 
 
-		<Descriptions.Item label={<em>Aggr Service Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Service Issues</em>}>
 			{rec.nlistissue > 0 ? getSvcStateTable(format(",")(rec.nlistissue), `({ state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
-		<Descriptions.Item label={<em>Aggr Severe Service Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Severe Service Issues</em>}>
 			{rec.nlistsevere > 0 ? getSvcStateTable(format(",")(rec.nlistsevere), `({ state = 'Severe' })`) : 0}
 		</Descriptions.Item>
 
@@ -2167,11 +2188,11 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 		</Descriptions.Item>
 
 
-		<Descriptions.Item label={<em>Aggr Process Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Process Issues</em>}>
 			{rec.nprocissue > 0 ? getProcStateTable(format(",")(rec.nprocissue), `({ state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
-		<Descriptions.Item label={<em>Aggr Severe Process Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Severe Process Issues</em>}>
 			{rec.nprocsevere > 0 ? getProcStateTable(format(",")(rec.nprocsevere), `({ state = 'Severe' })`) : 0}
 		</Descriptions.Item>
 
@@ -2181,28 +2202,28 @@ export function HostRangeAggrTimeCard({rec, parid, aggrMin, addTabCB, remTabCB, 
 			</Space>
 		</Descriptions.Item>
 
-		<Descriptions.Item label={<em>Aggr Host CPU Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Host CPU Issues</em>}>
 			{rec.cpuissue > 0 ? getCpumemStateTable(format(",")(rec.cpuissue), `({ cpumem.cpu_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
-		<Descriptions.Item label={<em>Aggr Host Memory Issues</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Host Memory Issues</em>}>
 			{rec.memissue > 0 ? getCpumemStateTable(format(",")(rec.memissue), `({ cpumem.mem_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
 		{rec.cpudelms >= 0 &&
-		<Descriptions.Item label={<em>Aggr CPU Delays</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr CPU Delays</em>}>
 			{rec.cpudelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
 
 		{rec.vmdelms >= 0 &&
-		<Descriptions.Item label={<em>Aggr Memory Delays</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr Memory Delays</em>}>
 			{rec.vmdelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
 
 		{rec.iodelms >= 0 &&
-		<Descriptions.Item label={<em>Aggr IO Delays</em>}>
+		<Descriptions.Item label={<em>{aggrtypestr} Aggr IO Delays</em>}>
 			{rec.iodelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
@@ -2717,7 +2738,8 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 															addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />}
 											{isrange && (useAggr && aggrMin) && 
 															<HostRangeAggrTimeCard rec={record} parid={parid} aggrMin={aggrMin}
-															addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />}
+																aggrType={aggrType} endtime={endtime}
+																addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />}
 											</>
 											),
 										width : '90%',	
@@ -2758,7 +2780,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					columns = customTableColumns;
 					rowKey = "rowid";
 					titlestr = "Host State";
-					timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 				}	
 				else if (!isrange) {
 					columns = hostColumns(!parid);
@@ -2772,7 +2794,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : ''} Host State`;
 					columns = !useAggr ? hostTimeColumns(!parid) : (aggrMin ? hostRangeTimeColumns(aggrType, !parid) : hostRangeNoSummColumns(aggrType, !parid));
-					timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 				}	
 
 				hinfo = (

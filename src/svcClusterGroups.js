@@ -534,7 +534,9 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 
 			const 			expandedRowRender = (rec) => <ExtSvcDesc rec={rec} />;
 
-			const			timestr = <span style={{ fontSize : 14, marginTop : 20, marginBottom : 30 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+			const			timestr = (<span style={{ fontSize : 14, marginTop : 20, marginBottom : 30 }} >
+							<strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong>
+							</span>);
 
 			hinfo = (
 				<>

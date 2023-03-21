@@ -2420,7 +2420,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Service State";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 			else if (!isrange) {
 				rowKey = "svcid";
@@ -2448,7 +2448,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				else {
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services State`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 
 			if (!columns) {
@@ -2656,7 +2656,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Service Info";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getSvcinfoColumns(true, false);
@@ -2672,7 +2672,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Service Info `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {starttime} to {endtime}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 
 			if (name) {
@@ -2873,7 +2873,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Service Summary";
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getSvcsummColumns(true, false);
@@ -2889,7 +2889,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Summary`;
 			
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 
 			hinfo = (

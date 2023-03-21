@@ -1004,24 +1004,27 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 
 			let		columns, titlestr, timestr;
 
+			if (starttime && endtime) {
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+			}
+			else {
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+			}	
+
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
-				titlestr = "Alerts Info";
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				titlestr = "Alerts Seen";
 			}	
 			else if (!useAggr) {
 				columns = getAlertColumns();
 
-				titlestr = 'Alerts Info';
+				titlestr = 'Alerts Seen';
 				if (!title) title = 'Alerts';
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
 			}
 			else {
 				columns = getAlertAggrColumns();
 				titlestr = "Aggregated Alert Statistics"
 				if (!title) title = 'Aggr Alerts';
-				
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
 			}	
 
 			let			expandedRowRender;
