@@ -1,2 +1,2 @@
-Frontend UI : Version 0.3.0
+Frontend UI : Version 0.3.1
 
