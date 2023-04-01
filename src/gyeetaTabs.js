@@ -1081,16 +1081,18 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 						});
 				};	
 
-				Modal.info({
-					title : <Title level={4}>Set Filters based on last 3 minutes max Aggregated Statistics</Title>,
+				Modal.confirm({
+					title : <Title level={4}>Select Service State Filters based on last 3 minutes Max Aggregated Stats</Title>,
 
 					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...svcstatefields, ...extsvcfields]} />,
 					width : '80%',	
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Cancel',
-					okType : 'default',
+					okText : 'Select Service from All Service States',
+					onOk : () => filterCB(),
+					okType : 'primary',
+					cancelType : 'primary',
 				});	
 				
 			}
@@ -1157,16 +1159,18 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 						});
 				};	
 
-				Modal.info({
-					title : <Title level={4}>Set Filters based on last 3 minutes max Aggregated Statistics</Title>,
+				Modal.confirm({
+					title : <Title level={4}>Select Service State Filters based on last 3 minutes Max Aggregated Stats</Title>,
 
 					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...svcstatefields, ...extsvcfields]} />,
 					width : '80%',	
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Cancel',
-					okType : 'default',
+					okText : 'Select Service from All Service States',
+					onOk : () => filterCB(),
+					okType : 'primary',
+					cancelType : 'primary',
 				});	
 				
 			}
@@ -1381,16 +1385,18 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 						});
 				};	
 
-				Modal.info({
-					title : <Title level={4}>Set Filters based on last 3 minutes max Aggregated Statistics</Title>,
+				Modal.confirm({
+					title : <Title level={4}>Select Process State Filters based on last 3 minutes Max Aggregated Stats</Title>,
 
 					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...procstatefields, ...extprocfields]} />,
 					width : '80%',	
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Cancel',
-					okType : 'default',
+					okText : 'Select Process from All Process States',
+					onOk : () => filterCB(),
+					okType : 'primary',
+					cancelType : 'primary',
 				});	
 				
 			}
@@ -1457,16 +1463,18 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 						});
 				};	
 
-				Modal.info({
-					title : <Title level={4}>Set Filters based on last 3 minutes max Aggregated Statistics</Title>,
+				Modal.confirm({
+					title : <Title level={4}>Select Process State Filters based on last 3 minutes Max Aggregated Stats</Title>,
 
 					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...procstatefields, ...extprocfields]} />,
 					width : '80%',	
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Cancel',
-					okType : 'default',
+					okText : 'Select Process from All Process States',
+					onOk : () => filterCB(),
+					okType : 'primary',
+					cancelType : 'primary',
 				});	
 				
 			}
