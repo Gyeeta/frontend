@@ -1133,7 +1133,7 @@ export function AlertDashboard({autoRefresh, refreshSec, starttime, endtime, fil
 
 	const		[isPauseRefresh, pauseRefresh] = useState(false);
 	const		[, setRefresh] = useState();
-	const		[stateFilter, setStateFilter] = useState('active|acked');
+	const		[stateFilter, setStateFilter] = useState(autoRefresh ? 'active|acked' : 'all');
 
 	if (objref.current === null) {
 		console.log(`Alert Dashboard initializing ...`);
@@ -1474,9 +1474,9 @@ export function AlertDashboard({autoRefresh, refreshSec, starttime, endtime, fil
 
 			{!autoRefresh && (<Button onClick={() => {onNewAutoRefresh()}}>Auto Refreshed Dashboard</Button>)}
 
-			<ButtonModal buttontext='Search Historical Alerts' width={800} okText="Cancel"
+			<ButtonModal buttontext='Get Historical Alerts' width={800} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onHistorical} title='Historical Alerts'
+					<SearchTimeFilter callback={onHistorical} title='Get Historical Alerts'
 						timecompcb={timecbnotime} filtercompcb={filtercb} />
 				)} />
 
@@ -1496,7 +1496,7 @@ export function AlertDashboard({autoRefresh, refreshSec, starttime, endtime, fil
 	const stateSelect = () => (
 		<>
 		<div style={{ textAlign: 'center', marginTop: 20, marginBottom : 20 }} >
-		<Radio.Group onChange={onStateSelChange} defaultValue='active|acked'>
+		<Radio.Group onChange={onStateSelChange} defaultValue={autoRefresh ? 'active|acked' : 'all' }>
 			<Radio.Button value='active|acked'>Open Alerts</Radio.Button>
 			<Radio.Button value='all'>All Alerts Seen</Radio.Button>
 			<Radio.Button value='active'>Active</Radio.Button>

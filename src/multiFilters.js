@@ -1551,7 +1551,7 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 		{timeobj && mrecs}
 
 		<div style={{ marginTop : 60, marginBottom : 30 }}>
-		<Popover content={`Please select the time point or range and ${rangefiltermandatory === true ? 'mandatory' : 'optional'} filters`} title="Search">
+		<Popover content={`Please select the time point or range and ${rangefiltermandatory === true ? 'mandatory' : 'optional'} filters`} title={title} >
 		<Button type="primary" onClick={onsearch} 
 				disabled={((timeobj === null) || (rangefiltermandatory === true && (safetypeof(timeobj.date) === 'array') && filterstr.length === 0))}>Search</Button>
 		</Popover>
@@ -1658,7 +1658,8 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		setSubsys(newsub);
 		objref.current.subsysobj = getSubsysHandlers(newsub);
 			
-		if (!objref.current.subsysobj.aggrfields || !isrange) {
+		// Skip aggregation for non supported subsystems or for Alert category
+		if (!objref.current.subsysobj.aggrfields || !isrange || newsub === 'alerts') {
 			setcanagg(false);
 		}	
 		else {
