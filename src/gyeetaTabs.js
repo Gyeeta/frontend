@@ -1068,8 +1068,8 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 
 				const filterCB = (filter) => {
 					svcTableTab({
-							starttime 	: moment().subtract(3, 'minutes').format(),
-							endtime 	: moment().format(),
+							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
+							endtime 	: moment().startOf('minute').format(),
 							useAggr 	: true,
 							aggrMin		: 10,
 							aggrType	: 'max',	
@@ -1089,7 +1089,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Select Service from All Service States',
+					okText : 'Get All Active Services',
 					onOk : () => filterCB(),
 					okType : 'primary',
 					cancelType : 'primary',
@@ -1146,8 +1146,8 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 
 				const filterCB = (filter) => {
 					svcTableTab({
-							starttime 	: moment().subtract(3, 'minutes').format(),
-							endtime 	: moment().format(),
+							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
+							endtime 	: moment().startOf('minute').format(),
 							useAggr 	: true,
 							aggrMin		: 10,
 							aggrType	: 'max',	
@@ -1167,7 +1167,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Select Service from All Service States',
+					okText : 'Get All Active Services',
 					onOk : () => filterCB(),
 					okType : 'primary',
 					cancelType : 'primary',
@@ -1372,8 +1372,8 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 
 				const filterCB = (filter) => {
 					procTableTab({
-							starttime 	: moment().subtract(3, 'minutes').format(),
-							endtime 	: moment().format(),
+							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
+							endtime 	: moment().startOf('minute').format(),
 							useAggr 	: true,
 							aggrMin		: 10,
 							aggrType	: 'max',	
@@ -1393,7 +1393,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Select Process from All Process States',
+					okText : 'Get All Active Processes',
 					onOk : () => filterCB(),
 					okType : 'primary',
 					cancelType : 'primary',
@@ -1450,8 +1450,8 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 
 				const filterCB = (filter) => {
 					procTableTab({
-							starttime 	: moment().subtract(3, 'minutes').format(),
-							endtime 	: moment().format(),
+							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
+							endtime 	: moment().startOf('minute').format(),
 							useAggr 	: true,
 							aggrMin		: 10,
 							aggrType	: 'max',	
@@ -1471,7 +1471,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 					closable : true,
 					destroyOnClose : true,
 					maskClosable : true,
-					okText : 'Select Process from All Process States',
+					okText : 'Get All Active Processes',
 					onOk : () => filterCB(),
 					okType : 'primary',
 					cancelType : 'primary',
