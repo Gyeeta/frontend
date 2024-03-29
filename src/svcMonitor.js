@@ -32,7 +32,7 @@ export const SvcIssueSource = [
 	{ name : "Listener Process Issue",  		value : 1 },
 	{ name : "High Queries/sec (QPS)", 		value : 2 },
 	{ name : "High Active Connections count", 	value : 3 },
-	{ name : "HTTP 5xx Server Errors", 		value : 4 },
+	{ name : "Server Errors", 			value : 4 },
 	{ name : "Host CPU Issue", 			value : 5 },
 	{ name : "Host Virtual Memory Issue", 		value : 6 },
 	{ name : "Dependent Listener Issue", 		value : 7 },
@@ -42,7 +42,7 @@ export const SvcIssueSource = [
 const fixedArraySize 	= 200;
 const realtimesec 	= 5;
 
-const qpsTitle 		= "Queries/sec (QPS) vs Service HTTP Errors";
+const qpsTitle 		= "Queries/sec (QPS) vs Service Errors";
 const respTitle		= "Avg and p95 5 sec Response vs p95 5 min Response in msec";
 const connTitle		= "Active Connections vs Total Connections per 15 sec";
 const netTitle 		= "Network Inbound vs Network Outbound per 15 sec in KB";
@@ -56,7 +56,7 @@ const svcStateCol 	= new ColumnInfo("state", "Bad Service State", getStateColor(
 const qpsColumns	= [
 	new ColumnInfo("qps5s", "Queries/sec (QPS)", "pink", 1, ","), 
 	svcStateCol,
-	new ColumnInfo("sererr", "Service HTTP Errors", "orange", 2, ","), 
+	new ColumnInfo("sererr", "Service Errors", "orange", 2, ","), 
 ];
 
 const respColumns 	= [
@@ -661,10 +661,10 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 
 			{summary.issuesourcearr[4] && summary.issuesourcearr[4].nrecs && 
 			<Descriptions.Item 
-				label={<em># Degrades by Server HTTP Errors</em>}>
+				label={<em># Degrades by Server Errors</em>}>
 				{summary.issuesourcearr[4].nrecs > 0 ? createLinkModal((
 					<Statistic valueStyle={{ fontSize: 16 }} value={summary.issuesourcearr[4].nrecs} />
-					), 'HTTP 5xx Server Errors', 
+					), 'Server Errors', 
 					(item) => ((!isaggregated && item.issue === 4) || (isaggregated && item.inhttperr > 0)), 
 						summary.issuesourcearr[4].firstidx, summary.issuesourcearr[4].lastidx + 1, summary.issuesourcearr[4].nrecs
 					) : 0}
@@ -780,19 +780,15 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 				<Statistic valueStyle={{ fontSize: 16 }} value={kbStrFormat(lastitem.kbout15s)} />
 			</Descriptions.Item>
 
-			{lastitem.ishttp &&
 			<Descriptions.Item 
-				label={<em>{avgstr} HTTP Server Errors</em>}>
+				label={<em>{avgstr} Server Errors</em>}>
 				<Statistic valueStyle={{ fontSize: 16 }} value={format(",.0f")(lastitem.sererr)} />
 			</Descriptions.Item>
-			}
 				
-			{lastitem.ishttp &&
 			<Descriptions.Item 
-				label={<em>{avgstr} HTTP Client Errors</em>}>
+				label={<em>{avgstr} Client Errors</em>}>
 				<Statistic valueStyle={{ fontSize: 16 }} value={format(",.0f")(lastitem.clierr)} />
 			</Descriptions.Item>
-			}
 
 			<Descriptions.Item 
 				label={<em>{avgstr} Listener Process Delays</em>}>
@@ -1505,7 +1501,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 					enableTracker={true} chartHeight={350} y1AxisType="linear" y2AxisType="linear"
 					baselineArray={baselineArray}
 					scatterArray={scatterArray}
-					y1AxisTitle="Queries/sec (QPS)" y2AxisTitle="Service HTTP Errors"
+					y1AxisTitle="Queries/sec (QPS)" y2AxisTitle="Service Errors"
 					y1AxisFormat=",.0f" y2AxisFormat=",.0f" onRescaleComps={onRescaleComps} timeRangeCB={timeRangeCB} />
 				<div style={{ marginBottom: 30 }}>
 				</div>

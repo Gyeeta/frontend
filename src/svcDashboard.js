@@ -42,8 +42,8 @@ export const svcstatefields = [
 	{ field : 'nconns',		desc : '# Total Connections',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'kbin15s',		desc : 'Service Inbound Net KB',	type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'kbout15s',		desc : 'Service Outbound Net KB',	type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'sererr',		desc : '# HTTP Server Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'clierr',		desc : '# HTTP Client Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'sererr',		desc : '# Server Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'clierr',		desc : '# Client Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'nprocs',		desc : '# Listener Processes',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'delayus',		desc : 'Process Delays usec',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'cpudelus',		desc : 'CPU Delays usec',		type : 'number',	subsys : 'svcstate',	valid : null, },
@@ -72,8 +72,8 @@ export const aggrsvcstatefields = [
 	{ field : 'nconns',		desc : '# Total Connections',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'kbin15s',		desc : 'Service Inbound Net KB',	type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'kbout15s',		desc : 'Service Outbound Net KB',	type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'sererr',		desc : '# HTTP Server Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'clierr',		desc : '# HTTP Client Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'sererr',		desc : '# Server Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'clierr',		desc : '# Client Errors',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'nprocs',		desc : '# Listener Processes',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'delayus',		desc : 'Process Delays usec',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'cpudelus',		desc : 'CPU Delays usec',		type : 'number',	subsys : 'svcstate',	valid : null, },
@@ -89,7 +89,7 @@ export const aggrsvcstatefields = [
 	{ field : 'inproc',		desc : 'Degrades by Process Issues',	type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'inqps',		desc : 'Degrades by High QPS',		type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'inaconn',		desc : 'Degrades by High Active Conn',	type : 'number',	subsys : 'svcstate',	valid : null, },
-	{ field : 'inhttperr',		desc : 'Degrades by Server HTTP Errors',type : 'number',	subsys : 'svcstate',	valid : null, },
+	{ field : 'inhttperr',		desc : 'Degrades by Server Errors',	type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'inoscpu',		desc : 'Degrades by Host CPU Issues',	type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'inosmem',		desc : 'Degrades by Host Memory Issues',type : 'number',	subsys : 'svcstate',	valid : null, },
 	{ field : 'indepsvc',		desc : 'Degrades by Dependent Service',	type : 'number',	subsys : 'svcstate',	valid : null, },
@@ -153,7 +153,7 @@ export const svcsummfields = [
 	{ field : 'totaconn',		desc : 'Total Active Connections',	type : 'number',	subsys : 'svcsumm',	valid : null, },
 	{ field : 'totkbin',		desc : 'Total Network Inbound KB',	type : 'number',	subsys : 'svcsumm',	valid : null, },
 	{ field : 'totkbout',		desc : 'Total Network Outbound KB',	type : 'number',	subsys : 'svcsumm',	valid : null, },
-	{ field : 'totsererr',		desc : 'Total HTTP Server Errors',	type : 'number',	subsys : 'svcsumm',	valid : null, },
+	{ field : 'totsererr',		desc : 'Total Server Errors',		type : 'number',	subsys : 'svcsumm',	valid : null, },
 	{ field : 'nsvc',		desc : '# Total Services',		type : 'number',	subsys : 'svcsumm',	valid : null, },
 	{ field : 'nactive',		desc : '# Active Services',		type : 'number',	subsys : 'svcsumm',	valid : null, },
 	{ field : 'time',		desc : 'Timestamp of Record',		type : 'timestamptz',	subsys : 'svcsumm',	valid : null, },
@@ -366,7 +366,7 @@ const hostCol = [
 		render :	(num) => format(",")(num),
 	},
 	{
-		title :		'HTTP Server Errors',
+		title :		'Server Errors',
 		key :		'sererr',
 		dataIndex :	'sererr',
 		gytype :	'number',
@@ -375,7 +375,7 @@ const hostCol = [
 		render :	(num) => format(",")(num),
 	},
 	{
-		title :		'HTTP Client Errors',
+		title :		'Client Errors',
 		key :		'clierr',
 		dataIndex :	'clierr',
 		gytype :	'number',
@@ -1262,7 +1262,7 @@ function getSvcsummColumns(istime, useHostFields)
 			render :	(num) => kbStrFormat(num),
 		},
 		{
-			title :		'HTTP Server Errors',
+			title :		'Server Errors',
 			key :		'totsererr',
 			dataIndex :	'totsererr',
 			gytype :	'number',
@@ -1451,7 +1451,7 @@ function SvcStateQuickFilters({filterCB, useHostFields})
 	<>
 	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
 	<div>
-	<span style={{ fontSize : 14 }}><i><strong>Service HTTP Server Errors greater than </strong></i></span>
+	<span style={{ fontSize : 14 }}><i><strong>Service Server Errors greater than </strong></i></span>
 	</div>
 	<div>
 	<Search placeholder="# Server Errors" allowClear onSearch={onserErr} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
@@ -3067,7 +3067,7 @@ export function SvcSummary({normdata, parid, filter, name, hostname, starttime, 
 			</Descriptions.Item>
 
 			<Descriptions.Item 
-				label={<em># {rangestr} HTTP Server Errors</em>}>
+				label={<em># {rangestr} Server Errors</em>}>
 				<Statistic valueStyle={{ fontSize: 16, color : summstats.totsererr > 0 ? 'red' : undefined }} value={format(",")(summstats.totsererr)} />
 			</Descriptions.Item>
 
