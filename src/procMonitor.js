@@ -388,8 +388,8 @@ function calcSummary(data, summary, isaggregated)
 			}	
 		}	
 
-		summary.starttime	= startmom.format();
-		summary.endtime		= endmom.format();
+		summary.starttime	= startmom.format('YYYY-MM-DD HH:mm:ssZ');
+		summary.endtime		= endmom.format('YYYY-MM-DD HH:mm:ssZ');
 
 	}
 	catch(e) {

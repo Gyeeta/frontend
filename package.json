@@ -80,5 +80,5 @@
   "scarfSettings": {
     "enabled": false
   },
-  "proxy": "http://localhost:10039"
+  "proxy": "https://localhost:10039"
 }

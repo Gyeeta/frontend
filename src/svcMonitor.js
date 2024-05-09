@@ -42,7 +42,7 @@ export const SvcIssueSource = [
 const fixedArraySize 	= 200;
 const realtimesec 	= 5;
 
-const qpsTitle 		= "Queries/sec (QPS) vs Service Errors";
+const qpsTitle 		= "Queries/sec (QPS) vs Server Errors";
 const respTitle		= "Avg and p95 5 sec Response vs p95 5 min Response in msec";
 const connTitle		= "Active Connections vs Total Connections per 15 sec";
 const netTitle 		= "Network Inbound vs Network Outbound per 15 sec in KB";
@@ -56,7 +56,7 @@ const svcStateCol 	= new ColumnInfo("state", "Bad Service State", getStateColor(
 const qpsColumns	= [
 	new ColumnInfo("qps5s", "Queries/sec (QPS)", "pink", 1, ","), 
 	svcStateCol,
-	new ColumnInfo("sererr", "Service Errors", "orange", 2, ","), 
+	new ColumnInfo("sererr", "Server Errors", "orange", 2, ","), 
 ];
 
 const respColumns 	= [
@@ -372,8 +372,8 @@ function calcSummary(data, summary, isaggregated)
 			}	
 		}	
 
-		summary.starttime	= startmom.format();
-		summary.endtime		= endmom.format();
+		summary.starttime	= startmom.format('YYYY-MM-DD HH:mm:ssZ');
+		summary.endtime		= endmom.format('YYYY-MM-DD HH:mm:ssZ');
 
 	}
 	catch(e) {
@@ -1222,9 +1222,12 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 	const respRescaleComps = useMemo(() => {
 		return (
 			<>
+			<Space style={{ marginLeft: 10 }}>
+			<Button onClick={(e) => getNetFlows(respRef)}> Get Network Flows </Button>
+			</Space>
 			</>
 		);
-	}, [/* respRef */]);	
+	}, [ respRef, getNetFlows ]);	
 
 	const connRescaleComps = useMemo(() => {
 		return (
@@ -1501,7 +1504,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 					enableTracker={true} chartHeight={350} y1AxisType="linear" y2AxisType="linear"
 					baselineArray={baselineArray}
 					scatterArray={scatterArray}
-					y1AxisTitle="Queries/sec (QPS)" y2AxisTitle="Service Errors"
+					y1AxisTitle="Queries/sec (QPS)" y2AxisTitle="Server Errors"
 					y1AxisFormat=",.0f" y2AxisFormat=",.0f" onRescaleComps={onRescaleComps} timeRangeCB={timeRangeCB} />
 				<div style={{ marginBottom: 30 }}>
 				</div>

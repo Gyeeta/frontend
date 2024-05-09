@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useReducer } 
 import {Typography, Space, PageHeader, Tabs, Alert, Modal, Menu, notification} from 'antd';
 import {LaptopOutlined, ClusterOutlined, ContainerOutlined, CloudServerOutlined, AlertOutlined, GlobalOutlined, FileDoneOutlined, 
 	BranchesOutlined, LineChartOutlined, BarChartOutlined, FilterOutlined, SearchOutlined, PhoneOutlined, SoundOutlined, DeploymentUnitOutlined,
-	SafetyOutlined} from '@ant-design/icons';
+	SafetyOutlined, ApiOutlined} from '@ant-design/icons';
 import {useSearchParams} from 'react-router-dom';
 import 	moment from 'moment';
 import axios from 'axios';
@@ -47,6 +47,7 @@ export const alertdefKey = 'alertdefKey', addAlertdefKey = 'addAlertdefKey';
 export const actionKey = 'actionKey', addActionKey = 'addActionKey';
 export const silenceKey = 'silenceKey', addSilenceKey = 'addSilenceKey';
 export const inhibitKey = 'inhibitKey', addInhibitKey = 'addInhibitKey';
+export const traceDashKey = 'traceDashKey', tracedefKey = 'tracedefKey';
 export const searchKey = 'searchKey';
 export const gyeetaStatusKey = 'gyeetaStatusKey';
 export const loginKey = 'loginKey';
@@ -73,7 +74,7 @@ export function GlobalInit()
 }	
 
 
-export function GyeetaTabs({startTabKey = 'clusterDashKey'})
+export function GyeetaTabs({startTabKey = svcDashKey})
 {
 	const 		[searchParams, /* setSearchParams */] = useSearchParams();
 	const		objref = useRef();
@@ -1961,7 +1962,7 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 			break;
 
 		default :
-			startKey = clusterDashKey;
+			startKey = svcDashKey;
 			break;
 		}	
 		
@@ -1991,35 +1992,41 @@ export function GyeetaTabs({startTabKey = 'clusterDashKey'})
 				<Menu onClick={onMenuClick} mode="horizontal" style={{ background: '#1a1818'}} >
 
 				<SubMenu key="ClusterMenu" icon={<ClusterOutlined />} title="Clusters">
-					<Menu.Item key={clusterDashKey} icon={<GlobalOutlined />}>Global Cluster Dashboard</Menu.Item>
-					<Menu.Item key={filtClusterKey} icon={<FilterOutlined />}>Filtered Cluster Dashboard</Menu.Item>
-					<Menu.Item key={clusterStateKey} icon={<LineChartOutlined />} >Specific Cluster State Monitor</Menu.Item>
+					<Menu.Item key={clusterDashKey} icon={<GlobalOutlined />}>Global Clusters</Menu.Item>
+					<Menu.Item key={filtClusterKey} icon={<FilterOutlined />}>Filtered Clusters</Menu.Item>
+					<Menu.Item key={clusterStateKey} icon={<LineChartOutlined />} >Cluster State Monitor</Menu.Item>
 				</SubMenu>
 
 				<SubMenu key="HostsMenu" icon={<LaptopOutlined />} title="Hosts">
-					<Menu.Item key={hostDashKey} icon={<GlobalOutlined />}>Global Hosts Dashboard</Menu.Item>
-					<Menu.Item key={filtHostKey} icon={<FilterOutlined />}>Filtered Hosts Dashboard</Menu.Item>
-					<Menu.Item key={hostCPUKey} icon={<LineChartOutlined />} >Specific Host CPU/Memory Monitor</Menu.Item>
+					<Menu.Item key={hostDashKey} icon={<GlobalOutlined />}>Global Hosts</Menu.Item>
+					<Menu.Item key={filtHostKey} icon={<FilterOutlined />}>Filtered Hosts</Menu.Item>
+					<Menu.Item key={hostCPUKey} icon={<LineChartOutlined />} >Host CPU/Memory Monitor</Menu.Item>
 					<Menu.Item key={hostStateKey} icon={<BarChartOutlined />} >Host State Monitor</Menu.Item>
-					<Menu.Item key={hostNetFlowKey} icon={<BranchesOutlined />} >Host Network Flow Dashboard</Menu.Item>
+					<Menu.Item key={hostNetFlowKey} icon={<BranchesOutlined />} >Host Network Flows</Menu.Item>
 				</SubMenu>
 
 				<SubMenu key="SvcMenu" icon={<CloudServerOutlined />} title="Services">
-					<Menu.Item key={svcDashKey} icon={<GlobalOutlined />} >Global Service Dashboard</Menu.Item>
-					<Menu.Item key={svcClusterKey} icon={<ClusterOutlined />}>Cluster Service Dashboard</Menu.Item>
-					<Menu.Item key={svcHostKey} icon={<LaptopOutlined />}>Host Service Dashboard</Menu.Item>
-					<Menu.Item key={svcGroupKey} icon={<DeploymentUnitOutlined />} >Service Groups Dashboard</Menu.Item>
-					<Menu.Item key={svcMonitorKey} icon={<LineChartOutlined />} >Specific Service Monitor</Menu.Item>
-					<Menu.Item key={svcNetFlowKey} icon={<BranchesOutlined />} >Service Network Flow Dashboard</Menu.Item>
+					<Menu.Item key={svcDashKey} icon={<GlobalOutlined />} >Global Services</Menu.Item>
+					<Menu.Item key={svcGroupKey} icon={<DeploymentUnitOutlined />} >Service Groups</Menu.Item>
+					<Menu.Item key={svcClusterKey} icon={<ClusterOutlined />}>Cluster Level Services</Menu.Item>
+					<Menu.Item key={svcHostKey} icon={<LaptopOutlined />}>Host Level Services</Menu.Item>
+					<Menu.Item key={svcMonitorKey} icon={<LineChartOutlined />} >Service Monitor</Menu.Item>
+					<Menu.Item key={svcNetFlowKey} icon={<BranchesOutlined />} >Service Network Flows</Menu.Item>
 				</SubMenu>
 				
 				<SubMenu key="ProcMenu" icon={<ContainerOutlined />} title="Processes">
-					<Menu.Item key={procDashKey} icon={<GlobalOutlined />} >Global Process Dashboard</Menu.Item>
-					<Menu.Item key={procClusterKey} icon={<ClusterOutlined />}>Cluster Process Dashboard</Menu.Item>
-					<Menu.Item key={procHostKey} icon={<LaptopOutlined />}>Host Process Dashboard</Menu.Item>
-					<Menu.Item key={procMonitorKey} icon={<LineChartOutlined />} >Specific Process Monitor</Menu.Item>
-					<Menu.Item key={procNetFlowKey} icon={<BranchesOutlined />} >Process Network Flow Dashboard</Menu.Item>
+					<Menu.Item key={procDashKey} icon={<GlobalOutlined />} >Global Processes</Menu.Item>
+					<Menu.Item key={procClusterKey} icon={<ClusterOutlined />}>Cluster Level Processes</Menu.Item>
+					<Menu.Item key={procHostKey} icon={<LaptopOutlined />}>Host Level Processes</Menu.Item>
+					<Menu.Item key={procMonitorKey} icon={<LineChartOutlined />} >Process Monitor</Menu.Item>
+					<Menu.Item key={procNetFlowKey} icon={<BranchesOutlined />} >Process Network Flows</Menu.Item>
 				</SubMenu>
+
+				<SubMenu key="TraceMenu" icon={<ApiOutlined />} title="Tracing">
+					<Menu.Item key={traceDashKey} icon={<ApiOutlined />}> Request Trace Dashboard</Menu.Item>
+					<Menu.Item key={tracedefKey} icon={<FileDoneOutlined />}> Request Trace Definitions</Menu.Item>
+				</SubMenu>
+
 
 				<SubMenu key="AlertMenu" icon={<AlertOutlined />} title="Alerts">
 					<Menu.Item key={alertDashKey} icon={<AlertOutlined />}> Alerts Dashboard</Menu.Item>

@@ -891,7 +891,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				titlestr = "Service Active Connection";
-				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')} to {moment(endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</span>;
 			}	
 			else if (!isrange) {
 				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext});
@@ -908,7 +908,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format('YYYY-MM-DD HH:mm:ssZ')} </span>;
 			}
 			else {
 				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
@@ -919,7 +919,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				else {
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Active Connections`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')} to {moment(endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</span>;
 			}	
 
 			const 			expandedRowRender = (rec) => <ExtActiveConnDesc rec={rec} />;
@@ -1191,7 +1191,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				titlestr = "Client Connection";
-				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</span>;
+				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')} to {moment(endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</span>;
 			}
 			else if (!isrange) {
 				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext});
@@ -1208,7 +1208,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format('YYYY-MM-DD HH:mm:ssZ')} </span>;
 			}
 			else {
 				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
@@ -2007,8 +2007,8 @@ function finalizeFlows(objref, starttime, endtime, maxResolvedUpstream, minResol
 			elem = flowarr[i];
 
 			if (elem.source) {
-				elem.label 		= bytesStrFormat(elem.data.cnetout + elem.data.cnetin, 0);
-				elem.labelStyle		= { fill: 'blue', fontWeight: 700 }; 
+				elem.label 		= bytesStrFormat(elem.data.cnetout + elem.data.cnetin, 0, 'b');
+				elem.labelStyle		= { fill: 'blue', fontWeight: 600 }; 
 				// elem.labelBgStyle 	= { opacity: 0.6 };
 			}
 		}	
@@ -2695,8 +2695,8 @@ export function NetSummary({objref, summary, addTabCB, remTabCB, isActiveTabCB, 
 	return (
 		<Descriptions title={titlestr} bordered={true} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} style={{ textAlign: 'center' }}>
 		
-		<Descriptions.Item label={<em>Start Time</em>}>{moment(summary.starttime, moment.ISO_8601).format()}</Descriptions.Item>
-		<Descriptions.Item label={<em>End Time</em>}>{moment(summary.endtime, moment.ISO_8601).format()}</Descriptions.Item>
+		<Descriptions.Item label={<em>Start Time</em>}>{moment(summary.starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</Descriptions.Item>
+		<Descriptions.Item label={<em>End Time</em>}>{moment(summary.endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</Descriptions.Item>
 		<Descriptions.Item label={<em>Get Info / Monitor</em>}>
 		{issvc && <Button type='dashed' onClick={() => getSvcInfo(objref.current.svcsibling === true && objref.current.svcprocmap[0]?.svcidarr ? 
 							objref.current.svcprocmap[0].svcidarr.split(',') : [objref.current.svcid], objref.current.parid, objref.current.starttime, 

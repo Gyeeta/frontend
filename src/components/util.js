@@ -166,7 +166,7 @@ export function kbStrFormat(kb, decimals = 3)
 }
 
 
-export function bytesStrFormat(bytes, decimals = 3)
+export function bytesStrFormat(bytes, decimals = 3, bytesStr = 'Bytes')
 {
 	if ((bytes === undefined) || (true === isNaN(bytes))) {
 		return "NaN";
@@ -184,7 +184,7 @@ export function bytesStrFormat(bytes, decimals = 3)
 		return `${+parseFloat((bytes/1024).toFixed(decimals))} KB`;
 	}	
 	
-	return `${bytes} Bytes`;
+	return `${bytes} ${bytesStr}`;
 }
 
 /*
@@ -596,7 +596,7 @@ export function onRowJSONDescribe({titlestr = 'Record', column, keyNames, fieldC
 		return {
 			onClick: event => {
 				Modal.info({
-					title : <span><strong>Service {record.name} State</strong></span>,
+					title : <span><strong>Record {record.name} State</strong></span>,
 					content : (
 						<>
 						<JSONDescription jsondata={record} titlestr={titlestr} column={column} keyNames={keyNames} fieldCols={fieldCols}
@@ -734,14 +734,17 @@ export function useDebounce(value, timeout)
 	return state;
 }
 
-export function useDebouncedEffect(callback, delay, deps = []) 
+export function useDebouncedEffect(callback, delay, deps = [], ignorefirst = false) 
 {
 	const firstUpdate = useRef(true);
 
 	useEffect(() => {
 		if (firstUpdate.current) {
 			firstUpdate.current = false;
-			return;
+
+			if (ignorefirst) {
+				return;
+			}
 		}
 		const handler = setTimeout(() => {
 			if (typeof callback === 'function') {
@@ -753,7 +756,7 @@ export function useDebouncedEffect(callback, delay, deps = [])
 			clearTimeout(handler);
 		};
 	// eslint-disable-next-line	
-	}, [callback, delay, ...deps]);
+	}, [callback, delay, ignorefirst, ...deps]);
 }
 
 export function arrayShiftLeft(array, nshifts)

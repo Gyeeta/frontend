@@ -498,7 +498,7 @@ export const GyLineChart = forwardRef(({chartTitle, columnInfoArr, seriesy1, ser
 
 	useDebouncedEffect(() => {
 		rescaleAxis(objref.current.timerange);
-	}, 300, [objref, rescaleAxis]);	
+	}, 300, [objref, rescaleAxis], true /* ignorefirst */);	
 
 	const 	handleTimeRangeChange = useCallback((newtimerange) => {
 		const 		origstart = objref.current.origtimerange.begin().getTime(), origend = objref.current.origtimerange.end().getTime();

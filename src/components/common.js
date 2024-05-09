@@ -34,6 +34,13 @@ export const NodeApis = {
 	madhavalist	:	'/v1/madhavalist',
 	madhavastatus	:	'/v1/madhavastatus',
 	parthalist	:	'/v1/parthalist',
+	tracereq	:	'/v1/tracereq',
+	exttracereq	:	'/v1/exttracereq',
+	traceconn	:	'/v1/traceconn',
+	traceuniq	:	'/v1/traceuniq',
+	tracedef	:	'/v1/tracedef',
+	tracestatus	:	'/v1/tracestatus',
+	tracehistory	:	'/v1/tracehistory',
 
 	multiquery	:	'/v1/multiquery',
 

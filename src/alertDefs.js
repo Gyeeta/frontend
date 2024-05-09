@@ -236,8 +236,10 @@ export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			data : {
 				qrytime		: Date.now(),
 				timeoutsec 	: 30,
-				filter		: filter,
-				maxrecs		: maxrecs,
+				options 	: {
+					filter	: filter,
+					maxrecs	: maxrecs,
+				},	
 			},
 			timeout : 30000,
 		};	
@@ -1340,15 +1342,15 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 				<Form.Item label="Alert Filter Test on Historical Data">
 					<Space>
 
-					<TimeRangeButton onChange={onTestTimeChange} linktext="Select Time Range to Test Alert Filters" 
+					<TimeRangeButton onChange={onTestTimeChange} linktext="Test Alert Filters" 
 						title={(
 							<>
-							<span style={{ fontSize : 16 }}>Alert Filter Test with Historical Data (Ignoring Consecutive match count)</span>
+							<span style={{ fontSize : 16 }}>Time Range for Alert Filter Test with Historical Data (Ignoring Consecutive match count)</span>
 							<div style={{ marginBottom : 30 }} />
 							</>)} 
 						disableFuture={true} />
 
-					<span>(Ideally, the Alert Filters should return only a few rows...)</span>
+					<span>(Ideally, the Alert Filters should return only a few rows for each time interval...)</span>
 
 					</Space>
 				</Form.Item>
