@@ -2838,7 +2838,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 }
 
 export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host States',
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2867,17 +2867,28 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 		const			tabKey = `HostState_${Date.now()}`;
 
 		CreateTab(title ?? "Host State", 
-			() => { return <HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			() => { return (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
+				</>
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Host State",
 
-			content : <HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />,
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),	
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2889,23 +2900,34 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 }
 
 export function hostinfoTableTab({parid, useAggr, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host Info',
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (!modal) {
 		const			tabKey = `HostInfo_${Date.now()}`;
 
 		CreateTab(title ?? "Host Info", 
-			() => { return <HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
+			() => { return (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
+				</>
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Host Info",
 
-			content : <HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />,
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

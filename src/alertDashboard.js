@@ -14,8 +14,8 @@ import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers} f
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import 			{ActionInfo} from './alertActions.js';
 import			{viewAlertdef, AlertdefDashboard} from './alertDefs.js';
-import			{SvcHostMonitor} from './svcMonitor.js';
-import			{ProcHostMonitor} from './procMonitor.js';
+import			{SvcMonitor} from './svcMonitor.js';
+import			{ProcMonitor} from './procMonitor.js';
 import			{HostMonitor, HostnameComponent} from './hostMonitor.js';
 import			{ClusterMonitor} from './clusterMonitor.js';
 import			{CPUMemPage} from './cpuMemPage.js';
@@ -637,7 +637,7 @@ function AlertExpandRow({record, modalCount, addTabCB, remTabCB, isActiveTabCB})
 		const		tabKey = `SvcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service State around Alert Time</i></span>, 'Service History', 
-					() => { return <SvcHostMonitor svcid={svcid} parid={parid} isRealTime={false} starttime={starttime} endtime={endtime}
+					() => { return <SvcMonitor svcid={svcid} parid={parid} isRealTime={false} starttime={starttime} endtime={endtime}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							/> }, tabKey, addTabCB);
 	};
@@ -646,7 +646,7 @@ function AlertExpandRow({record, modalCount, addTabCB, remTabCB, isActiveTabCB})
 		const		tabKey = `ProcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Process State around Alert Time</i></span>, 'Process History', 
-					() => { return <ProcHostMonitor procid={procid} parid={parid} isRealTime={false} starttime={starttime} endtime={endtime}
+					() => { return <ProcMonitor procid={procid} parid={parid} isRealTime={false} starttime={starttime} endtime={endtime}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							/> }, tabKey, addTabCB);
 	};
@@ -1072,7 +1072,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 
 
 export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1101,19 +1101,30 @@ export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 		const			tabKey = `Alerts_${Date.now()}`;
 
 		CreateTab(title ?? !useAggr ? "Alerts" : "Aggr Alerts", 
-			() => { return <AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
+						sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>
+				);	
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? !useAggr ? "Alerts" : "Aggr Alerts",
 
-			content : <AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

@@ -249,21 +249,32 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title})
+export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
 {
 	if (!modal) {
 		const			tabKey = `Inhibit_${Date.now()}`;
 
 		CreateTab(title ?? "Inhibits", 
-			() => { return <InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} title={title} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} title={title} /> 
+					</>	
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Inhibits",
 
-			content : <InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} />,
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+					title={title} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

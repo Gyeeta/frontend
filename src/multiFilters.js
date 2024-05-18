@@ -1857,7 +1857,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<RangeTimeZonePicker onChange={onRangeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Set Time : {timerange[0].format()} to {timerange[1].format()})</span> 
+				<span>(Time Set : {timerange[0].format("MMMM Do HH:mm:ss Z")} to {timerange[1].format("MMMM Do HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>
@@ -1872,7 +1872,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<DateTimeZonePicker onChange={onTimeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Set Time : {timerange[0].format()})</span> 
+				<span>(Time Set : {timerange[0].format("MMMM Do HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>

@@ -264,21 +264,32 @@ export function SilencesSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function silencesTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title})
+export function silencesTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
 {
 	if (!modal) {
 		const			tabKey = `Silence_${Date.now()}`;
 
 		CreateTab(title ?? "Silences", 
-			() => { return <SilencesSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} title={title} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<SilencesSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} title={title} /> 
+					</>
+				);	
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Silences",
 
-			content : <SilencesSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} />,
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SilencesSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						title={title} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

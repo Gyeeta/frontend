@@ -16,7 +16,7 @@ import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
-import 			{SvcHostMonitor, SvcIssueSource} from './svcMonitor.js';
+import 			{SvcMonitor, SvcIssueSource} from './svcMonitor.js';
 import 			{NetDashboard} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
@@ -1879,7 +1879,7 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 		const		tabKey = `SvcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service State Realtime Monitor</i></span>, 'Service Realtime Monitor', 
-					() => { return <SvcHostMonitor svcid={svcid} parid={parid} isRealTime={true}
+					() => { return <SvcMonitor svcid={svcid} parid={parid} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -1890,7 +1890,7 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 		const		tabKey = `SvcState_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service State around Record Time</i></span>, 'Service State',
-				() => { return <SvcHostMonitor svcid={svcid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend} 
+				() => { return <SvcMonitor svcid={svcid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 	};
@@ -2039,7 +2039,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		const		tabKey = `SvcState_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service Performance around Record Time</i></span>, 'Service State as per time',
-				() => { return <SvcHostMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+				() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 	};
@@ -2069,7 +2069,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		const		tabKey = `SvcHist_${Date.now()}`;
 		
 		CreateTab('Service Historical State',
-			() => { return <SvcHostMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} 
+			() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} 
 					starttime={istimepoint ? dateString : dateString[0]} endtime={istimepoint ? undefined : dateString[1]} 
 					aggregatesec={!istimepoint && useAggr && dateAggrMin ? dateAggrMin * 60 : undefined}
 					aggregatetype={!istimepoint && useAggr ? aggrType : undefined}
@@ -2082,7 +2082,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		const		tabKey = `SvcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service Realtime Monitor</i></span>, 'Service Realtime Monitor', 
-					() => { return <SvcHostMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={true}
+					() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -2437,7 +2437,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format()} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss.SSS Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? record.svcid + record.time);
@@ -2448,7 +2448,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				else {
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services State`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
 			}	
 
 			if (!columns) {
@@ -2495,7 +2495,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 }	
 
 export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2524,19 +2524,30 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 		const			tabKey = `SvcState_${Date.now()}`;
 
 		CreateTab(title ?? "Service State", 
-			() => { return <SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-					sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
+						sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>
+					);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service State",
 
-			content : <SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

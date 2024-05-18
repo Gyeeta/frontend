@@ -750,8 +750,12 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 
 				<Title level={4}>List of Interconnected Service Groups</Title>
-				<span style={{ marginBottom : 30 }}><strong>from {tstart} to {tend}</strong></span>
-				
+
+				<div style={{ marginBottom : 20 }} > 
+					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to 
+								{' '} {moment(tend, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>
+				</div>
+
 				<GyTable columns={svcmeshCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
 				
 				</div>
@@ -783,7 +787,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 	);
 }
 	
-export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir})
+export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -812,17 +816,28 @@ export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, add
 		const			tabKey = `SvcState_${Date.now()}`;
 
 		CreateTab(title ?? "Service Group", 
-			() => { return <SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
-					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
+						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>	
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Interconnected Service Group",
 
-			content : <SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
 					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -1118,7 +1133,11 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 
 				<Title level={4}>List of Virtual IP Based Service Groups</Title>
-				<span style={{ marginBottom : 30 }}><strong>from {tstart} to {tend}</strong></span>
+
+				<div style={{ marginBottom : 20 }} > 
+					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to 
+								{' '} {moment(tend, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>
+				</div>
 				
 				<GyTable columns={svcipCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
 				
@@ -1151,7 +1170,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 	);
 }
 	
-export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir})
+export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1180,17 +1199,28 @@ export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, a
 		const			tabKey = `SvcState_${Date.now()}`;
 
 		CreateTab(title ?? "Service Group", 
-			() => { return <SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
-					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
+						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>	
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Virtual IP Service Group",
 
-			content : <SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
 					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

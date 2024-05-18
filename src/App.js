@@ -6,7 +6,7 @@ import 			'./App.less';
 import 			{Alert} from 'antd';
 import 			{RecoilRoot} from 'recoil';
 
-import 			{GyeetaTabs, GlobalInit, clusterDashKey, svcDashKey, hostDashKey, procDashKey, alertDashKey, traceDashKey,
+import 			{GyeetaTabs, GlobalInit, clusterDashKey, svcDashKey, hostDashKey, procDashKey, alertDashKey, traceMonitorKey,
 			searchKey, gyeetaStatusKey, loginKey} from './gyeetaTabs.js'
 
 const 			{ErrorBoundary} = Alert;
@@ -25,7 +25,7 @@ function App()
 			<Route path="ui/hostdash" element={<GyeetaTabs startTabKey={hostDashKey} />} />
 			<Route path="ui/svcdash" element={<GyeetaTabs startTabKey={svcDashKey} />} />
 			<Route path="ui/procdash" element={<GyeetaTabs startTabKey={procDashKey} />} />
-			<Route path="ui/tracedash" element={<GyeetaTabs startTabKey={traceDashKey} />} />
+			<Route path="ui/tracemonitor" element={<GyeetaTabs startTabKey={traceMonitorKey} />} />
 			<Route path="ui/alertdash" element={<GyeetaTabs startTabKey={alertDashKey} />} />
 			<Route path="ui/search" element={<GyeetaTabs startTabKey={searchKey} />} />
 			<Route path="ui/status" element={<GyeetaTabs startTabKey={gyeetaStatusKey} />} />

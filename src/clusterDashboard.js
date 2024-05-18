@@ -852,7 +852,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 
 
 export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-						customColumns, customTableColumns, sortColumns, sortDir})
+						customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -881,19 +881,30 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 		const			tabKey = `ClusterState_${Date.now()}`;
 
 		CreateTab(title ?? "Cluster State", 
-			() => { return <ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
+						sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>
+				);	
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Cluster State",
 
-			content : <ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

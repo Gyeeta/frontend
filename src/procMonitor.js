@@ -786,7 +786,7 @@ function ProcHostSummary({procid, parid, objref, isRealTime, aggregatesec, aggro
 	);		
 }
 
-export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
+export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
 {
 	const 		objref = useRef(null);
 	const		cpuRef = useRef(null), rssRef = useRef(null), cpuDelayRef = useRef(null), vmDelayRef = useRef(null), ioDelayRef = useRef(null), netRef = useRef(null);
@@ -800,7 +800,7 @@ export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, 
 	const		[forceSummary, setForceSummary] = useState(false);
 
 	if (objref.current === null) {
-		console.log(`ProcHostMonitor initializing for first time : isRealTime=${isRealTime} starttime=${starttime} endtime=${endtime} aggregatesec=${aggregatesec} aggregatetype=${aggregatetype}`);
+		console.log(`ProcMonitor initializing for first time : isRealTime=${isRealTime} starttime=${starttime} endtime=${endtime} aggregatesec=${aggregatesec} aggregatetype=${aggregatetype}`);
 
 		objref.current = {
 			isstarted 		: false,
@@ -847,7 +847,7 @@ export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, 
 
 	useEffect(() => {
 		return () => {
-			console.log(`ProcHostMonitor destructor called...`);
+			console.log(`ProcMonitor destructor called...`);
 		};	
 	}, []);
 
@@ -880,7 +880,7 @@ export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, 
 
 	if (validProps === false) {
 		// This should not occur
-		throw new Error(`Internal Error : ProcHostMonitor validProps check failed`);
+		throw new Error(`Internal Error : ProcMonitor validProps check failed`);
 	}	
 
 	const modalCount = useCallback((isup) => {
@@ -1030,7 +1030,7 @@ export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, 
 		}, 0);
 
 		return () => { 
-			console.log(`Destructor called for ProcHostMonitor setinterval effect...`);
+			console.log(`Destructor called for ProcMonitor setinterval effect...`);
 			if (timer1) clearTimeout(timer1);
 		};
 		
@@ -1663,7 +1663,7 @@ export function ProcHostMonitor({procid, parid, isRealTime, starttime, endtime, 
 		const			tabKey = `ProcMonitor_${Date.now()}`;
 		
 		CreateTab('Process History', 
-			() => { return <ProcHostMonitor isRealTime={false} starttime={tstarttime} endtime={tendtime} procid={procid} parid={parid} 
+			() => { return <ProcMonitor isRealTime={false} starttime={tstarttime} endtime={tendtime} procid={procid} parid={parid} 
 						aggregatesec={useAggr ? aggrMin * 60 : undefined} aggregatetype={aggrType}
 						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} tabKey={tabKey}
 					/> }, tabKey, addTabCB);

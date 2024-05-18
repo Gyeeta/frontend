@@ -856,7 +856,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 	);		
 }
 
-export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
+export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
 {
 	const 		objref = useRef(null);
 	const		qpsRef = useRef(null), respRef = useRef(null), connRef = useRef(null), netRef = useRef(null), cpuiodelayRef = useRef(null), 
@@ -871,7 +871,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 	const		[forceSummary, setForceSummary] = useState(false);
 
 	if (objref.current === null) {
-		console.log(`SvcHostMonitor initializing for first time : isRealTime=${isRealTime} starttime=${starttime} endtime=${endtime} aggregatesec=${aggregatesec} aggregatetype=${aggregatetype}`);
+		console.log(`SvcMonitor initializing for first time : isRealTime=${isRealTime} starttime=${starttime} endtime=${endtime} aggregatesec=${aggregatesec} aggregatetype=${aggregatetype}`);
 
 		objref.current = {
 			isstarted 		: false,
@@ -920,7 +920,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 
 	useEffect(() => {
 		return () => {
-			console.log(`SvcHostMonitor destructor called...`);
+			console.log(`SvcMonitor destructor called...`);
 		};	
 	}, []);
 
@@ -953,7 +953,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 
 	if (validProps === false) {
 		// This should not occur
-		throw new Error(`Internal Error : SvcHostMonitor validProps check failed`);
+		throw new Error(`Internal Error : SvcMonitor validProps check failed`);
 	}	
 
 	const modalCount = useCallback((isup) => {
@@ -1102,7 +1102,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 		}, 0);
 
 		return () => { 
-			console.log(`Destructor called for SvcHostMonitor setinterval effect...`);
+			console.log(`Destructor called for SvcMonitor setinterval effect...`);
 			if (timer1) clearTimeout(timer1);
 		};
 		
@@ -1806,7 +1806,7 @@ export function SvcHostMonitor({svcid, parid, isRealTime, starttime, endtime, ag
 		const			tabKey = `SvcMonitor_${Date.now()}`;
 		
 		CreateTab('Service History', 
-			() => { return <SvcHostMonitor isRealTime={false} starttime={tstarttime} endtime={tendtime} svcid={svcid} parid={parid} 
+			() => { return <SvcMonitor isRealTime={false} starttime={tstarttime} endtime={tendtime} svcid={svcid} parid={parid} 
 						aggregatesec={useAggr ? aggrMin * 60 : undefined} aggregatetype={aggrType}
 						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} tabKey={tabKey}
 					/> }, tabKey, addTabCB);

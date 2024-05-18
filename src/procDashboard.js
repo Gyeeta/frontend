@@ -15,7 +15,7 @@ import 			{safetypeof, NullID, validateApi, fixedArrayAddItems, kbStrFormat, mse
 			strTruncateTo, getMinEndtime} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
-import 			{ProcHostMonitor, ProcIssueSource} from './procMonitor.js';
+import 			{ProcMonitor, ProcIssueSource} from './procMonitor.js';
 import 			{SvcInfoDesc} from './svcDashboard.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
@@ -1664,7 +1664,7 @@ export function ProcInfoDesc({procid, parid, starttime, endtime, addTabCB, remTa
 		const		tabKey = `ProcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Process State Realtime Monitor</i></span>, 'Process Realtime Monitor', 
-					() => { return <ProcHostMonitor procid={procid} parid={parid} isRealTime={true}
+					() => { return <ProcMonitor procid={procid} parid={parid} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -1675,7 +1675,7 @@ export function ProcInfoDesc({procid, parid, starttime, endtime, addTabCB, remTa
 		const			tend = endtime ?? moment(starttime, starttime ? moment.ISO_8601 : undefined).add(1, 'minute').format();
 
 		return CreateLinkTab(<span><i>Process Historical State</i></span>, 'Process Historical State', 
-					() => { return <ProcHostMonitor procid={procid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend}
+					() => { return <ProcMonitor procid={procid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -1849,7 +1849,7 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		const		tabKey = `ProcState_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Process Performance around record time</i></span>, 'Process State as per time',
-				() => { return <ProcHostMonitor procid={rec.procid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend} 
+				() => { return <ProcMonitor procid={rec.procid} parid={parid} isRealTime={false} starttime={tstart} endtime={tend} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 	};
@@ -1879,7 +1879,7 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		const		tabKey = `ProcHist_${Date.now()}`;
 		
 		CreateTab('Process Historical',
-			() => { return <ProcHostMonitor procid={rec.procid} parid={parid} isRealTime={false} 
+			() => { return <ProcMonitor procid={rec.procid} parid={parid} isRealTime={false} 
 					starttime={istimepoint ? dateString : dateString[0]} endtime={istimepoint ? undefined : dateString[1]} 
 					aggregatesec={!istimepoint && useAggr && dateAggrMin ? dateAggrMin * 60 : undefined}
 					aggregatetype={!istimepoint && useAggr ? aggrType : undefined}
@@ -1893,7 +1893,7 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		const		tabKey = `ProcMon_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Process Realtime Monitor</i></span>, 'Process Realtime Monitor', 
-					() => { return <ProcHostMonitor procid={rec.procid} parid={parid} isRealTime={true}
+					() => { return <ProcMonitor procid={rec.procid} parid={parid} isRealTime={true}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -2229,7 +2229,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 }	
 
 export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2258,19 +2258,30 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 		const			tabKey = `ProcState_${Date.now()}`;
 
 		CreateTab(title ?? "Process State", 
-			() => { return <ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
+						sortColumns={sortColumns} sortDir={sortDir} /> 
+					</>	
+				);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Process State",
 
-			content : <ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />,
+					sortColumns={sortColumns} sortDir={sortDir} />
+				</>
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

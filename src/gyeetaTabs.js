@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useReducer } 
 import {Typography, Space, PageHeader, Tabs, Alert, Modal, Menu, notification} from 'antd';
 import {LaptopOutlined, ClusterOutlined, ContainerOutlined, CloudServerOutlined, AlertOutlined, GlobalOutlined, FileDoneOutlined, 
 	BranchesOutlined, LineChartOutlined, BarChartOutlined, FilterOutlined, SearchOutlined, PhoneOutlined, SoundOutlined, DeploymentUnitOutlined,
-	SafetyOutlined, ApiOutlined} from '@ant-design/icons';
+	SafetyOutlined, ApiOutlined, ProfileOutlined} from '@ant-design/icons';
 import {useSearchParams} from 'react-router-dom';
 import 	moment from 'moment';
 import axios from 'axios';
@@ -22,9 +22,9 @@ import {hostfields, MultiFilters, GenericSearch} from './multiFilters.js';
 import {CPUMemPage} from './cpuMemPage.js';
 import {NetDashboard} from './netDashboard.js';
 import {HostMonitor} from './hostMonitor.js';
-import {SvcHostMonitor} from './svcMonitor.js';
+import {SvcMonitor} from './svcMonitor.js';
 import {SvcClusterGroups} from './svcClusterGroups.js';
-import {ProcHostMonitor} from './procMonitor.js';
+import {ProcMonitor} from './procMonitor.js';
 import {GyeetaStatusTag, GyeetaStatus} from './aboutStatus.js';
 import {ActionConfig, ActionDashboard} from './alertActions.js';
 import {AlertdefConfig, AlertdefDashboard} from './alertDefs.js';
@@ -47,7 +47,7 @@ export const alertdefKey = 'alertdefKey', addAlertdefKey = 'addAlertdefKey';
 export const actionKey = 'actionKey', addActionKey = 'addActionKey';
 export const silenceKey = 'silenceKey', addSilenceKey = 'addSilenceKey';
 export const inhibitKey = 'inhibitKey', addInhibitKey = 'addInhibitKey';
-export const traceDashKey = 'traceDashKey', tracedefKey = 'tracedefKey';
+export const traceMonitorKey = 'traceMonitorKey', tracestatusKey = 'tracestatusKey', tracedefKey = 'tracedefKey';
 export const searchKey = 'searchKey';
 export const gyeetaStatusKey = 'gyeetaStatusKey';
 export const loginKey = 'loginKey';
@@ -94,7 +94,11 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 		};
 	}
 
-	const addTabCB = useCallback((title, content, key, closable = true) => {
+	const addTabCB = useCallback((title, content, key, closable = (key !== loginKey)) => {
+
+		if (objref.current.activekey === loginKey) {
+			return;
+		}
 
 		for (let i = 0; i < objref.current.panearr.length; ++i) {
 			let 		pane = objref.current.panearr[i];
@@ -226,6 +230,10 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 
 	const onTabChange = useCallback((activekey) => {
 		/*console.log(`onTabChange called : New activekey = ${activekey}`);*/
+
+		if (objref.current.activekey === loginKey) {
+			return;
+		}
 
 		objref.current.prevtabkey = objref.current.activekey;
 		objref.current.activekey = activekey;
@@ -421,6 +429,85 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				}	
 
 				notification.error({message : "Process Dashboard", description : `Exception during Process Dashboard fetch : ${emsg}`});
+			}	
+			break;
+
+		case traceMonitorKey :
+			
+
+			try {
+				const tableOnRow = (record, rowIndex) => {
+					return {
+						onClick: event => {
+							
+							Modal.destroyAll();
+							
+							if (!record || !record.procid) {
+								return;
+							}	
+
+							const		tabKey = `procmon${record.procid}`;
+
+							const		procmon = () => (
+								<>
+								<ErrorBoundary>
+								<ProcMonitor procid={record.procid} parid={record.parid} isRealTime={true} 
+										addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
+								</ErrorBoundary>
+								</>
+							);	
+
+							addTabCB('Process Monitor', procmon, tabKey);
+						}	
+					};	
+				};	
+
+				const filterCB = (filter) => {
+					procTableTab({
+							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
+							endtime 	: moment().startOf('minute').format(),
+							useAggr 	: true,
+							aggrMin		: 10,
+							aggrType	: 'max',	
+							filter 		: filter, 
+							isext		: true,
+							modal 		: true,
+							tableOnRow 	: tableOnRow,
+							title 		: 'Select a process to monitor',
+						});
+				};	
+
+				Modal.confirm({
+					title : <Title level={4}>Select Process State Filters based on last 3 minutes Max Aggregated Stats</Title>,
+
+					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...procstatefields, ...extprocfields]} />,
+					width : '80%',	
+					closable : true,
+					destroyOnClose : true,
+					maskClosable : true,
+					okText : 'Get All Active Processes',
+					onOk : () => filterCB(),
+					okType : 'primary',
+					cancelType : 'primary',
+				});	
+				
+			}
+			catch(e) {
+				let		emsg;
+
+				console.log(`Exception seen for Process Monitor : ${e.response ? JSON.stringify(e.response.data) : e.message}`);
+
+				if (e.response && e.response.data) {
+					emsg = e.response.data;
+				}	
+				else if (e.message) {
+					emsg = e.message;
+				}	
+				else {
+					emsg = 'Exception Caught';
+				}	
+
+				notification.error({message : "Process Monitor", description : `Exception during data fetch : ${emsg}`});
 			}	
 			break;
 
@@ -1056,7 +1143,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							const		svcmon = () => (
 								<>
 								<ErrorBoundary>
-								<SvcHostMonitor svcid={record.svcid} parid={record.parid} isRealTime={true} 
+								<SvcMonitor svcid={record.svcid} parid={record.parid} isRealTime={true} 
 										addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
 								</ErrorBoundary>
 								</>
@@ -1360,7 +1447,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							const		procmon = () => (
 								<>
 								<ErrorBoundary>
-								<ProcHostMonitor procid={record.procid} parid={record.parid} isRealTime={true} 
+								<ProcMonitor procid={record.procid} parid={record.parid} isRealTime={true} 
 										addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
 								</ErrorBoundary>
 								</>
@@ -1880,7 +1967,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 			try {
 
 				// Add a fallback tab
-				onMenuClick({ key : clusterDashKey });
+				onMenuClick({ key : svcDashKey });
 
 				const		tabKey = loginKey;
 
@@ -2023,7 +2110,8 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				</SubMenu>
 
 				<SubMenu key="TraceMenu" icon={<ApiOutlined />} title="Tracing">
-					<Menu.Item key={traceDashKey} icon={<ApiOutlined />}> Request Trace Dashboard</Menu.Item>
+					<Menu.Item key={traceMonitorKey} icon={<ApiOutlined />}> Request Trace Monitor</Menu.Item>
+					<Menu.Item key={tracestatusKey} icon={<ProfileOutlined />}> Trace Activity Status</Menu.Item>
 					<Menu.Item key={tracedefKey} icon={<FileDoneOutlined />}> Request Trace Definitions</Menu.Item>
 				</SubMenu>
 
