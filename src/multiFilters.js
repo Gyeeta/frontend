@@ -1585,6 +1585,123 @@ export function getFieldsExcludingHost(fieldarr)
 	return fieldarr.filter((col) => col.field !== 'host' && col.field !== 'cluster' && col.field !== 'parid');
 }	
 
+const presetChangeTimeRange = [
+	{ desc : 'Previous 1 min', 	timeoffsetsec : '-60' },	
+	{ desc : 'Previous 5 mins', 	timeoffsetsec : '-300' },	
+	{ desc : 'Previous 15 mins',	timeoffsetsec : '-900' },	
+	{ desc : 'Previous 30 mins',	timeoffsetsec : '-1800' },	
+	{ desc : 'Next 1 min', 		timeoffsetsec : '60' },	
+	{ desc : 'Next 5 mins', 	timeoffsetsec : '300' },	
+	{ desc : 'Next 15 mins',	timeoffsetsec : '900' },	
+	{ desc : 'Next 30 mins',	timeoffsetsec : '1800' },	
+];
+
+
+export function SearchWrapConfig({starttime, endtime, maxrecs, recoffset, origComp, ...props})
+{
+	const [tstart, settstart] 	= useState(starttime);
+	const [tend, settend] 		= useState(endtime);
+	const [currmax, setmax] 	= useState(maxrecs);
+	const [nrows, setnrows]		= useState(0);
+	const [offset, setoffset] 	= useState(recoffset > 0 ? recoffset : 0);
+
+	const [form] 			= Form.useForm();
+	const objref 			= useRef({ tstart : starttime, tend :  endtime });
+	const Comp 			= origComp;
+
+	const onFinish = useCallback((values) => {
+
+		settstart(objref.current.tstart);
+		settend(objref.current.tend);
+		setmax(Number(values.maxrecs));
+		setoffset(0);
+
+	}, [objref, settstart, settend, setmax, setoffset]);
+
+	const onPresetRangeChange = useCallback((value) => {
+		const			secoff = Number(value);
+
+		if (secoff < 0) {
+			objref.current.tstart 	= moment(tstart, moment.ISO_8601).add(secoff, 'seconds').format();
+			objref.current.tend	= tstart;
+		}	
+		else {
+			objref.current.tstart	= tend;
+			objref.current.tend 	= moment(tend, moment.ISO_8601).add(secoff, 'seconds').format();
+		}
+	}, [objref, tstart, tend]);	
+	
+	const onRangeChange = useCallback((dateObjs) => {
+		if (safetypeof(dateObjs) !== 'array') {
+			return;
+		}
+
+		objref.current.tstart 	= dateObjs[0].format();
+		objref.current.tend	= dateObjs[1].format();
+
+	}, [objref]);	
+
+	const component = useMemo(() => {
+
+		return <Comp {...props} starttime={tstart} endtime={tend} maxrecs={currmax} recoffset={offset > 1 ? offset : undefined} 
+						dataRowsCb={(val) => setnrows(Number(val))} />;
+
+	}, [tstart, tend, currmax, offset, props, setnrows]);	
+
+	if (!Comp) return null;
+
+	return (
+		<>
+		<ErrorBoundary>
+
+		{nrows >= 0 && (
+		
+		<>
+		<div style={{ marginLeft: 30, marginRight: 30, marginBottom : 30, border: '1px dotted #7a7aa0', padding : 10 }} >
+
+		<Form {...formItemLayout} form={form} name="search" onFinish={onFinish} scrollToFirstError >
+			<Form.Item label="Change Search Time Range">
+				<Space>
+				
+				<PresetTimesOrRanges isrange={true} secOffsetCB={onPresetRangeChange} presetArray={presetChangeTimeRange} />
+				<span> OR </span>
+				<RangeTimeZonePicker onChange={onRangeChange} disableFuture={true} />
+
+				</Space>
+			</Form.Item>
+
+			<Form.Item label="Change Max Records to Fetch" name="maxrecs" initialValue={maxrecs ? maxrecs.toString() : "10000"}>
+				<InputNumber min={1} max={10000000} />
+			</Form.Item>
+
+			<Form.Item {...tailFormItemLayout}>
+				<Button htmlType="submit" >Update Search</Button>
+			</Form.Item>
+		</Form>
+
+		</div>
+		</>
+		)}
+
+		{component}
+
+		{nrows > 0 && currmax > 0 && (
+			<div style={{ marginLeft: 30, marginRight: 30, marginBottom : 30, border: '1px dotted #7a7aa0', padding : 10, 
+					display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}} >
+			<>		
+			<Button onClick={() => setoffset(offset - currmax)} disabled={offset < currmax}>Get Previous {currmax} records within same time range</Button>
+			<span>Record Range Returned : {offset + 1} to {nrows + offset}</span>
+			<Button onClick={() => setoffset(offset + currmax)} disabled={nrows < currmax}>Get Next {currmax} records within same time range</Button>
+			</>
+			</div>
+		)}
+
+		</ErrorBoundary>
+		</>
+	);
+
+}
+
 
 export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTabCB, remTabCB, isActiveTabCB})
 {
@@ -1632,7 +1749,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}	
 		}	
 
-		objref.current.subsysobj.tablecb(
+		return objref.current.subsysobj.tablecb(
 			{
 				starttime 		: timerange[0].format(),
 				endtime 		: timerange[1].format(),
@@ -1649,6 +1766,8 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				addTabCB, 
 				remTabCB, 
 				isActiveTabCB,
+
+				wrapComp		: SearchWrapConfig,
 			}
 		);
 

@@ -239,7 +239,7 @@ export const presetTimeRange = [
 	{ desc : 'Last 24 hours', 	timeoffsetsec : '86400' },	
 ];
 
-export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder})
+export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder, presetArray})
 {
 	if (!secOffsetCB) {
 		return null;
@@ -248,8 +248,10 @@ export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder})
 	const		opts = [];
 
 	if (!isrange) {
-		for (let i = 0; i < presetPointTime.length; ++i) {
-			opts.push(<Option key={presetPointTime[i].timeoffsetsec} value={presetPointTime[i].timeoffsetsec}>{presetPointTime[i].desc}</Option>);
+		const			prearr = presetArray ?? presetPointTime;
+
+		for (let i = 0; i < prearr.length; ++i) {
+			opts.push(<Option key={prearr[i].timeoffsetsec} value={prearr[i].timeoffsetsec}>{prearr[i].desc}</Option>);
 		}	
 
 		return (
@@ -259,8 +261,10 @@ export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder})
 		);
 	}
 	else {
-		for (let i = 0; i < presetTimeRange.length; ++i) {
-			opts.push(<Option key={presetTimeRange[i].timeoffsetsec} value={presetTimeRange[i].timeoffsetsec}>{presetTimeRange[i].desc}</Option>);
+		const			prearr = presetArray ?? presetTimeRange;
+
+		for (let i = 0; i < prearr.length; ++i) {
+			opts.push(<Option key={prearr[i].timeoffsetsec} value={prearr[i].timeoffsetsec}>{prearr[i].desc}</Option>);
 		}	
 
 		return (

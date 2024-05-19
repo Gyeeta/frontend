@@ -715,7 +715,7 @@ function getSvcInfo(svcidarr, parid, starttime, modalCount, addTabCB, remTabCB, 
 
 
 export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -757,6 +757,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 			timeout 	: useAggr ? 500 * 1000 : 100 * 1000,
@@ -779,7 +780,24 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					const			field = isext ? "extactiveconn" : "activeconn";
+				
+					dataRowsCb(data[field]?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, isext, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = isext ? "extactiveconn" : "activeconn";
@@ -788,10 +806,6 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			const svcCB = (name, rec) => {
 				if (rec) {
@@ -929,6 +943,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
 					expandable={isext && !customTableColumns ? { expandedRowRender } : undefined} rowKey="rowid" scroll={getTableScroll()} />
 				</div>
@@ -960,7 +975,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 }
 
 export function activeConnTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -986,6 +1001,8 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 		}
 	}
 
+	const                           Comp = wrapComp ?? ActiveConnSearch;
+
 	if (!modal) {
 		const			tabKey = `ActiveConn_${Date.now()}`;
 
@@ -993,10 +1010,10 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<ActiveConnSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname}  customColumns={customColumns} customTableColumns={customTableColumns} 
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ActiveConnSearch} /> 
 					</>
 				);	
 				}, tabKey, addTabCB);
@@ -1008,10 +1025,10 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<ActiveConnSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname}  customColumns={customColumns} customTableColumns={customTableColumns} 
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ActiveConnSearch} />
 				</>
 				),
 			width : '90%',	
@@ -1025,7 +1042,7 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 }
 
 export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey, title,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -1067,6 +1084,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 			timeout 	: useAggr ? 500 * 1000 : 100 * 1000,
@@ -1089,7 +1107,24 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					const			field = isext ? "extclientconn" : "clientconn";
+					
+					dataRowsCb(data[field]?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, isext, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = isext ? "extclientconn" : "clientconn";
@@ -1098,10 +1133,6 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			const cliCB = (name, rec) => {
 				if (rec) {
@@ -1240,6 +1271,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
 					expandable={isext && !customTableColumns ? { expandedRowRender } : undefined} rowKey="rowid" scroll={getTableScroll()} />
 				</div>
@@ -1272,7 +1304,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 }
 
 export function clientConnTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1298,6 +1330,8 @@ export function clientConnTab({parid, hostname, starttime, endtime, useAggr, agg
 		}
 	}
 
+	const                           Comp = wrapComp ?? ClientConnSearch;
+
 	if (!modal) {
 		const			tabKey = `ActiveConn_${Date.now()}`;
 
@@ -1305,10 +1339,10 @@ export function clientConnTab({parid, hostname, starttime, endtime, useAggr, agg
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<ClientConnSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClientConnSearch} /> 
 					</>
 				);
 				}, tabKey, addTabCB);
@@ -1320,10 +1354,10 @@ export function clientConnTab({parid, hostname, starttime, endtime, useAggr, agg
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<ClientConnSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClientConnSearch} />
 				</>
 				),
 			width : '90%',	

@@ -1,7 +1,7 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
 
-import			{Button, Popover, Space, Slider, Modal, Input, Descriptions, Statistic, Typography, Tag, Alert, notification, message, Row, Col, Empty} from 'antd';
+import			{Button, Popover, Space, Slider, Modal, Input, Descriptions, Statistic, Typography, Tag, Alert, notification, message, Row, Col} from 'antd';
 
 import 			{format} from "d3-format";
 import 			moment from 'moment';
@@ -17,7 +17,7 @@ import 			{HostDashboard, HostInfoDesc, HostInfoSearch, HostStateSearch, hostTab
 import 			{SvcDashboard, svcTableTab} from './svcDashboard.js';
 import 			{ProcDashboard, procTableTab} from './procDashboard.js';
 import			{ClusterMonitor} from './clusterMonitor.js';
-import 			{MultiFilters, SearchTimeFilter} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 
 const 			{ErrorBoundary} = Alert;
@@ -665,7 +665,7 @@ export function ClusterStateAggrFilter({filterCB, linktext})
 }	
 
 export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, title, tabKey,
-						customColumns, customTableColumns, sortColumns, sortDir})
+						customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -704,6 +704,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -725,7 +726,22 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.clusterstate?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "clusterstate";
@@ -734,10 +750,6 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 
 			if (typeof tableOnRow !== 'function') {
@@ -820,6 +832,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.clusterstate} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -852,7 +865,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 
 
 export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-						customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+						customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -877,6 +890,8 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 		}
 	}
 
+	const                           Comp = wrapComp ?? ClusterStateSearch;
+
 	if (!modal) {
 		const			tabKey = `ClusterState_${Date.now()}`;
 
@@ -884,10 +899,10 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} /> 
 					</>
 				);	
 				}, tabKey, addTabCB);
@@ -899,10 +914,10 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<ClusterStateSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} />
 				</>
 				),
 			width : '90%',	
@@ -1219,7 +1234,7 @@ export function ClusterModalCard({rec, starttime, endtime, aggrType, recinterval
 
 		return <Button type='dashed' onClick={() => {
 			hostTableTab({starttime : tstartnew, endtime : tendnew, useAggr : useaggr, aggrMin, aggrType : aggrType,
-					filter, name : `Cluster ${rec.cluster}`, addTabCB, remTabCB, isActiveTabCB});
+					filter, name : `Cluster ${rec.cluster}`, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1235,7 +1250,7 @@ export function ClusterModalCard({rec, starttime, endtime, aggrType, recinterval
 
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({starttime : tstartnew, endtime : tendnew, useAggr : useaggr, aggrMin,  aggrType : aggrType, filter, name : `Cluster ${rec.cluster}`, 
-					addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1250,7 +1265,7 @@ export function ClusterModalCard({rec, starttime, endtime, aggrType, recinterval
 
 		return <Button type='dashed' onClick={() => {
 			procTableTab({starttime : tstartnew, endtime : tendnew, useAggr : useaggr, aggrMin,  aggrType : aggrType, filter, name : `Cluster ${rec.cluster}`, 
-					addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1472,7 +1487,7 @@ export function ClusterSummary({normdata, tableOnRow, columns, modalCount, addTa
 		const		tendnew = moment(mend ? +mend : undefined).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
-			hostTableTab({starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB});
+			hostTableTab({starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1985,7 +2000,7 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 		// Now close the search modal
 		Modal.destroyAll();
 
-		clusterTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+		clusterTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 

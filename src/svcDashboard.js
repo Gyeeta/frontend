@@ -20,7 +20,7 @@ import 			{SvcMonitor, SvcIssueSource} from './svcMonitor.js';
 import 			{NetDashboard} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
-import 			{MultiFilters, SearchTimeFilter, hostfields} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
 import			{SvcClusterGroups} from './svcClusterGroups.js';
 import			{procInfoTab, procTableTab} from './procDashboard.js';
 
@@ -2309,7 +2309,7 @@ export function svcStateOnRow({parid, useAggr, aggrMin, endtime, addTabCB, remTa
 }	
 
 export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, isext, 
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -2351,6 +2351,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset	: recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 			timeout : useAggr ? 500 * 1000 : 100 * 1000,
@@ -2373,7 +2374,23 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+				const			field = isext ? "extsvcstate" : "svcstate";
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data[field]?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isext, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = isext ? "extsvcstate" : "svcstate";
@@ -2382,10 +2399,6 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				if (!customTableColumns) {
@@ -2462,6 +2475,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
 					expandable={isext && !customTableColumns ? { expandedRowRender } : undefined} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
@@ -2495,7 +2509,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 }	
 
 export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2520,6 +2534,8 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 		}
 	}
 
+	const				Comp = wrapComp ?? SvcStateSearch;
+
 	if (!modal) {
 		const			tabKey = `SvcState_${Date.now()}`;
 
@@ -2527,10 +2543,10 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcStateSearch} /> 
 					</>
 					);
 				}, tabKey, addTabCB);
@@ -2542,10 +2558,10 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<SvcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcStateSearch} />
 				</>
 				),
 			width : '90%',	
@@ -2559,7 +2575,7 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 }
 
 export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2583,6 +2599,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -2604,7 +2621,22 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.svcinfo?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "svcinfo";
@@ -2613,10 +2645,6 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				if (!customTableColumns) {
@@ -2675,7 +2703,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 				titlestr = 'Services Info';
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format()} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.parid ? record.parid : ''));
@@ -2683,7 +2711,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Service Info `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (name) {
@@ -2695,6 +2723,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svcinfo} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -2726,7 +2755,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 }
 
 export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null })
 {
 	if (starttime || endtime) {
 
@@ -2751,21 +2780,36 @@ export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTyp
 		}
 	}
 
+	const                           Comp = wrapComp ?? SvcinfoSearch;
+
 	if (!modal) {
 		const			tabKey = `Svcinfo_${Date.now()}`;
 
 		CreateTab(title ?? "Service Info", 
-			() => { return <SvcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcinfoSearch} /> 
+					</>	
+					);	
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service Info",
 
-			content : <SvcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SvcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />,
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcinfoSearch} />
+				</>	
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2777,7 +2821,7 @@ export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2801,6 +2845,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -2822,7 +2867,21 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.svcsumm?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "svcsumm";
@@ -2831,10 +2890,6 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				const getSvcDash = (record) => {
@@ -2892,7 +2947,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 
 				titlestr = `Services Summary for Host ${hostname}`;
 
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
 			}
 			else {
 				rowKey = ((record) => record.time + record.parid ? record.parid : '');
@@ -2900,7 +2955,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Summary`;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			hinfo = (
@@ -2908,6 +2963,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svcsumm} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -2939,7 +2995,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 }
 
 export function svcSummTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2964,22 +3020,36 @@ export function svcSummTab({parid, hostname, starttime, endtime, useAggr, aggrMi
 		}
 	}
 
+	const                           Comp = wrapComp ?? SvcSummSearch;
+	
 	if (!modal) {
 		const			tabKey = `SvcSumm_${Date.now()}`;
 
 		CreateTab(title ?? "Service Summary", 
-			() => { return <SvcSummSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					hostname={hostname} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						hostname={hostname} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcSummSearch} /> 
+					</>	
+					);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service Summary",
 
-			content : <SvcSummSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<SvcSummSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} hostname={hostname} />,
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					hostname={hostname} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcSummSearch} />
+				</>	
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -3024,7 +3094,7 @@ export function SvcSummary({normdata, parid, filter, name, hostname, starttime, 
 
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({parid, hostname, starttime : !isrange ? summstats.time : starttime, endtime : !isrange ? undefined : endtime, 
-					useAggr, filter : newfilter, name, addTabCB, remTabCB, isActiveTabCB, isext : true});
+					useAggr, filter : newfilter, name, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 		}} >{linktext}</Button>;
 	};
 	
@@ -3498,7 +3568,7 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 		Modal.destroyAll();
 
 		svcTableTab({parid, hostname : parid ? objref.current.hostname : undefined, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, aggrfilter, name, maxrecs, addTabCB, remTabCB, isActiveTabCB, isext : true});
+				filter : fstr, aggrfilter, name, maxrecs, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig, });
 
 	}, [parid, filter, name, addTabCB, remTabCB, isActiveTabCB, objref]);	
 
@@ -3537,6 +3607,8 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 			addTabCB, 
 			remTabCB, 
 			isActiveTabCB,
+
+			wrapComp		: SearchWrapConfig,
 		});
 	};
 

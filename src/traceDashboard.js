@@ -615,7 +615,7 @@ const tracehistoryCol = [
 
 
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -638,6 +638,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -659,7 +660,21 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.tracestatus?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "tracestatus";
@@ -668,10 +683,6 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			let		columns, rowKey, titlestr, timestr;
 
@@ -695,6 +706,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.tracestatus} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -726,7 +738,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -751,6 +763,8 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 		}
 	}
 
+	const                           Comp = wrapComp ?? TracestatusSearch;
+
 	if (!modal) {
 		const			tabKey = `Tracestatus_${Date.now()}`;
 
@@ -758,9 +772,10 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<TracestatusSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
+						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracestatusSearch} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -772,9 +787,10 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<TracestatusSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracestatusSearch} />
 				</>	
 				),
 			width : '90%',	
@@ -788,7 +804,7 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 }
 
 
-export function TracehistorySearch({starttime, endtime, filter, maxrecs, sortDir, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
+export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -804,7 +820,6 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, sortDir
 				options : {
 					maxrecs,
 					filter,
-					sortdir,
 				},	
 			},
 		};	
@@ -862,6 +877,7 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, sortDir
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.tracehistory} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -892,7 +908,8 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, sortDir
 	);
 }
 
-export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, customColumns, sortColumns, sortDir})
+export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, customColumns, 
+					sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -930,6 +947,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 					columns		: customColumns,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 			timeout : 100 * 1000,
@@ -952,19 +970,32 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			return;
 		}	
 
-	}, [parid, doFetch, endtime, filter, maxrecs, starttime, isext, customColumns, sortColumns, sortDir]);
+	}, [parid, doFetch, endtime, filter, maxrecs, starttime, isext, customColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					const			field = isext ? "exttracereq" : "tracereq";
+					
+					dataRowsCb(data[field]?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, isext, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
-		const			field = isext ? "extsvcstate" : "svcstate";
+		const			field = isext ? "exttracereq" : "tracereq";
 
 		if (!data || !data[field]) {
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid Trace Request response received from server..."} />;
 			closetab = 60000;
 		}
-		else if (data[field].length === 0 && remTabCB) {
-			hinfo = <Alert type="info" showIcon message="No Trace Request data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB});
@@ -989,6 +1020,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>

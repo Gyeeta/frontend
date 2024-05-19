@@ -22,7 +22,7 @@ import {svcTableTab, SvcStateMultiQuickFilter, SvcModalCard, hostAggrCol, hostRa
 import {cpumemTableTab} from './cpuMemPage.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 
 const { ErrorBoundary } = Alert;
 const { Title } = Typography;
@@ -487,7 +487,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid : parid, starttime : tstart, endtime : tend, useAggr, aggrMin : 365 * 24 * 60,
 					filter : fstr, name : `Service ${objref.current.svcname}`, maxrecs : 10000,
-					addTabCB, remTabCB, isActiveTabCB, isext : true});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1272,6 +1272,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Host Processes with CPU/IO Delays</Button>
 			
 			
@@ -1292,6 +1293,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Host CPU Memory State</Button>
 			
 			</Space>
@@ -1321,6 +1323,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Host Processes with Memory Delays</Button>
 			
 			
@@ -1341,6 +1344,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Host CPU Memory State</Button>
 			
 			
@@ -1850,7 +1854,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		Modal.destroyAll();
 
 		svcTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [parid, svcid, addTabCB, remTabCB, isActiveTabCB, objref]);	
 

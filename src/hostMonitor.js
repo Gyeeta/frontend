@@ -17,7 +17,7 @@ import {ColumnInfo, fixedSeriesAddItems, getTimeEvent, getTimeSeries, getScatter
 import {safetypeof, getStateColor, validateApi, CreateRectSvg, fixedArrayAddItems, ButtonModal, CreateTab, arrayFilter,
 	useFetchApi, LoadingAlert} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 import {svcTableTab} from './svcDashboard.js';
 import {procTableTab} from './procDashboard.js';
 import {cpumemTableTab} from './cpuMemPage.js';
@@ -408,14 +408,14 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 	const getSvcStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({parid : summary.parid, starttime : tstart, endtime : tend, filter, name : `Host ${summary.hostname}`, maxrecs : 10000,
-					addTabCB, remTabCB, isActiveTabCB, isext : true});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid : summary.parid, starttime : tstart, endtime : tend, filter, name : `Host ${summary.hostname}`, maxrecs : 10000,
-					addTabCB, remTabCB, isActiveTabCB, isext : true});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -644,7 +644,7 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 			</Descriptions.Item>
 
 			<Descriptions.Item 
-				label={<em>{avgstr}Host CPU Delays</em>}>
+				label={<em>{avgstr}Host CPU Delays msec</em>}>
 				{lastitem.cpudelms > 0 ? 
 					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.cpudelms)} />, 
 					`{ procstate.cpudel > 0 }`,
@@ -653,7 +653,7 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 			</Descriptions.Item>
 
 			<Descriptions.Item 
-				label={<em>{avgstr}Host Memory Delays</em>}>
+				label={<em>{avgstr}Host Memory Delays msec</em>}>
 				{lastitem.vmdelms > 0 ? 
 					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.vmdelms)} />, 
 					`{ procstate.vmdel > 0 }`,
@@ -662,7 +662,7 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 			</Descriptions.Item>
 
 			<Descriptions.Item 
-				label={<em>{avgstr}Host IO Delays</em>}>
+				label={<em>{avgstr}Host IO Delays msec</em>}>
 				{lastitem.iodelms > 0 ? 
 					getProcStateTable(<Statistic valueStyle={{ fontSize: 16 }} value={format(",")(lastitem.iodelms)} />, 
 					`{ procstate.iodel > 0 }`,
@@ -945,6 +945,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Services with Issues</Button>
 			
 			<Button onClick={() => {
@@ -964,6 +965,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Host CPU Memory State</Button>
 
 			</Space>
@@ -994,6 +996,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Processes with Issues</Button>
 			
 			<Button onClick={() => {
@@ -1013,6 +1016,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Processes State</Button>
 
 			</Space>
@@ -1043,6 +1047,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Processes with CPU Delays</Button>
 			
 			<Button onClick={() => {
@@ -1062,6 +1067,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Processes State</Button>
 
 			</Space>
@@ -1092,6 +1098,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Processes with Memory Delays</Button>
 			
 			<Button onClick={() => {
@@ -1111,6 +1118,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Processes State</Button>
 
 			</Space>
@@ -1142,6 +1150,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Processes with IO Delays</Button>
 			
 			<Button onClick={() => {
@@ -1161,6 +1170,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Processes State</Button>
 
 			</Space>
@@ -1547,7 +1557,7 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 		Modal.destroyAll();
 
 		hostTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [parid, addTabCB, remTabCB, isActiveTabCB, objref]);	
 

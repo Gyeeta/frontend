@@ -23,7 +23,7 @@ import {GyTable, getTableScroll} from './components/gyTable.js';
 import {StateBadge} from './components/stateBadge.js';
 import {HostInfoDesc} from './hostViewPage.js';
 import {MultiFilters, hostfields} from './multiFilters.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 import {svcTableTab} from './svcDashboard.js';
 import {procTableTab} from './procDashboard.js';
 
@@ -1657,14 +1657,14 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 	const getSvcStateTable = (linktext, filter, aggrfilter) => {
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({parid, starttime : rec.time, endtime : tend, filter, aggrfilter, 
-					useAggr : isaggr, aggrMin : newAggrMin, aggrType : 'sum', addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000});
+					useAggr : isaggr, aggrMin : newAggrMin, aggrType : 'sum', addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter, aggrfilter) => {
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid, starttime : rec.time, endtime : tend, filter, aggrfilter, 
-					useAggr : isaggr, aggrMin : newAggrMin, aggrType : 'sum', addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000});
+					useAggr : isaggr, aggrMin : newAggrMin, aggrType : 'sum', addTabCB, remTabCB, isActiveTabCB, isext : true, maxrecs : 10000, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1784,7 +1784,7 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 }
 
 export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
@@ -1810,6 +1810,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -1830,7 +1831,21 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 			console.log(`Exception caught while waiting for CPU Memory Table fetch response : ${e}\n${e.stack}\n`);
 			return;
 		}	
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.cpumem?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
 
 	if (isloading === false && isapierror === false) { 
 
@@ -1912,7 +1927,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 						}	
 					}	
 
-					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
 				}
 				else {
 					rowKey = parid ? "time" : ((record) => record.parid + record.time);
@@ -1925,7 +1940,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 						columns = !useAggr ? globCpuColumns : globAggrCpuColumns(aggrType);
 						titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} CPU Memory State`;
 					}	
-					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
 
 				hinfo = (
@@ -1933,6 +1948,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 					<Title level={4}>{titlestr}</Title>
 					{timestr}
+					<div style={{ marginBottom: 30 }} />
 					<GyTable columns={columns} onRow={tableOnRow} dataSource={data.cpumem} rowKey={rowKey} scroll={getTableScroll()} />
 					</div>
 					</>
@@ -1969,7 +1985,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 }
 
 export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1994,6 +2010,8 @@ export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, ag
 		}
 	}
 
+	const                           Comp = wrapComp ?? CpuMemSearch;
+
 	if (!modal) {
 		const			tabKey = `CpuMem_${Date.now()}`;
 
@@ -2001,10 +2019,10 @@ export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, ag
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<CpuMemSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -2016,9 +2034,10 @@ export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, ag
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<CpuMemSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
+					hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} />
 				</>
 				),
 			width : '90%',	
@@ -2081,7 +2100,7 @@ function CpuMemSummary({objref, isRealTime, aggregatesec, aggroper, modalCount, 
 	const getProcStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid : summary.parid, starttime : tstart, endtime : tend, filter, name : `Host ${summary.hostname}`, maxrecs : 10000,
-					addTabCB, remTabCB, isActiveTabCB, isext : true});
+					addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -2845,6 +2864,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with Issues</Button>
 			
 			<Button onClick={() => {
@@ -2865,6 +2885,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with Avg CPU > 1%</Button>
 
 			</Space>
@@ -2895,6 +2916,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with CPU Delays</Button>
 			
 			<Button onClick={() => {
@@ -2915,6 +2937,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes Degraded by Context Switches</Button>
 
 			</Space>
@@ -2945,6 +2968,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with Memory/Block IO Delays</Button>
 			
 			<Button onClick={() => {
@@ -2965,6 +2989,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes Degraded by Memory Issues</Button>
 
 			</Space>
@@ -2996,6 +3021,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with Issues</Button>
 			
 			<Button onClick={() => {
@@ -3017,6 +3043,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes Degraded by CPU Delays</Button>
 
 			</Space>
@@ -3047,6 +3074,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes Degraded by Memory Issues</Button>
 
 			</Space>
@@ -3077,6 +3105,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Processes with Memory RSS > 10 MB</Button>
 			
 			</Space>
@@ -3527,7 +3556,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 		Modal.destroyAll();
 
 		cpumemTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+				filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [parid, addTabCB, remTabCB, isActiveTabCB, objref]);	
 

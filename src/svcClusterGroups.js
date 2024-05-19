@@ -13,7 +13,7 @@ import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc, aggrsvcstatefields, extsvcfields} from './svcDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
-import 			{MultiFilters, SearchTimeFilter} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 
 const 			{Title} = Typography;
 const 			{ErrorBoundary} = Alert;
@@ -684,7 +684,7 @@ function mergeSvcIPTimestamps(data)
 
 
 
-export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, sortColumns, sortDir})
+export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -703,6 +703,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 				maxrecs		: maxrecs,
 				sortcolumns	: sortColumns,
 				sortdir		: sortColumns ? sortDir : undefined,
+				recoffset       : recoffset > 0 ? recoffset : undefined,
 			},
 			timeout : 60000,
 		};	
@@ -730,7 +731,22 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir]);
+	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.svcmeshclust?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const				field = "svcmeshclust";
@@ -787,7 +803,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 	);
 }
 	
-export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, extraComp = null})
+export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -812,6 +828,8 @@ export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, add
 		}
 	}
 
+	const                           Comp = wrapComp ?? SvcMeshGroups;
+
 	if (!modal) {
 		const			tabKey = `SvcState_${Date.now()}`;
 
@@ -819,9 +837,9 @@ export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, add
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} filter={filter} 
 						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> 
+						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcMeshGroups} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -833,9 +851,9 @@ export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, add
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<SvcMeshGroups starttime={starttime} endtime={endtime} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} filter={filter} 
 					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcMeshGroups} />
 				</>
 				),
 			width : '90%',	
@@ -1067,7 +1085,7 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 
 }	
 
-export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, sortColumns, sortDir})
+export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -1086,6 +1104,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 				maxrecs		: maxrecs,
 				sortcolumns	: sortColumns,
 				sortdir		: sortColumns ? sortDir : undefined,
+				recoffset       : recoffset > 0 ? recoffset : undefined,
 			},
 			timeout : 60000,
 		};	
@@ -1113,7 +1132,22 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir]);
+	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.svcipclust?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "svcipclust";
@@ -1170,7 +1204,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 	);
 }
 	
-export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, extraComp = null})
+export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1195,6 +1229,8 @@ export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, a
 		}
 	}
 
+	const                           Comp = wrapComp ?? SvcVirtualIPGroups;
+
 	if (!modal) {
 		const			tabKey = `SvcState_${Date.now()}`;
 
@@ -1202,9 +1238,9 @@ export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, a
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} filter={filter} 
 						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} /> 
+						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcVirtualIPGroups} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -1216,9 +1252,9 @@ export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, a
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<SvcVirtualIPGroups starttime={starttime} endtime={endtime} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} filter={filter} 
 					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcVirtualIPGroups} />
 				</>
 				),
 			width : '90%',	
@@ -1311,7 +1347,7 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 		// Now close the search modal
 		Modal.destroyAll();
 
-		svcMeshTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+		svcMeshTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 
@@ -1364,7 +1400,7 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 		// Now close the search modal
 		Modal.destroyAll();
 
-		svcVirtIPTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+		svcVirtIPTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 

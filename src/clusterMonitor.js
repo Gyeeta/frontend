@@ -17,7 +17,7 @@ import {GyTable} from './components/gyTable.js';
 import {safetypeof, validateApi, CreateRectSvg, fixedArrayAddItems, CreateLinkTab, ComponentLife, ButtonModal, arrayFilter, CreateTab} from './components/util.js';
 import {mergeClusterTimestamps, ClusterHostList, clusterTimeColumns, clusterAggrTimeColumns, ClusterModalCard, clusterTableTab, ClusterStateMultiQuickFilter} from './clusterDashboard.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 import {svcTableTab} from './svcDashboard.js';
 import {procTableTab} from './procDashboard.js';
 import {hostTableTab} from './hostViewPage.js';
@@ -330,20 +330,20 @@ function ClusterSummary({cluster, objref, isRealTime, aggregatesec, aggroper, ti
 
 	const getHostStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
-			hostTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB});
+			hostTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 
 	const getSvcStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			svcTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter, tstart, tend) => {
 		return <Button type='dashed' onClick={() => {
-			procTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			procTableTab({starttime : tstart, endtime : tend, filter, name : `Cluster ${cluster}`, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -844,6 +844,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Hosts with Service Issues</Button>
 
 			<Button onClick={() => {
@@ -863,6 +864,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Services with Issues</Button>
 			
 			</Space>
@@ -892,6 +894,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Active Services</Button>
 			</Space>
 			</>
@@ -920,6 +923,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Services with Network Traffic</Button>
 			
 			</Space>
@@ -947,6 +951,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Hosts with Process Issues</Button>
 
 			<Button onClick={() => {
@@ -966,6 +971,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Processes with Issues</Button>
 			
 
@@ -995,6 +1001,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Hosts with CPU Issues</Button>
 			
 			<Button onClick={() => {
@@ -1013,6 +1020,7 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Hosts with Memory Issues</Button>
 
 			</Space>
@@ -1412,7 +1420,8 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 		// Now close the search modal
 		Modal.destroyAll();
 
-		clusterTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, name : `Cluster '${cluster}'`, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+		clusterTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, name : `Cluster '${cluster}'`, 
+					maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [cluster, addTabCB, remTabCB, isActiveTabCB]);	
 

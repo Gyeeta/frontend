@@ -20,7 +20,7 @@ import {SvcDashboard, svcTableTab} from './svcDashboard.js';
 import {CPUMemPage, cpumemTableTab} from './cpuMemPage.js';
 import {ProcDashboard, procTableTab} from './procDashboard.js';
 import {NetDashboard} from './netDashboard.js';
-import {MultiFilters, HostMultiFilters} from './multiFilters.js';
+import {MultiFilters, HostMultiFilters, SearchWrapConfig} from './multiFilters.js';
 
 import './hostViewPage.css';
 
@@ -1400,7 +1400,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 		const		tendnew = moment(rec.time, moment.ISO_8601).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			svcTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1409,7 +1409,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 		const		tendnew = moment(rec.time, moment.ISO_8601).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
-			procTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+			procTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1418,7 +1418,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 		const		tendnew = moment(rec.time, moment.ISO_8601).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
-			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB});
+			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : tstartnew, endtime : tendnew, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -1830,21 +1830,21 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -2132,21 +2132,21 @@ export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, 
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
 			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
-							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB});
+							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
@@ -2650,7 +2650,7 @@ export function HostInfoFilters({filterCB, linktext})
 }
 
 export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, tableOnRow, aggrfilter, maxrecs, name, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
@@ -2679,6 +2679,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 
 			},
@@ -2712,7 +2713,21 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 			notification.error({message : "Data Fetch Error", description : `Exception during Host State Data fetch : ${emsg}`});
 		}
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.hoststate?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
 
 	if (isloading === false && isapierror === false) { 
 
@@ -2787,14 +2802,14 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					rowKey = !parid ? 'parid' : 'time';
 
 					titlestr = name ? `${name} Host State` : !filter && !parid ? 'Global Host State' : 'Host State';
-					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
+					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
 				}
 				else {
 					rowKey = ((record) => record.time + record.parid);
 
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : ''} Host State`;
 					columns = !useAggr ? hostTimeColumns(!parid) : (aggrMin ? hostRangeTimeColumns(aggrType, !parid) : hostRangeNoSummColumns(aggrType, !parid));
-					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
 
 				hinfo = (
@@ -2802,6 +2817,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 					<Title level={4}>{titlestr}</Title>
 					{timestr}
+					<div style={{ marginBottom: 30 }} />
 					<GyTable columns={columns} onRow={tableOnRow} dataSource={data.hoststate} rowKey={rowKey} scroll={getTableScroll()} />
 					</div>
 					</>
@@ -2838,7 +2854,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 }
 
 export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host States',
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2863,6 +2879,8 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 		}
 	}
 
+	const                           Comp = wrapComp ?? HostStateSearch;
+
 	if (!modal) {
 		const			tabKey = `HostState_${Date.now()}`;
 
@@ -2870,9 +2888,10 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 			() => { return (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
+					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					 recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} /> 
 				</>
 				);
 				}, tabKey, addTabCB);
@@ -2886,7 +2905,8 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} />
 				</>
 				),	
 			width : '90%',	
@@ -3341,7 +3361,7 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 			fstr = newfilter;
 		}	
 
-		hostTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+		hostTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 					
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	

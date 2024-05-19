@@ -20,7 +20,7 @@ import {NetDashboard} from './netDashboard.js';
 import {HostInfoDesc} from './hostViewPage.js';
 import {cpumemTableTab} from './cpuMemPage.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 
 const { ErrorBoundary } = Alert;
@@ -1162,6 +1162,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Host Processes with CPU Delays</Button>
 			
 			
@@ -1182,6 +1183,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Host CPU Memory State</Button>
 			
 			</Space>
@@ -1212,6 +1214,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Host Processes with Memory Delays</Button>
 			
 			
@@ -1232,6 +1235,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get Host CPU Memory State</Button>
 			
 			</Space>
@@ -1262,6 +1266,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 						addTabCB,
 						remTabCB,
 						isActiveTabCB,
+						wrapComp 	: SearchWrapConfig,
 					})}} >Get All Host Processes with Block IO Delays</Button>
 			
 			</Space>
@@ -1707,7 +1712,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 		Modal.destroyAll();
 
 		procTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB});
+				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [parid, procid, addTabCB, remTabCB, isActiveTabCB, objref]);	
 

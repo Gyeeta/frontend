@@ -22,7 +22,7 @@ import 			{NodeApis} from './components/common.js';
 import 			{NetDashboard} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{procDashKey} from './gyeetaTabs.js';
-import 			{MultiFilters, SearchTimeFilter, hostfields} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
 
 const 			{Title} = Typography;
 const 			{Search} = Input;
@@ -2022,7 +2022,7 @@ function ExtProcDesc({rec})
 
 
 export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -2063,6 +2063,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 			timeout 	: useAggr ? 500 * 1000 : 100 * 1000,
@@ -2086,7 +2087,24 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					const			field = isext ? "extprocstate" : "procstate";
+					
+					dataRowsCb(data[field]?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, isext, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = isext ? "extprocstate" : "procstate";
@@ -2095,10 +2113,6 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				if (!customTableColumns) {
@@ -2170,7 +2184,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format()} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? record.procid + record.time);
@@ -2183,7 +2197,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 					columns = !useAggr ? globAggrRangeCol : globAggrGlobAggrCol(aggrType);
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Process State`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (isext && !customColumns) {
@@ -2197,6 +2211,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
 					expandable={isext && !customTableColumns ? { expandedRowRender } : undefined} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
@@ -2229,7 +2244,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 }	
 
 export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2254,6 +2269,8 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 		}
 	}
 
+	const                           Comp = wrapComp ?? ProcStateSearch;
+
 	if (!modal) {
 		const			tabKey = `ProcState_${Date.now()}`;
 
@@ -2261,10 +2278,10 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcStateSearch} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -2276,10 +2293,10 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<ProcStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcStateSearch} />
 				</>
 				),
 			width : '90%',	
@@ -2293,7 +2310,7 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 }	
 
 export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2317,6 +2334,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -2338,7 +2356,21 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.procinfo?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "procinfo";
@@ -2347,10 +2379,6 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 			if (typeof tableOnRow !== 'function') {
 				if (!customTableColumns) {
@@ -2411,7 +2439,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 
 				titlestr = 'Processs Info';
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format()} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.parid ? record.parid : ''));
@@ -2419,7 +2447,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Process Info `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (name) {
@@ -2431,6 +2459,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.procinfo} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
@@ -2462,7 +2491,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 }
 
 export function procInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2487,21 +2516,36 @@ export function procInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTy
 		}
 	}
 
+	const                           Comp = wrapComp ?? ProcinfoSearch;
+
 	if (!modal) {
 		const			tabKey = `Procinfo_${Date.now()}`;
 
 		CreateTab(title ?? "Process Info", 
-			() => { return <ProcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> }, tabKey, addTabCB);
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcinfoSearch} /> 
+					</>
+					);
+				}, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Process Info",
 
-			content : <ProcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />,
+					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcinfoSearch} />
+				</>	
+				),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2958,7 +3002,7 @@ export function ProcDashboard({parid, autoRefresh, refreshSec, starttime, endtim
 		Modal.destroyAll();
 
 		procTableTab({parid, hostname : parid ? objref.current.hostname : undefined, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-					filter : fstr, aggrfilter, name, maxrecs, addTabCB, remTabCB, isActiveTabCB, isext : true});
+					filter : fstr, aggrfilter, name, maxrecs, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 
 	}, [parid, filter, name, addTabCB, remTabCB, isActiveTabCB, objref]);	
 
@@ -2998,6 +3042,7 @@ export function ProcDashboard({parid, autoRefresh, refreshSec, starttime, endtim
 			addTabCB, 
 			remTabCB, 
 			isActiveTabCB,
+			wrapComp 		: SearchWrapConfig,
 		});
 	};
 

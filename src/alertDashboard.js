@@ -1,6 +1,6 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
-import			{Button, Space, Modal, Input, Descriptions, Divider, Typography, Tag, Alert, notification, message, Badge, Radio, Statistic, Empty} from 'antd';
+import			{Button, Space, Modal, Input, Descriptions, Divider, Typography, Tag, Alert, notification, message, Badge, Radio, Statistic} from 'antd';
 
 import 			moment from 'moment';
 import 			axios from 'axios';
@@ -915,7 +915,7 @@ export function AlertSummary({normdata, endtime, modalCount, addTabCB, remTabCB,
 }
 
 export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, title, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -938,6 +938,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns 	: !useAggr ? ['alerttime'] : sortColumns, 
 					sortdir 	: !useAggr ? ['desc'] : (sortColumns ? sortDir : undefined),
+					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
 		};	
@@ -963,7 +964,22 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+
+	useEffect(() => {
+		if (typeof dataRowsCb === 'function') {
+			if (isloading === false) { 
+			  	
+				if (isapierror === false) {
+					dataRowsCb(data.alerts?.length);
+				}
+				else {
+					dataRowsCb(NaN);
+				}	
+			}	
+		}	
+	}, [data, isloading, isapierror, dataRowsCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "alerts";
@@ -972,10 +988,6 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
 			closetab = 30000;
 		}
-		else if (data[field].length === 0) {
-			hinfo = <Alert type="info" showIcon message="No data found on server..." description=<Empty /> />;
-			closetab = 10000;
-		}	
 		else {
 
 			if (typeof tableOnRow !== 'function') {
@@ -1038,6 +1050,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
 				{timestr}
+				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} expandable={!useAggr ? { expandedRowRender } : undefined} expandRowByClick={!useAggr ? true : undefined} 
 					dataSource={data.alerts} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll()} />
 				
@@ -1072,7 +1085,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 
 
 export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1097,6 +1110,8 @@ export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 		}
 	}
 
+	const                           Comp = wrapComp ?? AlertsSearch;
+
 	if (!modal) {
 		const			tabKey = `Alerts_${Date.now()}`;
 
@@ -1104,10 +1119,10 @@ export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-						sortColumns={sortColumns} sortDir={sortDir} /> 
+						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={AlertsSearch} /> 
 					</>
 				);	
 				}, tabKey, addTabCB);
@@ -1119,10 +1134,10 @@ export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<AlertsSearch starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} />
+					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={AlertsSearch} />
 				</>
 				),
 			width : '90%',	
