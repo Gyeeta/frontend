@@ -1,15 +1,19 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
-import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Radio, Statistic, Empty} from 'antd';
+import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Radio, Statistic, Empty, 
+			Space} from 'antd';
+import 			{ CheckSquareTwoTone, CloseOutlined } from '@ant-design/icons';
 
 import 			moment from 'moment';
 import 			axios from 'axios';
+import 			{format} from "d3-format";
 
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
-import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, ButtonModal, usecStrFormat,
-			strTruncateTo, JSONDescription, timeDiffString, splitAndTrim, capitalFirstLetter, LoadingAlert, CreateLinkTab} from './components/util.js';
-import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers} from './multiFilters.js';
+import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, ButtonModal, usecStrFormat, bytesStrFormat,
+			strTruncateTo, JSONDescription, timeDiffString, splitAndTrim, capitalFirstLetter, LoadingAlert, CreateLinkTab,
+			mergeMultiMadhava, getLocalTime} from './components/util.js';
+import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 
@@ -31,7 +35,7 @@ const tracereqfields = [
 	{ field : 'netin',		desc : 'Request Inbound Bytes',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'netout',		desc : 'Response Outbound Bytes',	type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'err',		desc : 'Response Error Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'errtxt',		desc : 'Response Error Text String',	type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'errtxt',		desc : 'Resp Error Text String',	type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'status',		desc : 'HTTP Status Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'app',		desc : 'Client Application String',	type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'user',		desc : 'Client Username String',	type : 'string',	subsys : 'tracereq',	valid : null, },
@@ -42,18 +46,18 @@ const tracereqfields = [
 	{ field : 'tconn',		desc : 'Connection Start Timestamp',	type : 'timestamptz',	subsys : 'tracereq',	valid : null, },
 	{ field : 'cip',		desc : 'Client IP Address',		type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'cport',		desc : 'Client TCP Port',		type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'nreq',		desc : 'Connection Request # from 0',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'nreq',		desc : 'Connection Request #',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'sessid',		desc : 'Server Connection Number',	type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracereq',	valid : null, }	
-	{ field : 'connid',		desc : 'Connection Gyeeta ID',		type : 'string',	subsys : 'tracereq',	valid : null, }	
+	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracereq',	valid : null, },	
+	{ field : 'connid',		desc : 'Connection Gyeeta ID',		type : 'string',	subsys : 'tracereq',	valid : null, },	
 ];
 
 const exttracefields = [
-	{ field : 'cname',		desc : 'Client Process Name',		type : 'string',	subsys : 'exttracereq',	valid : null, }	
-	{ field : 'csvc',		desc : 'Is Client a Service?',		type : 'boolean',	subsys : 'exttracereq',	valid : null, }	
-	{ field : 'cprocid',		desc : 'Client Process Gyeeta ID',	type : 'string',	subsys : 'exttracereq',	valid : null, }	
-	{ field : 'cparid',		desc : 'Client Partha Gyeeta ID',	type : 'string',	subsys : 'exttracereq',	valid : null, },
-	{ field : 'cmadid',		desc : 'Client Partha Madhava ID',	type : 'string',	subsys : 'exttracereq',	valid : null, },
+	{ field : 'cname',		desc : 'Client Process Name',		type : 'string',	subsys : 'exttracereq',	valid : null, },	
+	{ field : 'csvc',		desc : 'Is Client a Service?',		type : 'boolean',	subsys : 'exttracereq',	valid : null, },	
+	{ field : 'cprocid',		desc : 'Client Process Gyeeta ID',	type : 'string',	subsys : 'exttracereq',	valid : null, },	
+	{ field : 'cparid',		desc : 'Client Partha ID',		type : 'string',	subsys : 'exttracereq',	valid : null, },
+	{ field : 'cmadid',		desc : 'Client Madhava ID',		type : 'string',	subsys : 'exttracereq',	valid : null, },
 ];
 
 
@@ -71,8 +75,8 @@ const tracestatusfields = [
 	{ field : 'tlast',		desc : 'Last Status Timestamp',		type : 'timestamptz',	subsys : 'tracestatus',	valid : null, },
 	{ field : 'region',		desc : 'Service Region Name',		type : 'string',	subsys : 'tracestatus',	valid : null, },
 	{ field : 'zone',		desc : 'Service Zone Name',		type : 'string',	subsys : 'tracestatus',	valid : null, },
-	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracestatus',	valid : null, }	
-	{ field : 'defid',		desc : 'Trace Definition ID',		type : 'string',	subsys : 'tracestatus',	valid : null, }	
+	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracestatus',	valid : null, },	
+	{ field : 'defid',		desc : 'Trace Definition ID',		type : 'string',	subsys : 'tracestatus',	valid : null, },	
 ];
 
 const tracehistoryfields = [
@@ -85,7 +89,7 @@ const tracehistoryfields = [
 	{ field : 'time',		desc : 'Timestamp of Record',		type : 'timestamptz',	subsys : 'tracehistory',	valid : null, },
 	{ field : 'region',		desc : 'Service Region Name',		type : 'string',	subsys : 'tracehistory',	valid : null, },
 	{ field : 'zone',		desc : 'Service Zone Name',		type : 'string',	subsys : 'tracehistory',	valid : null, },
-	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracehistory',	valid : null, }	
+	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracehistory',	valid : null, },	
 ];
 
 
@@ -113,7 +117,7 @@ function TraceStateBadge(state)
 	return <Badge color={color} text={state} />;
 }	
 
-function getTracereqColumns(useextFields)
+function getTracereqColumns(useextFields, useHostFields)
 {
 	const colarr = [
 		{
@@ -121,19 +125,20 @@ function getTracereqColumns(useextFields)
 			key :		'time',
 			dataIndex :	'time',
 			gytype :	'string',
-			width :		160,
+			width :		170,
 			fixed : 	'left',
+			render :	(val) => getLocalTime(val, true),
 		},	
 		{
 			title :		'Request API',
 			key :		'req',
 			dataIndex :	'req',
 			gytype : 	'string',
-			render :	(val) => <Button type="link">{strTruncateTo(val, 100)}</Button>,
+			render :	(val) => strTruncateTo(val, 100),
 			width :		300,
 		},	
 		{
-			title :		'Response usec',
+			title :		'Response Time',
 			key :		'resp',
 			dataIndex :	'resp',
 			gytype :	'number',
@@ -150,17 +155,11 @@ function getTracereqColumns(useextFields)
 		},
 		{
 			title :		'Service Name',
-			key :		'name',
-			dataIndex :	'name',
+			key :		'svcname',
+			dataIndex :	'svcname',
 			gytype : 	'string',
 			width : 	120,
-		},	
-		{
-			title :		'Listener Port',
-			key :		'port',
-			dataIndex :	'port',
-			gytype : 	'number',
-			width : 	100,
+			render :	(val) => <Button type="link">{val}</Button>,
 		},	
 		{
 			title :		'Request Bytes',
@@ -181,10 +180,10 @@ function getTracereqColumns(useextFields)
 		{
 			title :		'Error Text',
 			key :		'errtxt',
-			dataIndex :	'ertxtr',
+			dataIndex :	'errtxt',
 			gytype :	'string',
 			width : 	160,
-			render :	(str) => <span style={{ color : 'red' }} >{str}</span>,
+			render :	(str) => <span style={{ color : 'red' }} >{strTruncateTo(str, 50)}</span>,
 			responsive : 	['lg'],
 		},
 		{
@@ -193,6 +192,7 @@ function getTracereqColumns(useextFields)
 			dataIndex :	'app',
 			gytype :	'string',
 			width : 	150,
+			render :	(val) => strTruncateTo(val, 40),
 		},
 		{
 			title :		'Username',
@@ -214,6 +214,7 @@ function getTracereqColumns(useextFields)
 			dataIndex :	'status',
 			gytype : 	'number',
 			width : 	100,
+			render :	(num) => <span style={{ color : num >= 400 ? 'red' : undefined }} >{num}</span>,
 		},	
 		{
 			title :		'Net Protocol',
@@ -245,6 +246,7 @@ function getTracereqColumns(useextFields)
 			gytype : 	'string',
 			width :		160,
 			responsive : 	['lg'],
+			render : 	(val) => timeDiffString(val),
 		},	
 		{
 			title :		'Conn Request #',
@@ -274,13 +276,22 @@ function getTracereqColumns(useextFields)
 				gytype :	'boolean',
 				width : 	100,
 				responsive : 	['lg'],
-				render : 	(val) => (val === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'red'}}/>),
+				render : 	(val) => (val === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'gray'}}/>),
 			},
+			{
+				title :		'Client Proc ID',
+				key :		'cprocid',
+				dataIndex :	'cprocid',
+				gytype : 	'string',
+				responsive : 	['lg'],
+				width :		140,
+			},	
+			
 		);
 
 	}
 
-	colarr.push(
+	if (useHostFields) colarr.push(
 		{
 			title :		'Host',
 			key :		'host',
@@ -310,7 +321,7 @@ export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB
 		return {
 			onClick: event => {
 				Modal.info({
-					title : <span><strong>Service {record.name}</strong></span>,
+					title : <span style={{ textAlign: 'center' }}><strong>{record.svcname} Trace API</strong></span>,
 					content : (
 						<>
 						<TraceReqModalCard rec={record} parid={parid ?? record.parid} endtime={endtime}
@@ -328,31 +339,42 @@ export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB
 	};
 }	
 
-export function TraceReqModalCard({rec, parid, endtime, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
+export function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
 {
-	// TODO
-	return null;
+	const			fieldCols = rec.cname !== undefined ? [...tracereqfields, ...exttracefields] : tracereqfields;
+
+	return (
+		<>
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 200 }} >
+		<h2 style={{ textAlign: 'center' }}>Request API</h2>
+		<p>
+		<code style={{ fontFamily: 'Consolas,"courier new"', fontSize: '105%', textAlign: 'center' }}>{rec.req}</code>
+		</p>
+		</div>
+		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} 
+				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} />
+		</>
+	);	
 }
 
-export function traceSvcTab({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, extraComp = null})
+export function traceMonitorTab({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, wrapComp, extraComp = null, ...props})
 {
-	const			tabKey = `Trace ${svcname ?? ''} ${svcid.slice(0, 5)}`;
+	const				tabKey = `Trace ${svcname ?? ''} ${svcid.slice(0, 5)}`;
+	const				Comp = wrapComp ?? TraceMonitor;
 
 	CreateTab(tabKey, 
 		() => (
 			<>
 			{typeof extraComp === 'function' ? extraComp() : extraComp}
-			<TraceMonitor svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+			<Comp {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} origComp={TraceMonitor} />
 			</>		
 		), tabKey, addTabCB);
 }
 
-
-
-function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
+function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB })
 {
-	const			tarr [];
+	const			tarr = [];
 
 	if (istime) {
 		tarr.push( 
@@ -363,6 +385,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 				gytype :	'string',
 				width :		160,
 				fixed : 	'left',
+				render :	(val) => getLocalTime(val),
 			}
 		);
 	}	
@@ -437,8 +460,8 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 			key :		'tend',
 			dataIndex :	'tend',
 			gytype : 	'string',
-			width : 	120,
-			render : 	(val) => timeDiffString(val, false /* printago */),
+			width : 	140,
+			render : 	(val) => timeDiffString(val, true /* printago */),
 		},
 		{
 			title :		'Region Name',
@@ -476,7 +499,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 		},
 	];
 
-	if (typeof setsvcCB === 'function') {
+	if (typeof getTraceDefCB === 'function') {
 		colarr.push({
 			title :		'Trace Definition',
 			fixed : 	'right',
@@ -484,7 +507,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 			dataIndex :	'setdef',
 			render : 	(_, record) => {
 						return (
-						</>
+						<>
 						{record.defid && (
 							<Button type="link" onClick={() => getTraceDefCB(record.defid)} >Get Trace Definition</Button>
 						)}
@@ -495,34 +518,32 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 
 	}
 
-	if (typeof setsvcCB === 'function') {
 
-		colarr.push({
-			title :		'Monitor Requests',
-			fixed : 	'right',
-			width :		150,
-			dataIndex :	'setmon',
-			render : 	(_, record) => {
-						return (
-						</>
-						{ record.svcid && (
-							<Button onClick={() => traceSvcTab({ 
-								svcid : record.svcid, svcname : record.name, parid : record.parid, 
-								starttime, endtime, addTabCB, remTabCB, isActiveTabCB })} size='small' >Service Trace Monitor</Button>
-						)}
-						</>
-						);
-					},	
-		});	
+	colarr.push({
+		title :		'Monitor Requests',
+		fixed : 	'right',
+		width :		150,
+		dataIndex :	'setmon',
+		render : 	(_, record) => {
+					return (
+					<>
+					{ record.svcid && (
+						<Button onClick={() => traceMonitorTab({ 
+							svcid : record.svcid, svcname : record.name, parid : record.parid, 
+							starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
+							wrapComp : SearchWrapConfig, })} size='small' type='primary' >Set Trace Monitor</Button>
+					)}
+					</>
+					);
+				},	
+	});	
 
-	}	
 
 	return [...tarr, ...colarr];
 }
 
 
 const tracehistoryCol = [
-{
 	{
 		title :		'Time',
 		key :		'time',
@@ -614,7 +635,7 @@ const tracehistoryCol = [
 ];
 
 
-export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
+export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -666,7 +687,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.tracestatus?.length);
 				}
 				else {
@@ -698,7 +719,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Trace Status `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			hinfo = (
@@ -841,7 +862,7 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [doFetch, endtime, filter, maxrecs, starttime, ]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "tracehistory";
@@ -857,20 +878,12 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 		else {
 			let		columns, rowKey, titlestr, timestr;
 
-			if (customColumns && customTableColumns) {
-				columns = customTableColumns;
-				rowKey = "rowid";
-				titlestr = "Trace History";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
-			}
-			else {
-				rowKey = ((record) => record.time + record.svcid);
-				columns = tracehistoryCol;
+			rowKey = ((record) => record.time + record.svcid);
+			columns = tracehistoryCol;
 
-				titlestr = 'Trace History';
+			titlestr = 'Trace History';
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
-			}	
+			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 
 			hinfo = (
 				<>
@@ -908,7 +921,7 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 	);
 }
 
-export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, customColumns, 
+export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, 
 					sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -976,7 +989,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					const			field = isext ? "exttracereq" : "tracereq";
 					
 					dataRowsCb(data[field]?.length);
@@ -1007,13 +1020,13 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			titlestr = 'Trace Requests';
 
 			if (!isrange) {
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss.SSS Z")} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss.SSS Z")} </strong></span>;
 			}
 			else {
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
 			}	
 
-			columns = getTracereqColumns(isext);
+			columns = getTracereqColumns(isext, !parid);
 
 			hinfo = (
 				<>
@@ -1050,6 +1063,72 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		</ErrorBoundary>
 		</>
 	);
+}
+
+export function traceRequestTab({starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title,
+					customColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+{
+	if (starttime || endtime) {
+
+		let mstart = moment(starttime, moment.ISO_8601);
+
+		if (false === mstart.isValid()) {
+			notification.error({message : "Trace Request Query", description : `Invalid starttime specified for Trace Request : ${starttime}`});
+			return;
+		}	
+
+		if (endtime) {
+			let mend = moment(endtime, moment.ISO_8601);
+
+			if (false === mend.isValid()) {
+				notification.error({message : "Trace Request Query", description : `Invalid endtime specified for Trace Request : ${endtime}`});
+				return;
+			}
+			else if (mend.unix() < mstart.unix()) {
+				notification.error({message : "Trace Request Query", description : `Invalid endtime specified for Trace Request : endtime less than starttime : ${endtime}`});
+				return;
+			}	
+		}
+	}
+
+	const                           Comp = wrapComp ?? TracereqSearch;
+
+	if (!modal) {
+		const			tabKey = `Tracereq_${Date.now()}`;
+
+		CreateTab(title ?? "Trace Request", 
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} 
+						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
+					</>	
+				);
+				}, tabKey, addTabCB);
+	}
+	else {
+		Modal.info({
+			title : title ?? "Trace Request",
+
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} 
+					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+					tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
+				</>	
+				),
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : false,
+			okText : 'Close',
+			okType : 'default',
+		});	
+	}	
 }
 
 
@@ -1129,9 +1208,19 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 	);
 }
 
-export function TraceMonitor({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
+export function TraceMonitor({svcid, svcname, parid, starttime, endtime, maxrecs, addTabCB, remTabCB, isActiveTabCB, tabKey, ...props})
 {
-	return <TracereqSearch svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />;
+	const				svcfilter = `{ svcid = '${svcid}' }`;	
+
+	
+	return (
+		<>
+		<TracereqSearch {...props} parid={parid} filter={svcfilter} starttime={starttime} endtime={endtime} maxrecs={maxrecs} 
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} />
+		<div style={{ marginTop : 40 }} />
+		<NetDashboard {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+		</>
+	);
 }
 

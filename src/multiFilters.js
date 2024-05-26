@@ -672,7 +672,7 @@ export function CustomAggrColumns({subsysFields, aggrsubsysFields, addtime, addi
 						key 		:	'time',
 						dataIndex 	:	'time',
 						gytype 		:	'string',
-						width 		:	120,
+						width 		:	140,
 					},
 				);
 			}	
@@ -1590,44 +1590,50 @@ const presetChangeTimeRange = [
 	{ desc : 'Previous 5 mins', 	timeoffsetsec : '-300' },	
 	{ desc : 'Previous 15 mins',	timeoffsetsec : '-900' },	
 	{ desc : 'Previous 30 mins',	timeoffsetsec : '-1800' },	
+	{ desc : 'Previous 60 mins',	timeoffsetsec : '-3600' },	
 	{ desc : 'Next 1 min', 		timeoffsetsec : '60' },	
 	{ desc : 'Next 5 mins', 	timeoffsetsec : '300' },	
 	{ desc : 'Next 15 mins',	timeoffsetsec : '900' },	
 	{ desc : 'Next 30 mins',	timeoffsetsec : '1800' },	
+	{ desc : 'Last 1 min', 		timeoffsetsec : '100060' },	
+	{ desc : 'Last 5 mins', 	timeoffsetsec : '100300' },	
+	{ desc : 'Last 15 mins',	timeoffsetsec : '100900' },	
+	{ desc : 'Last 30 mins',	timeoffsetsec : '101800' },	
 ];
 
 
 export function SearchWrapConfig({starttime, endtime, maxrecs, recoffset, origComp, ...props})
 {
-	const [tstart, settstart] 	= useState(starttime);
-	const [tend, settend] 		= useState(endtime);
-	const [currmax, setmax] 	= useState(maxrecs);
-	const [nrows, setnrows]		= useState(0);
-	const [offset, setoffset] 	= useState(recoffset > 0 ? recoffset : 0);
+	const [{tstart, tend, currmax, offset}, 
+			setstate] 	= useState({tstart : starttime, tend : endtime, currmax : maxrecs, offset : recoffset > 0 ? recoffset : 0 });
 
+	const [nrows, setnrows]		= useState(0);
 	const [form] 			= Form.useForm();
 	const objref 			= useRef({ tstart : starttime, tend :  endtime });
 	const Comp 			= origComp;
 
 	const onFinish = useCallback((values) => {
-
-		settstart(objref.current.tstart);
-		settend(objref.current.tend);
-		setmax(Number(values.maxrecs));
-		setoffset(0);
-
-	}, [objref, settstart, settend, setmax, setoffset]);
+		setstate({ tstart : objref.current.tstart, tend : objref.current.tend, currmax : Number(values.maxrecs), offset : 0});
+	}, [objref, setstate]);
 
 	const onPresetRangeChange = useCallback((value) => {
 		const			secoff = Number(value);
+		const			start = tstart ?? moment().format(); 
+		const			end = tend ?? moment().format(); 
 
 		if (secoff < 0) {
-			objref.current.tstart 	= moment(tstart, moment.ISO_8601).add(secoff, 'seconds').format();
-			objref.current.tend	= tstart;
+			objref.current.tstart 	= moment(start, moment.ISO_8601).add(secoff, 'seconds').format();
+			objref.current.tend	= start;
 		}	
 		else {
-			objref.current.tstart	= tend;
-			objref.current.tend 	= moment(tend, moment.ISO_8601).add(secoff, 'seconds').format();
+			if (secoff > 100000) {
+				objref.current.tstart	= moment().subtract(secoff - 100000, 'seconds').format();
+				objref.current.tend 	= moment().format();
+			}
+			else {
+				objref.current.tstart	= end;
+				objref.current.tend 	= moment(end, moment.ISO_8601).add(secoff, 'seconds').format();
+			}
 		}
 	}, [objref, tstart, tend]);	
 	
@@ -1689,9 +1695,11 @@ export function SearchWrapConfig({starttime, endtime, maxrecs, recoffset, origCo
 			<div style={{ marginLeft: 30, marginRight: 30, marginBottom : 30, border: '1px dotted #7a7aa0', padding : 10, 
 					display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}} >
 			<>		
-			<Button onClick={() => setoffset(offset - currmax)} disabled={offset < currmax}>Get Previous {currmax} records within same time range</Button>
+			<Button onClick={() => setstate(prevstate => ({...prevstate, offset : offset - currmax}))} 
+							disabled={offset < currmax}>Get Previous {currmax} records within same time range</Button>
 			<span>Record Range Returned : {offset + 1} to {nrows + offset}</span>
-			<Button onClick={() => setoffset(offset + currmax)} disabled={nrows < currmax}>Get Next {currmax} records within same time range</Button>
+			<Button onClick={() => setstate(prevstate => ({...prevstate, offset : offset + currmax}))}
+							disabled={nrows < currmax}>Get Next {currmax} records within same time range</Button>
 			</>
 			</div>
 		)}
@@ -1976,7 +1984,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<RangeTimeZonePicker onChange={onRangeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Time Set : {timerange[0].format("MMMM Do HH:mm:ss Z")} to {timerange[1].format("MMMM Do HH:mm:ss Z")})</span> 
+				<span>(Time Set : {timerange[0].format("MMM Do HH:mm:ss Z")} to {timerange[1].format("MMM Do HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>
@@ -1991,7 +1999,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<DateTimeZonePicker onChange={onTimeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Time Set : {timerange[0].format("MMMM Do HH:mm:ss Z")})</span> 
+				<span>(Time Set : {timerange[0].format("MMM Do HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>

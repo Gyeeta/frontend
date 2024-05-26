@@ -25,6 +25,7 @@ import {HostMonitor} from './hostMonitor.js';
 import {SvcMonitor} from './svcMonitor.js';
 import {SvcClusterGroups} from './svcClusterGroups.js';
 import {ProcMonitor} from './procMonitor.js';
+import {tracestatusTab} from './traceDashboard.js';
 import {GyeetaStatusTag, GyeetaStatus} from './aboutStatus.js';
 import {ActionConfig, ActionDashboard} from './alertActions.js';
 import {AlertdefConfig, AlertdefDashboard} from './alertDefs.js';
@@ -434,68 +435,25 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 
 		case traceMonitorKey :
 			
-
 			try {
-				const tableOnRow = (record, rowIndex) => {
-					return {
-						onClick: event => {
-							
-							Modal.destroyAll();
-							
-							if (!record || !record.procid) {
-								return;
-							}	
+				tracestatusTab({
+						starttime 	: moment().subtract(90, 'seconds').format(),
+						endtime 	: moment().format(),
+						useAggr 	: true,
+						aggrMin		: 1000,
+						modal 		: true,
+						filter		: "{ state = 'Active' }",
+						title 		: <h3>List of Active Trace Services. Click on 'Set Trace Monitor' button to monitor that service</h3>,
+						addTabCB	: addTabCB,
+						remTabCB	: remTabCB,
+						isActiveTabCB	: isActiveTabCB,
+					});
 
-							const		tabKey = `procmon${record.procid}`;
-
-							const		procmon = () => (
-								<>
-								<ErrorBoundary>
-								<ProcMonitor procid={record.procid} parid={record.parid} isRealTime={true} 
-										addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
-								</ErrorBoundary>
-								</>
-							);	
-
-							addTabCB('Process Monitor', procmon, tabKey);
-						}	
-					};	
-				};	
-
-				const filterCB = (filter) => {
-					procTableTab({
-							starttime 	: moment().startOf('minute').subtract(3, 'minutes').format(),
-							endtime 	: moment().startOf('minute').format(),
-							useAggr 	: true,
-							aggrMin		: 10,
-							aggrType	: 'max',	
-							filter 		: filter, 
-							isext		: true,
-							modal 		: true,
-							tableOnRow 	: tableOnRow,
-							title 		: 'Select a process to monitor',
-						});
-				};	
-
-				Modal.confirm({
-					title : <Title level={4}>Select Process State Filters based on last 3 minutes Max Aggregated Stats</Title>,
-
-					content : <MultiFilters filterCB={filterCB} filterfields={[...hostfields, ...procstatefields, ...extprocfields]} />,
-					width : '80%',	
-					closable : true,
-					destroyOnClose : true,
-					maskClosable : true,
-					okText : 'Get All Active Processes',
-					onOk : () => filterCB(),
-					okType : 'primary',
-					cancelType : 'primary',
-				});	
-				
 			}
 			catch(e) {
 				let		emsg;
 
-				console.log(`Exception seen for Process Monitor : ${e.response ? JSON.stringify(e.response.data) : e.message}`);
+				console.log(`Exception seen for Trace Monitor : ${e.response ? JSON.stringify(e.response.data) : e.message}`);
 
 				if (e.response && e.response.data) {
 					emsg = e.response.data;
@@ -507,7 +465,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 					emsg = 'Exception Caught';
 				}	
 
-				notification.error({message : "Process Monitor", description : `Exception during data fetch : ${emsg}`});
+				notification.error({message : "Trace Monitor", description : `Exception during data fetch : ${emsg}`});
 			}	
 			break;
 
@@ -1165,7 +1123,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							isext		: true,
 							modal 		: true,
 							tableOnRow 	: tableOnRow,
-							title 		: 'Select a service to monitor',
+							title 		: 'Click on a row to monitor that service',
 						});
 				};	
 
@@ -1243,7 +1201,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							isext		: true,
 							modal 		: true,
 							tableOnRow 	: tableOnRow,
-							title 		: 'Select a service to monitor',
+							title 		: 'Click on a row to monitor that service',
 						});
 				};	
 
@@ -1315,7 +1273,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							filter : filter, 
 							modal : true,
 							tableOnRow : tableOnRow,
-							title : 'Select a cluster to monitor',
+							title : 'Click on a row to monitor that cluster',
 						});
 				};	
 
@@ -1469,7 +1427,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							isext		: true,
 							modal 		: true,
 							tableOnRow 	: tableOnRow,
-							title 		: 'Select a process to monitor',
+							title 		: 'Click on a row to monitor that process',
 						});
 				};	
 
@@ -1547,7 +1505,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 							isext		: true,
 							modal 		: true,
 							tableOnRow 	: tableOnRow,
-							title 		: 'Select a process to monitor',
+							title 		: 'Click on a row to monitor that process',
 						});
 				};	
 

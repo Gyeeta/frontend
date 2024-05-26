@@ -12,7 +12,7 @@ import 			{GyTable, TimeFieldSorter, getTableScroll} from './components/gyTable.
 import			{clusterDashKey} from './gyeetaTabs.js';
 import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, CreateLinkTab, ComponentLife, fixedArrayAddItems, ButtonModal, 
-			capitalFirstLetter, ButtonJSONDescribe, LoadingAlert, JSONDescription} from './components/util.js';
+			capitalFirstLetter, ButtonJSONDescribe, LoadingAlert, JSONDescription, getLocalTime} from './components/util.js';
 import 			{HostDashboard, HostInfoDesc, HostInfoSearch, HostStateSearch, hostTableTab} from './hostViewPage.js';
 import 			{SvcDashboard, svcTableTab} from './svcDashboard.js';
 import 			{ProcDashboard, procTableTab} from './procDashboard.js';
@@ -228,6 +228,7 @@ export const clusterAggrTimeColumns = (aggrType) => {
 		gytype :	'string',
 		sorter :	TimeFieldSorter,
 		defaultSortOrder :	'ascend',
+		render :	(val) => getLocalTime(val),
 	},
 	...clusterAggrColumns(aggrType),
 	];
@@ -241,6 +242,7 @@ export const clusterTimeColumns = [
 		gytype :	'string',
 		sorter :	TimeFieldSorter,
 		defaultSortOrder :	'ascend',
+		render :	(val) => getLocalTime(val),
 	},
 	...clusterColumns,
 ];
@@ -732,7 +734,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.clusterstate?.length);
 				}
 				else {
@@ -1440,10 +1442,10 @@ export function ClusterSummary({normdata, tableOnRow, columns, modalCount, addTa
 
 		if (mstart.isValid()) {
 			if (mend && mend.isValid()) {
-				tstr = `for time range ${starttime} (${mstart.format("MMMM Do YYYY HH:mm:ss.SSS Z")}) to ${endtime} (${mend.format("MMMM Do YYYY HH:mm:ss.SSS Z")})`;
+				tstr = `for time range ${starttime} (${mstart.format("MMM Do YYYY HH:mm:ss.SSS Z")}) to ${endtime} (${mend.format("MMM Do YYYY HH:mm:ss.SSS Z")})`;
 			}	
 			else {
-				tstr = `at ${starttime} (${mstart.format("MMMM Do YYYY HH:mm:ss.SSS Z")})`;
+				tstr = `at ${starttime} (${mstart.format("MMM Do YYYY HH:mm:ss.SSS Z")})`;
 			}	
 		}	
 	}

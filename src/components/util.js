@@ -234,6 +234,20 @@ export function timeDiffString(timestr, printago = true)
 	return timeoffsetString(moment(timestr, moment.ISO_8601).unix() - (Date.now()/1000 | 0), printago);
 }
 
+export function getLocalTime(timestr, dispmsec)
+{
+	if (typeof timestr !== 'string') {
+		return 'Invalid';
+	}
+
+	if (!dispmsec) {
+		return moment(timestr, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss Z");
+	}
+
+	return moment(timestr, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss.SSS Z");
+}
+
+
 export function splitInArray(strin)
 {
 	return '' + strin.split(',').map((str) => `'${str}'`);
@@ -583,14 +597,14 @@ export function JSONDescription({jsondata, titlestr, column = 2, keyNames, field
 	);	
 }	
 
-export function ButtonJSONDescribe({record, buttontext = 'View Complete Record Description', titlestr = 'Record', column, keyNames, fieldCols, xfrmDataCB})
+export function ButtonJSONDescribe({record, buttontext = 'View Complete Record Description', titlestr = 'Record', column, keyNames, fieldCols, xfrmDataCB, ...props})
 {
 	return <ButtonModal buttontext={buttontext} title="Record JSON fields" maskClosable={true} 
 				contentCB={() => <JSONDescription jsondata={record} titlestr={titlestr} column={column} keyNames={keyNames} fieldCols={fieldCols}
-								xfrmDataCB={xfrmDataCB}/>} />	
+								xfrmDataCB={xfrmDataCB} {...props} />} />	
 }	
 
-export function onRowJSONDescribe({titlestr = 'Record', column, keyNames, fieldCols, xfrmDataCB})
+export function onRowJSONDescribe({titlestr = 'Record', column, keyNames, fieldCols, xfrmDataCB, ...props})
 {
 	return (record, rowIndex) => {
 		return {
@@ -600,7 +614,7 @@ export function onRowJSONDescribe({titlestr = 'Record', column, keyNames, fieldC
 					content : (
 						<>
 						<JSONDescription jsondata={record} titlestr={titlestr} column={column} keyNames={keyNames} fieldCols={fieldCols}
-								xfrmDataCB={xfrmDataCB} />	
+								xfrmDataCB={xfrmDataCB} {...props} />	
 						</>
 						),
 
@@ -654,6 +668,11 @@ export function mergeMultiMadhava(origdata, field)
 
 	normdata[field] = [];
 	
+	if (origdata[1].madid && origdata[0].madid && origdata[0][field]) {
+		// Need to preserve order for offset handling...
+		origdata.sort((a, b) => a.madid.localeCompare(b.madid));
+	}
+
 	for (let elem of origdata) {
 		if (elem[field]) {
 			if (safetypeof(elem[field]) === 'array') {

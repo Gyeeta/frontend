@@ -11,7 +11,7 @@ import 			{format} from "d3-format";
 import 			{FixedPrioQueue} from './components/fixedPrioQueue.js';
 import 			{safetypeof, validateApi, fixedArrayAddItems, kbStrFormat, usecStrFormat, useFetchApi, CreateLinkTab, CreateTab, ComponentLife, 
 			mergeMultiMadhava, ButtonModal, capitalFirstLetter, stateEnum, ButtonJSONDescribe, LoadingAlert, JSONDescription, strTruncateTo,
-			getStateColor, getMinEndtime, msecStrFormat} from './components/util.js';
+			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
@@ -533,8 +533,9 @@ export const hostRangeCol = [
 		key :		'time',
 		dataIndex :	'time',
 		gytype :	'string',
-		width :		140,
+		width :		160,
 		fixed : 	'left',
+		render :	(val) => getLocalTime(val),
 	},
 	...hostCol,
 ];
@@ -574,8 +575,9 @@ export const hostAggrCol = (aggrType) => {
 		key :		'time',
 		dataIndex :	'time',
 		gytype :	'string',
-		width :		140,
+		width :		160,
 		fixed : 	'left',
+		render :	(val) => getLocalTime(val),
 	},
 	{
 		title :		'Service Name',
@@ -872,6 +874,7 @@ const extsvcColumns = [
 		dataIndex :	'tstart',
 		gytype : 	'string',
 		width :		160,
+		render : 	(val) => timeDiffString(val),
 	},	
 	{
 		title :		'Region Name',
@@ -980,6 +983,7 @@ function getSvcinfoColumns(istime, useHostFields)
 			gytype :	'string',
 			width :		160,
 			fixed : 	'left',
+			render :	(val) => getLocalTime(val),
 		});
 	}
 
@@ -1014,6 +1018,7 @@ function getSvcinfoColumns(istime, useHostFields)
 			dataIndex :	'tstart',
 			gytype : 	'string',
 			width :		160,
+			render : 	(val) => timeDiffString(val),
 		},	
 		{
 			title :		'5 day p95 Response',
@@ -1186,8 +1191,9 @@ function getSvcsummColumns(istime, useHostFields)
 			key :		'time',
 			dataIndex :	'time',
 			gytype :	'string',
-			width :		140,
+			width :		160,
 			fixed : 	'left',
+			render :	(val) => getLocalTime(val),
 		});
 	}
 
@@ -2381,7 +2387,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 			if (isloading === false) { 
 				const			field = isext ? "extsvcstate" : "svcstate";
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data[field]?.length);
 				}
 				else {
@@ -2450,7 +2456,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss.SSS Z")} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ? moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z") : moment().format("MMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? record.svcid + record.time);
@@ -2461,7 +2467,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				else {
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services State`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (!columns) {
@@ -2627,7 +2633,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.svcinfo?.length);
 				}
 				else {
@@ -2703,7 +2709,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 				titlestr = 'Services Info';
 
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.parid ? record.parid : ''));
@@ -2711,7 +2717,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Service Info `;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (name) {
@@ -2873,7 +2879,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.svcsumm?.length);
 				}
 				else {
@@ -2947,7 +2953,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 
 				titlestr = `Services Summary for Host ${hostname}`;
 
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 			}
 			else {
 				rowKey = ((record) => record.time + record.parid ? record.parid : '');
@@ -2955,7 +2961,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Summary`;
 			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			hinfo = (
@@ -3104,7 +3110,7 @@ export function SvcSummary({normdata, parid, filter, name, hostname, starttime, 
 	const title = (<div style={{ textAlign : 'center' }}>
 		{<><Title level={4}>{titlestr}</Title>
 		<Space>
-		{!isrange && <span style={{ fontSize : 14 }} > at {summstats.time} ({moment(summstats.time, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}) </span>}
+		{!isrange && <span style={{ fontSize : 14 }} > at {summstats.time} ({moment(summstats.time, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")}) </span>}
 		{isrange && <span style={{ fontSize : 14 }} > for Time Range between <em>{starttime}</em> and <em>{endtime}</em> </span>}
 		</Space>
 		</>} 

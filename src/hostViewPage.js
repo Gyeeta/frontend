@@ -9,7 +9,7 @@ import axios from 'axios';
 import {format} from "d3-format";
 
 import {useFetchApi, ComponentLife, ButtonModal, safetypeof, CreateLinkTab, CreateTab, validateApi, mergeMultiMadhava, msecStrFormat,
-	capitalFirstLetter, fixedArrayAddItems, stateEnum, ButtonJSONDescribe, LoadingAlert, getErrorString, JSONDescription} from './components/util.js';
+	capitalFirstLetter, fixedArrayAddItems, stateEnum, ButtonJSONDescribe, LoadingAlert, getErrorString, JSONDescription, getLocalTime} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
 import {SearchTimeFilter} from './multiFilters.js';
 import {HostMonitor} from './hostMonitor.js';
@@ -239,6 +239,7 @@ export const hostTimeColumns = (isglob = true) => {
 		gytype :	'string',
 		width :		140,
 		fixed : 	'left',
+		render :	(val) => getLocalTime(val),
 	},
 	...hostColumns(isglob),
 
@@ -480,7 +481,7 @@ export const hostRangeTimeColumns = (aggrType, isglob = true) => {
 		key :		'time',
 		dataIndex :	'time',
 		gytype :	'string',
-		render : 	!isglob ? ((text) => <Button type="link">{text}</Button>) : undefined,
+		render : 	!isglob ? ((text) => <Button type="link">{getLocalTime(text)}</Button>) : undefined,
 		width :		140,
 		fixed : 	'left',
 	},
@@ -1569,7 +1570,7 @@ export function HostSummary({normdata, onRow, modalCount, addTabCB, remTabCB, is
 					<div style={{ textAlign : 'center' }}>{<em>{desc} <br /> 
 					<Space><span 
 						style={{ fontSize : 14, visibility : (false === moment(normdata.starttime, moment.ISO_8601).isValid()) ? "hidden" : "visible" }} > 
-						at time {normdata.starttime} ({moment(normdata.starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")})</span></Space>
+						at time {normdata.starttime} ({moment(normdata.starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")})</span></Space>
 					</em>} </div> :
 					<span>{desc} retrieval not currently implemented...</span>,
 
@@ -1596,7 +1597,7 @@ export function HostSummary({normdata, onRow, modalCount, addTabCB, remTabCB, is
 		<Space>
 		<span 
 			style={{ fontSize : 14, visibility : (false === moment(normdata.starttime, moment.ISO_8601).isValid()) ? "hidden" : "visible" }} > 
-			at {normdata.starttime} ({moment(normdata.starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss.SSS Z")}) </span>
+			at {normdata.starttime} ({moment(normdata.starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")}) </span>
 		</Space>
 		</em></>} 
 		</div>);
@@ -2719,7 +2720,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.hoststate?.length);
 				}
 				else {
@@ -2802,14 +2803,14 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					rowKey = !parid ? 'parid' : 'time';
 
 					titlestr = name ? `${name} Host State` : !filter && !parid ? 'Global Host State' : 'Host State';
-					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
+					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 				}
 				else {
 					rowKey = ((record) => record.time + record.parid);
 
 					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : ''} Host State`;
 					columns = !useAggr ? hostTimeColumns(!parid) : (aggrMin ? hostRangeTimeColumns(aggrType, !parid) : hostRangeNoSummColumns(aggrType, !parid));
-					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
 
 				hinfo = (

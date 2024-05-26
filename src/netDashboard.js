@@ -16,7 +16,7 @@ import			{SvcInfoDesc} from './svcDashboard.js';
 import			{HostInfoDesc} from './hostViewPage.js';
 import 			{safetypeof, NullID, validateApi, bytesStrFormat, splitInArray, gyMax, ComponentLife, CreateLinkTab, CreateTab, 
 			ButtonJSONDescribe, mergeMultiMadhava, useFetchApi, LoadingAlert, capitalFirstLetter, JSONDescription, strTruncateTo,
-			getMinEndtime, msecStrFormat} from './components/util.js';
+			getMinEndtime, msecStrFormat, timeDiffString, getLocalTime} from './components/util.js';
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import 			{MultiFilters, getInrecsField, hostfields} from './multiFilters.js';
@@ -107,8 +107,9 @@ function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = '
 			key :		'time',
 			dataIndex :	'time',
 			gytype :	'string',
-			width :		140,
+			width :		160,
 			fixed : 	'left',
+			render :	(val) => getLocalTime(val),
 		});
 		
 	}	
@@ -218,6 +219,7 @@ function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = '
 				dataIndex :	'tstart',
 				gytype : 	'string',
 				width :		160,
+				render : 	(val) => timeDiffString(val),
 			},	
 			{
 				title :		'Service Region Name',
@@ -353,8 +355,9 @@ function getClientConnColumns({istime = true, useHostFields, isext, aggrType = '
 			key :		'time',
 			dataIndex :	'time',
 			gytype :	'string',
-			width :		140,
+			width :		160,
 			fixed : 	'left',
+			render :	(val) => getLocalTime(val),
 		});
 		
 	}	
@@ -432,6 +435,7 @@ function getClientConnColumns({istime = true, useHostFields, isext, aggrType = '
 			dataIndex :	'tstart',
 			gytype : 	'string',
 			width :		160,
+			render : 	(val) => timeDiffString(val),
 		},	
 		{
 			title :		'Client Region Name',
@@ -786,7 +790,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					const			field = isext ? "extactiveconn" : "activeconn";
 				
 					dataRowsCb(data[field]?.length);
@@ -1113,7 +1117,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					const			field = isext ? "extclientconn" : "clientconn";
 					
 					dataRowsCb(data[field]?.length);
@@ -2698,6 +2702,7 @@ function FlowEdgeDesc({edge, objref, addTabCB, remTabCB, isActiveTabCB, isTablet
 
 	return (
 		<>
+		<div style={{ marginTop: 30, marginBottom: 50, border: '1px groove #d9d9d9' }} >
 		<Descriptions title={titlestr} bordered={true} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} style={{ textAlign: 'center' }}>
 		
 		<Descriptions.Item label={<em># Total Connections</em>}>{edata.nconns}</Descriptions.Item>
@@ -2715,9 +2720,11 @@ function FlowEdgeDesc({edge, objref, addTabCB, remTabCB, isActiveTabCB, isTablet
 		)}
 
 		</Descriptions>
+		</div>
 
-		<div style={{ marginTop: 30, marginBottom: 50, border: '1px groove #d9d9d9' }} />
+		<div style={{ marginTop: 30, marginBottom: 50, border: '1px groove #d9d9d9' }} >
 		<FlowNodeDesc node={clinode} objref={objref} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} showStats={false} />
+		</div>
 		<div style={{ marginTop: 50, marginBottom: 50, border: '1px groove #d9d9d9' }} >
 		<FlowNodeDesc node={svcnode} objref={objref} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} showStats={false} />
 		</div>
@@ -2774,7 +2781,7 @@ export function NetSummary({objref, summary, addTabCB, remTabCB, isActiveTabCB, 
 	);
 }
 
-export function NetDashboard({svcid, svcname, svcsibling, procid, procname, isprocsvc, parid, autoRefresh, refreshSec, starttime, endtime, useaggregation, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
+export function NetDashboard({svcid, svcname, svcsibling, procid, procname, isprocsvc, parid, autoRefresh, refreshSec, starttime, endtime, useaggregation, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer})
 {
 	const 		objref = useRef(null);
 
@@ -2900,6 +2907,12 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 		objref.current.isPauseRefresh = isPauseRefresh;
 		objref.current.pauseRefresh = isPauseRefresh;
 	}, [isPauseRefresh, objref]);
+
+	useEffect(() => {
+		console.log(`starttime/endtime Changes seen`);
+
+		objref.current.nextfetchtime = Date.now();
+	}, [starttime, endtime, objref]);
 
 	const modalCount = useCallback((isup) => {
 		if (isup === true) {
@@ -3230,6 +3243,7 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			</Space>
 			</div>
 
+			{!iscontainer && (
 			<div style={{ marginLeft : 20 }}>
 			<Space>
 			{autoRefresh && isPauseRefresh === false && (<Button icon={<PauseCircleOutlined />} onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
@@ -3241,6 +3255,7 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 					showTime={true} showRange={true} minAggrRangeMin={0} maxAggrRangeMin={0} disableFuture={true} />
 			</Space>
 			</div>
+			)}
 
 			</div>
 		);
@@ -3367,8 +3382,12 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 
 	return (
 		<>
+		{!iscontainer && (
+		<>
 		<Title level={4}><em>{objref.current.isaggregated ? "Aggregated Network Flows" : "Network Flow Dashboard"}</em></Title>
 		{hdrtag}
+		</>
+		)}
 
 		<ErrorBoundary>
 		{bodycont}

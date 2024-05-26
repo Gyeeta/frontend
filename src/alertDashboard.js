@@ -837,7 +837,7 @@ export function AlertSummary({normdata, endtime, modalCount, addTabCB, remTabCB,
 
 	if (normdata.starttime) {
 		if (!endtime) {
-			tstr = `For Alerts fired in last ${timeDiffString(normdata.starttime, false /* printago */)} at ${moment().format("MMMM Do YYYY HH:mm:ss.SSS Z")}`;
+			tstr = `For Alerts fired in last ${timeDiffString(normdata.starttime, false /* printago */)} at ${moment().format("MMM Do YYYY HH:mm:ss.SSS Z")}`;
 		}	
 		else {
 			tstr = `For Alerts fired between ${normdata.starttime} and ${endtime}`;
@@ -970,7 +970,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.alerts?.length);
 				}
 				else {
@@ -1563,7 +1563,7 @@ export function AlertDashboard({autoRefresh, refreshSec, starttime, endtime, fil
 
 		if (!normdata[0].summary && normdata[0].starttime) {
 			if (!endtime) {
-				title = `List of Alerts fired in last ${timeDiffString(normdata[0].starttime, false /* printago */)} from ${moment().format("MMMM DD YYYY HH:mm:ss.SSS Z")}`;
+				title = `List of Alerts fired in last ${timeDiffString(normdata[0].starttime, false /* printago */)} from ${moment().format("MMM DD YYYY HH:mm:ss.SSS Z")}`;
 			}	
 			else {
 				title = `List of Alerts fired between ${normdata[0].starttime} and ${endtime}`;

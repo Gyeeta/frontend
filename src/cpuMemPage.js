@@ -17,7 +17,7 @@ import {NodeApis} from './components/common.js';
 import {ColumnInfo, fixedSeriesAddItems, getTimeEvent, getTimeSeries, stateColorStyle, stateScatterRadius, getScatterObj, GyLineChart} from './components/gyChart.js';
 import {safetypeof, getStateColor, MBStrFormat, validateApi, CreateRectSvg, CreateCircleSvg, fixedArrayAddItems, ComponentLife,
 	capitalFirstLetter, CreateLinkTab, CreateTab, mergeMultiMadhava, ButtonModal, stateEnum, useFetchApi, LoadingAlert,
-	JSONDescription, getMinEndtime, arrayFilter} from './components/util.js';
+	JSONDescription, getMinEndtime, arrayFilter, getLocalTime} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 import {StateBadge} from './components/stateBadge.js';
@@ -147,9 +147,10 @@ const hostCpuColumns = [
 		title :		'Time',
 		key :		'time',
 		dataIndex :	'time',
-		width :		140,
+		width :		160,
 		gytype :	'string',
 		fixed : 	'left',
+		render :	(val) => getLocalTime(val),
 	},
 	{
 		title :		'CPU State',
@@ -447,9 +448,10 @@ const hostAggrCpuColumns = (aggrType) => {
 		title :		'Time',
 		key :		'time',
 		dataIndex :	'time',
-		width :		140,
+		width :		160,
 		gytype :	'string',
 		fixed : 	'left',
+		render :	(val) => getLocalTime(val),
 	},
 	{
 		title :		'# CPU Bad States',
@@ -1837,7 +1839,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.cpumem?.length);
 				}
 				else {
@@ -1927,7 +1929,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 						}	
 					}	
 
-					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMMM Do YYYY HH:mm:ss Z")} </span>;
+					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 				}
 				else {
 					rowKey = parid ? "time" : ((record) => record.parid + record.time);
@@ -1940,7 +1942,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 						columns = !useAggr ? globCpuColumns : globAggrCpuColumns(aggrType);
 						titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} CPU Memory State`;
 					}	
-					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>;
+					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
 
 				hinfo = (

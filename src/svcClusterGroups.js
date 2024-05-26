@@ -534,9 +534,7 @@ function MeshSvcStateTable({record, starttime, endtime, addTabCB, remTabCB, isAc
 
 			const 			expandedRowRender = (rec) => <ExtSvcDesc rec={rec} />;
 
-			const			timestr = (<span style={{ fontSize : 14, marginTop : 20, marginBottom : 30 }} >
-							<strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong>
-							</span>);
+			const			timestr = (<span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>);
 
 			hinfo = (
 				<>
@@ -737,7 +735,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.svcmeshclust?.length);
 				}
 				else {
@@ -768,8 +766,8 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 				<Title level={4}>List of Interconnected Service Groups</Title>
 
 				<div style={{ marginBottom : 20 }} > 
-					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to 
-								{' '} {moment(tend, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>
+					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to 
+								{' '} {moment(tend, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>
 				</div>
 
 				<GyTable columns={svcmeshCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)} />
@@ -1138,7 +1136,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 		if (typeof dataRowsCb === 'function') {
 			if (isloading === false) { 
 			  	
-				if (isapierror === false) {
+				if (isapierror === false && data) {
 					dataRowsCb(data.svcipclust?.length);
 				}
 				else {
@@ -1169,8 +1167,8 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 				<Title level={4}>List of Virtual IP Based Service Groups</Title>
 
 				<div style={{ marginBottom : 20 }} > 
-					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")} to 
-								{' '} {moment(tend, moment.ISO_8601).format("MMMM Do YYYY HH:mm:ss Z")}</strong></span>
+					<span ><strong>from {moment(tstart, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to 
+								{' '} {moment(tend, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>
 				</div>
 				
 				<GyTable columns={svcipCol(tstart, tend, addTabCB, remTabCB, isActiveTabCB)} dataSource={data[field]} rowKey="rowid" onRow={tableOnRow} scroll={getTableScroll(700, 500)}  />
