@@ -16,6 +16,7 @@ import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, Butto
 import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
+import			{SvcMonitor} from './svcMonitor.js';
 
 const 			{ErrorBoundary} = Alert;
 const 			{Title} = Typography;
@@ -355,21 +356,6 @@ export function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remT
 				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} />
 		</>
 	);	
-}
-
-export function traceMonitorTab({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, wrapComp, extraComp = null, ...props})
-{
-	const				tabKey = `Trace ${svcname ?? ''} ${svcid.slice(0, 5)}`;
-	const				Comp = wrapComp ?? TraceMonitor;
-
-	CreateTab(tabKey, 
-		() => (
-			<>
-			{typeof extraComp === 'function' ? extraComp() : extraComp}
-			<Comp {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} origComp={TraceMonitor} />
-			</>		
-		), tabKey, addTabCB);
 }
 
 function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB })
@@ -1208,10 +1194,45 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 	);
 }
 
+export function traceMonitorTab({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, wrapComp, extraComp = null, ...props})
+{
+	const				tabKey = `Trace ${svcname ?? ''} ${svcid.slice(0, 5)}..`;
+	const				Comp = wrapComp ?? TraceMonitor;
+
+	CreateTab(tabKey, 
+		() => (
+			<>
+			{typeof extraComp === 'function' ? extraComp() : extraComp}
+			<Comp {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} origComp={TraceMonitor} />
+			</>		
+		), tabKey, addTabCB);
+}
+
+
 export function TraceMonitor({svcid, svcname, parid, starttime, endtime, maxrecs, addTabCB, remTabCB, isActiveTabCB, tabKey, ...props})
 {
+	const 				[svcmonkey, setsvcmonkey] = useState(1);
 	const				svcfilter = `{ svcid = '${svcid}' }`;	
+	let				monaggrsec, svcmonstart = starttime;
 
+	useEffect(() => {
+		// Force SvcMonitor to remount
+		setsvcmonkey(prev => prev + 1);
+	}, [starttime, endtime]);
+
+	if (starttime && endtime) {
+		let			endsec = moment(endtime, moment.ISO_8601), startsec = moment(starttime, moment.ISO_8601);
+
+		if (endsec.unix() >= startsec.unix() + 1800) {
+			monaggrsec = 60;
+		}	
+
+		if (endsec.unix() - startsec.unix() < 300) {
+			startsec = endsec.subtract(300, 'seconds');
+			svcmonstart = startsec.format();
+		}	
+	}	
 	
 	return (
 		<>
@@ -1219,6 +1240,9 @@ export function TraceMonitor({svcid, svcname, parid, starttime, endtime, maxrecs
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} />
 		<div style={{ marginTop : 40 }} />
 		<NetDashboard {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+		<div style={{ marginTop : 40 }} />
+		<SvcMonitor {...props} svcid={svcid} svcname={svcname} parid={parid} key={svcmonkey} starttime={svcmonstart} endtime={endtime} aggregatesec={monaggrsec} 
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
 		</>
 	);

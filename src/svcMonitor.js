@@ -383,7 +383,7 @@ function calcSummary(data, summary, isaggregated)
 	}	
 }	
 
-function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, timeSliderIndex, modalCount, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
+function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, timeSliderIndex, modalCount, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile, iscontainer})
 {
 	const 			summary = objref.current.summary;	
 	const			isaggregated = (aggregatesec !== undefined);
@@ -721,7 +721,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 
 		</Descriptions>
 
-		{ lastitem && (
+		{ lastitem && !iscontainer && (
 
 			<Descriptions title={lasttitle} bordered={true} column={{ xxl: 4, xl: 4, lg: 3, md: 3, sm: 2, xs: 1 }} >
 
@@ -856,7 +856,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 	);		
 }
 
-export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile})
+export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer})
 {
 	const 		objref = useRef(null);
 	const		qpsRef = useRef(null), respRef = useRef(null), connRef = useRef(null), netRef = useRef(null), cpuiodelayRef = useRef(null), 
@@ -956,6 +956,15 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		throw new Error(`Internal Error : SvcMonitor validProps check failed`);
 	}	
 
+	useEffect(() => {
+		console.log(`starttime/endtime Changes seen`);
+
+		objref.current.nextfetchtime = Date.now();
+		objref.current.isstarted = false;
+		objref.current.svcinfo = null;
+	}, [starttime, endtime, objref]);
+
+
 	const modalCount = useCallback((isup) => {
 		if (isup === true) {
 			objref.current.modalCount++;
@@ -977,7 +986,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 					return;
 				}
 
-				if (isRealTime) {
+				if (isRealTime || !objref.current.isstarted) {
 					let		isact = true;
 
 					if (tabKey && typeof isActiveTabCB === 'function') {
@@ -1022,7 +1031,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 					timeout 	: isRealTime && !isaggregated ? 10000 : 100000,
 				};
 
-				if (false === isRealTime) {
+				if (!isRealTime) {
 					conf.data.starttime = moment(starttime, moment.ISO_8601).format();
 					conf.data.endtime = moment(endtime, moment.ISO_8601).format();
 
@@ -1775,7 +1784,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		return (
 			<>
 			{<SvcHostSummary parid={parid} objref={objref} isRealTime={isRealTime} aggregatesec={isaggregated ? aggregatesec : undefined} aggroper={aggroper} 
-					timeSliderIndex={timeSliderIndex !== null ? timeSliderIndex : undefined} modalCount={modalCount}
+					timeSliderIndex={timeSliderIndex !== null ? timeSliderIndex : undefined} modalCount={modalCount} iscontainer={iscontainer}
 					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} />}
 			{<h4 style={{ textAlign : 'center', marginTop : 20 }} ><em><strong>Time Range Summary Slider</strong></em></h4>}
 			<div style={{ marginLeft : 70, marginRight : 100 }} >
@@ -2116,8 +2125,8 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		<>
 		<div style={{ marginLeft : 10, marginTop : 10, marginRight : 10 }} >
 
-		<Title level={4}><em>{isaggregated ? "Aggregated" : ""} Service State Monitor</em></Title>
-		{hdrtagall}
+		{!iscontainer && <Title level={4}><em>{isaggregated ? "Aggregated" : ""} Service State Monitor</em></Title>}
+		{!iscontainer && hdrtagall}
 
 		<div style={{ marginTop: 10, padding: 10 }}>
 

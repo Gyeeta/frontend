@@ -3243,19 +3243,17 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			</Space>
 			</div>
 
-			{!iscontainer && (
 			<div style={{ marginLeft : 20 }}>
 			<Space>
-			{autoRefresh && isPauseRefresh === false && (<Button icon={<PauseCircleOutlined />} onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
-			{autoRefresh && isPauseRefresh === true && (<Button icon={<PlayCircleOutlined />} onClick={() => {pauseRefresh(false)}}>Resume Auto Refresh</Button>)}
+			{!iscontainer && autoRefresh && isPauseRefresh === false && (<Button icon={<PauseCircleOutlined />} onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
+			{!iscontainer && autoRefresh && isPauseRefresh === true && (<Button icon={<PlayCircleOutlined />} onClick={() => {pauseRefresh(false)}}>Resume Auto Refresh</Button>)}
 
-			{!autoRefresh && (<Button onClick={() => {onNewAutoRefresh()}}>Get Auto Refreshed Flows</Button>)}
+			{!iscontainer && !autoRefresh && (<Button onClick={() => {onNewAutoRefresh()}}>Get Auto Refreshed Flows</Button>)}
 
 			<TimeRangeAggrModal onChange={onHistorical} title={`Get Historical Data ${objref.current.filterset ? 'with filters' : ''}`} 
 					showTime={true} showRange={true} minAggrRangeMin={0} maxAggrRangeMin={0} disableFuture={true} />
 			</Space>
 			</div>
-			)}
 
 			</div>
 		);
