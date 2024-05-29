@@ -522,6 +522,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 				content : (
 					<>
 					{typeof extraelemcb === 'function' && ( <div style={{ marginBottom : 30 }}> {extraelemcb()} </div>)}
+					<ComponentLife stateCB={modalCount} />
 					<GyTable columns={isaggregated ? hostAggrCol(aggroper) : hostRangeCol} onRow={tableOnRow} 
 							dataSource={arrayFilter(filt, summary.dataarr, firstidx, lastidx, nrecs)} 
 							rowKey={((record) => record.host + record.time)} scroll={getTableScroll()} />
@@ -575,25 +576,25 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 			<Descriptions.Item label={<em>Cluster Name</em>}> <span style={{ fontSize: 14 }}><em>{summary.clustername}</em></span> </Descriptions.Item>
 
 			{svcinfo && <Descriptions.Item label={<em>Service Start Time</em>}>{svcinfo.tstart}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Listener IP</em>}>{svcinfo.ip}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Listener Port</em>}>{svcinfo.port}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Process Command Line</em>}>{svcinfo.cmdline}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Region Name</em>}>{svcinfo.region}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Zone Name</em>}>{svcinfo.zone}</Descriptions.Item>}
-			{svcinfo && svcinfo.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual IP</em>}>{svcinfo.svcip1}</Descriptions.Item>}
-			{svcinfo && svcinfo.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual Port</em>}>{svcinfo.svcport1}</Descriptions.Item>}
-			{svcinfo && svcinfo.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual IP</em>}>{svcinfo.svcip2}</Descriptions.Item>}
-			{svcinfo && svcinfo.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual Port</em>}>{svcinfo.svcport2}</Descriptions.Item>}
-			{svcinfo && svcinfo.svcdns.length > 0 && <Descriptions.Item label={<em>Domain Name</em>}>{svcinfo.svcdns}</Descriptions.Item>}
-			{svcinfo && svcinfo.svctag.length > 0 && <Descriptions.Item label={<em>Service Tag</em>}>{svcinfo.svctag}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Listener IP</em>}>{svcinfo.ip}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Listener Port</em>}>{svcinfo.port}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Process Command Line</em>}>{svcinfo.cmdline}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Region Name</em>}>{svcinfo.region}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Zone Name</em>}>{svcinfo.zone}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual IP</em>}>{svcinfo.svcip1}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual Port</em>}>{svcinfo.svcport1}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual IP</em>}>{svcinfo.svcip2}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual Port</em>}>{svcinfo.svcport2}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svcdns.length > 0 && <Descriptions.Item label={<em>Domain Name</em>}>{svcinfo.svcdns}</Descriptions.Item>}
+			{svcinfo && !iscontainer && svcinfo.svctag.length > 0 && <Descriptions.Item label={<em>Service Tag</em>}>{svcinfo.svctag}</Descriptions.Item>}
 			{getProcInfo && <Descriptions.Item label={<em>Process Info</em>}><Button type='dashed' onClick={getProcInfo} >Get Process Info</Button></Descriptions.Item>}
 			{getProcInfo && <Descriptions.Item label={<em>Process States for duration</em>}>
 				{getProcStateTable('Service Process States', '', summary.starttime, summary.endtime, true)}					
 			</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Current 5 Day p95 Response</em>}>{format(",")(svcinfo.p95resp5d)} msec</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Current 5 Day Avg. Response</em>}>{format(",")(svcinfo.avgresp5d)} msec</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Current p95 QPS</em>}>{format(",")(svcinfo.p95qps)}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Current p95 Active Conns</em>}>{format(",")(svcinfo.p95aconn)}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Current 5 Day p95 Response</em>}>{format(",")(svcinfo.p95resp5d)} msec</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Current 5 Day Avg. Response</em>}>{format(",")(svcinfo.avgresp5d)} msec</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Current p95 QPS</em>}>{format(",")(svcinfo.p95qps)}</Descriptions.Item>}
+			{svcinfo && !iscontainer && <Descriptions.Item label={<em>Current p95 Active Conns</em>}>{format(",")(svcinfo.p95aconn)}</Descriptions.Item>}
 
 			<Descriptions.Item 
 				label={<em># Bad States</em>}>
@@ -856,7 +857,7 @@ function SvcHostSummary({parid, objref, isRealTime, aggregatesec, aggroper, time
 	);		
 }
 
-export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer})
+export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggregatesec, aggregatetype, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer, pauseUpdateCb})
 {
 	const 		objref = useRef(null);
 	const		qpsRef = useRef(null), respRef = useRef(null), connRef = useRef(null), netRef = useRef(null), cpuiodelayRef = useRef(null), 
@@ -964,6 +965,26 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		objref.current.svcinfo = null;
 	}, [starttime, endtime, objref]);
 
+	
+	const setPauseUpdateCb = useCallback(() => {
+		let		isact = true;
+
+		if (typeof pauseUpdateCb !== 'function') {
+			return;
+		}
+
+		if (tabKey && typeof isActiveTabCB === 'function') {
+			isact = isActiveTabCB(tabKey);
+		}
+
+		if (objref.current.isdrilldown || (false === isact) || (objref.current.timeSliderIndex !== null) || (objref.current.modalCount > 0)) {
+			pauseUpdateCb(true);
+		}	
+		else {
+			pauseUpdateCb(false);
+		}	
+		
+	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
 
 	const modalCount = useCallback((isup) => {
 		if (isup === true) {
@@ -972,7 +993,10 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 		else if (isup === false && objref.current.modalCount > 0) {
 			objref.current.modalCount--;
 		}	
-	}, [objref]);	
+
+		setPauseUpdateCb();
+
+	}, [objref, setPauseUpdateCb]);	
 
 	useEffect(() => {
 		
@@ -1375,6 +1399,8 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 
 		objref.current.isdrilldown = isrescale;
 
+		setPauseUpdateCb();
+
 		if (isrescale === false) {
 			return null;
 		}	
@@ -1401,7 +1427,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 
 			default			: return null;
 		}
-	}, [objref, qpsRescaleComps, respRescaleComps, connRescaleComps, netRescaleComps, cpuiodelayRescaleComps, vmdelayRssRescaleComps, cpuRescaleComps]);
+	}, [objref, qpsRescaleComps, respRescaleComps, connRescaleComps, netRescaleComps, cpuiodelayRescaleComps, vmdelayRssRescaleComps, cpuRescaleComps, setPauseUpdateCb]);
 
 	const getRefFromTitle = useCallback((title) => {
 		switch (title) {
@@ -1469,8 +1495,10 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 			setTimeSlider(newindex);
 			objref.current.timeSliderIndex = newindex;
 			objref.current.updtracker = objref.current.prevdatastart[objref.current.prevdatastart.length - 1].time;
+
+			setPauseUpdateCb();
 		}
-	}, [objref]);
+	}, [objref, setPauseUpdateCb]);
 
 	const onTimeSliderAfterChange = useCallback(() => {
 		if (objref && objref.current && objref.current.prevdata) {
@@ -1786,10 +1814,10 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 			{<SvcHostSummary parid={parid} objref={objref} isRealTime={isRealTime} aggregatesec={isaggregated ? aggregatesec : undefined} aggroper={aggroper} 
 					timeSliderIndex={timeSliderIndex !== null ? timeSliderIndex : undefined} modalCount={modalCount} iscontainer={iscontainer}
 					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isTabletOrMobile={isTabletOrMobile} />}
-			{<h4 style={{ textAlign : 'center', marginTop : 20 }} ><em><strong>Time Range Summary Slider</strong></em></h4>}
+			{!iscontainer && (<h4 style={{ textAlign : 'center', marginTop : 20 }} ><em><strong>Time Range Summary Slider</strong></em></h4>)}
 			<div style={{ marginLeft : 70, marginRight : 100 }} >
-			{<Slider marks={getTimeSliderMarks()} min={0} max={objref.current.maxSlider} 
-					onChange={onTimeSliderChange} onAfterChange={onTimeSliderAfterChange} tooltipVisible={false} />}
+			{!iscontainer && (<Slider marks={getTimeSliderMarks()} min={0} max={objref.current.maxSlider} 
+					onChange={onTimeSliderChange} onAfterChange={onTimeSliderAfterChange} tooltipVisible={false} />)}
 			</div>		
 			<div style={{ marginBottom: 30 }}></div>
 			</>

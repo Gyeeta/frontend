@@ -12,11 +12,12 @@ import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, ButtonModal, usecStrFormat, bytesStrFormat,
 			strTruncateTo, JSONDescription, timeDiffString, splitAndTrim, capitalFirstLetter, LoadingAlert, CreateLinkTab,
-			mergeMultiMadhava, getLocalTime} from './components/util.js';
+			mergeMultiMadhava, getLocalTime, useDidMountEffect} from './components/util.js';
 import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
+import			{SvcInfoDesc} from './svcDashboard.js';
 
 const 			{ErrorBoundary} = Alert;
 const 			{Title} = Typography;
@@ -316,7 +317,7 @@ function getTracereqColumns(useextFields, useHostFields)
 	return colarr;
 }
 
-export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB})
+export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount})
 {
 	return (record, rowIndex) => {
 		return {
@@ -325,6 +326,7 @@ export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB
 					title : <span style={{ textAlign: 'center' }}><strong>{record.svcname} Trace API</strong></span>,
 					content : (
 						<>
+						<ComponentLife stateCB={modalCount} />
 						<TraceReqModalCard rec={record} parid={parid ?? record.parid} endtime={endtime}
 								addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 						</>
@@ -358,7 +360,7 @@ export function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remT
 	);	
 }
 
-function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB })
+function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, monAutoRefresh })
 {
 	const			tarr = [];
 
@@ -425,7 +427,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 			render :	(num) => format(",")(num),
 		},
 		{
-			title :		'Is TLS Encrypted?',
+			title :		'TLS Encrypted?',
 			key :		'istls',
 			dataIndex :	'istls',
 			gytype :	'boolean',
@@ -516,8 +518,8 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 					{ record.svcid && (
 						<Button onClick={() => traceMonitorTab({ 
 							svcid : record.svcid, svcname : record.name, parid : record.parid, 
-							starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
-							wrapComp : SearchWrapConfig, })} size='small' type='primary' >Set Trace Monitor</Button>
+							autoRefresh : !!monAutoRefresh, starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
+							})} size='small' type='primary' >Set Trace Monitor</Button>
 					)}
 					</>
 					);
@@ -621,8 +623,26 @@ const tracehistoryCol = [
 ];
 
 
+function getSvcInfo(svcid, parid, starttime, modalCount, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile)
+{
+	Modal.info({
+		title : <span><strong>Service Info</strong></span>,
+		content : (
+			<>
+			<ComponentLife stateCB={modalCount} />
+			<SvcInfoDesc svcid={svcid} parid={parid} starttime={starttime} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+			</>
+			),			
+		width : '90%',	
+		closable : true,
+		destroyOnClose : true,
+		maskClosable : true,
+	});
+}	
+
+
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, monAutoRefresh})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -697,16 +717,15 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 				columns = customTableColumns;
 				rowKey = "rowid";
 				titlestr = "Trace Status";
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.svcid ? record.svcid : ''));
-				columns = getTracestatusColumns({ starttime, endtime, addTabCB, remTabCB, isActiveTabCB });
+				columns = getTracestatusColumns({ starttime, endtime, addTabCB, remTabCB, isActiveTabCB, monAutoRefresh });
 
 				titlestr = `${useAggr ? 'Aggregated ' : ''} Trace Status `;
-			
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
+
+			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 
 			hinfo = (
 				<>
@@ -745,7 +764,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, monAutoRefresh, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -782,7 +801,7 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracestatusSearch} /> 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} monAutoRefresh={monAutoRefresh} origComp={TracestatusSearch} /> 
 					</>	
 				);
 				}, tabKey, addTabCB);
@@ -797,7 +816,7 @@ export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracestatusSearch} />
+					recoffset={recoffset} dataRowsCb={dataRowsCb} monAutoRefresh={monAutoRefresh} origComp={TracestatusSearch} />
 				</>	
 				),
 			width : '90%',	
@@ -908,10 +927,12 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 }
 
 export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, 
-					sortColumns, sortDir, recoffset, dataRowsCb})
+					sortColumns, sortDir, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
+	const 			objref = useRef({ modalCount : 0, });
+
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -939,7 +960,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				starttime,
 				endtime,
 				parid,
-				timeoutsec 	: 100,
+				timeoutsec 		: 180,
 				options : {
 					maxrecs 	: maxrecs,
 					filter		: filter,
@@ -949,7 +970,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
-			timeout : 100 * 1000,
+			timeout : 180 * 1000,
 		};	
 
 		const xfrmresp = (apidata) => {
@@ -987,6 +1008,39 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		}	
 	}, [data, isloading, isapierror, isext, dataRowsCb]);	
 
+	const setPauseUpdateCb = useCallback(() => {
+		let		isact = true;
+
+		if (typeof pauseUpdateCb !== 'function') {
+			return;
+		}
+
+		if (tabKey && typeof isActiveTabCB === 'function') {
+			isact = isActiveTabCB(tabKey);
+		}
+
+		if ((false === isact) || (objref.current.modalCount > 0)) {
+			pauseUpdateCb(true);
+		}	
+		else {
+			pauseUpdateCb(false);
+		}	
+		
+	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
+
+
+	const modalCount = useCallback((isup) => {
+		if (isup === true) {
+			objref.current.modalCount++;
+		}	
+		else if (isup === false && objref.current.modalCount > 0) {
+			objref.current.modalCount--;
+		}	
+
+		setPauseUpdateCb();
+
+	}, [objref, setPauseUpdateCb]);	
+
 
 	if (isloading === false && isapierror === false) { 
 		const			field = isext ? "exttracereq" : "tracereq";
@@ -997,7 +1051,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		}
 		else {
 			if (typeof tableOnRow !== 'function') {
-				tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB});
+				tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
 			}
 
 			let			columns, rowKey, titlestr, timestr;
@@ -1006,10 +1060,10 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			titlestr = 'Trace Requests';
 
 			if (!isrange) {
-				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss.SSS Z")} </strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM DD YYYY HH:mm:ss.SSS Z")} </strong></span>;
 			}
 			else {
-				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss.SSS Z")}</strong></span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss.SSS Z")}</strong></span>;
 			}	
 
 			columns = getTracereqColumns(isext, !parid);
@@ -1038,7 +1092,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		hinfo = <LoadingAlert />;
 	}
 
-	if (closetab > 1000 && tabKey && remTabCB) {
+	if (closetab > 1000 && tabKey && remTabCB && !iscontainer) {
 		remTabCB(tabKey, closetab);
 	}	
 
@@ -1194,56 +1248,515 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 	);
 }
 
-export function traceMonitorTab({svcid, svcname, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, wrapComp, extraComp = null, ...props})
+export function traceMonitorTab({svcid, svcname, parid, autoRefresh, refreshSec, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, extraComp = null, ...props})
 {
-	const				tabKey = `Trace ${svcname ?? ''} ${svcid.slice(0, 5)}..`;
-	const				Comp = wrapComp ?? TraceMonitor;
+	const				tabKey = `Trace ${svcname ?? ''} ${Date.now()}..`;
 
-	CreateTab(tabKey, 
-		() => (
+	CreateTab(`Trace ${svcname ?? ''} ${svcid.slice(0, 5)}..`, 
+		() => {
+		return (
 			<>
 			{typeof extraComp === 'function' ? extraComp() : extraComp}
-			<Comp {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime} 
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} origComp={TraceMonitor} />
+			<TraceMonitor {...props} svcid={svcid} svcname={svcname} parid={parid} autoRefresh={autoRefresh} refreshSec={refreshSec} 
+					starttime={starttime} endtime={endtime} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
 			</>		
-		), tabKey, addTabCB);
+		);
+		}, tabKey, addTabCB);
 }
 
 
-export function TraceMonitor({svcid, svcname, parid, starttime, endtime, maxrecs, addTabCB, remTabCB, isActiveTabCB, tabKey, ...props})
+export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 30, starttime, endtime, maxrecs, addTabCB, remTabCB, isActiveTabCB, tabKey, ...props})
 {
-	const 				[svcmonkey, setsvcmonkey] = useState(1);
-	const				svcfilter = `{ svcid = '${svcid}' }`;	
-	let				monaggrsec, svcmonstart = starttime;
+	const 				objref = useRef({ tracePauseUpdate : false, netPauseUpdate : false, svcMonPauseUpdate : false, pauseRefresh : false,
+								isPauseRefresh : false, refreshSec : refreshSec, tracestatus : null, svcstart : null, svcaggrsec : 0, 
+								nextfetchtime : Date.now(), svcfilter : `{ svcid = '${svcid}' }`, 
+								laststarttime : starttime, lastendtime : endtime, lastAutoRefresh : autoRefresh, 
+								svcinfo : null,});
+	
+	const				[{tstart, tend, svckey, currmax, offset}, setstate] = useState(
+								{ 
+									tstart : (autoRefresh || !starttime) ? moment().subtract(5, 'minutes') : moment(starttime, moment.ISO_8601),
+									tend : (autoRefresh || !endtime) ? moment() : moment(endtime, moment.ISO_8601),
+									svckey : 1,
+									currmax : maxrecs ?? 10000, 
+									offset : 0,
+								});
+	const				[isPauseRefresh, pauseRefresh] = useState(false);
+	const 				[nrows, setnrows] = useState(0);
+	const				[, setForceUpdate] = useState(false);
 
 	useEffect(() => {
-		// Force SvcMonitor to remount
-		setsvcmonkey(prev => prev + 1);
-	}, [starttime, endtime]);
+		console.log(`Trace Monitor initial Effect called...`);
 
-	if (starttime && endtime) {
-		let			endsec = moment(endtime, moment.ISO_8601), startsec = moment(starttime, moment.ISO_8601);
+		return () => {
+			console.log(`Trace Monitor destructor called...`);
+		};	
+	}, []);
 
-		if (endsec.unix() >= startsec.unix() + 1800) {
-			monaggrsec = 60;
+	const validProps = useMemo(() => {	
+
+		if (!svcid) {
+			throw new Error(`Mandatory prop parameter svcid not specified`);
 		}	
 
-		if (endsec.unix() - startsec.unix() < 300) {
-			startsec = endsec.subtract(300, 'seconds');
-			svcmonstart = startsec.format();
+		if (!parid) {
+			throw new Error(`Mandatory prop parameter parid not specified`);
 		}	
+
+		if (autoRefresh) {
+			objref.current.refreshSec = refreshSec;
+
+			if (objref.current.refreshSec < 30) {
+				objref.current.refreshSec = 30;
+			}	
+		}
+
+		objref.current.nextfetchtime = Date.now() + refreshSec * 1000;
+
+		objref.current.svcfilter = `{ svcid = '${svcid}' }`;
+
+		if (addTabCB && typeof addTabCB !== 'function') {
+			throw new Error(`Invalid addTabCB prop specified`);
+		}	
+
+		if (remTabCB && typeof remTabCB !== 'function') {
+			throw new Error(`Invalid remTabCB prop specified`);
+		}	
+
+		if (isActiveTabCB && ((typeof isActiveTabCB !== 'function') || (typeof tabKey !== 'string'))) {
+			throw new Error(`Invalid tab properties specified : tabkey or Active Tab Callback not specified`);	
+		}	
+		
+		return true;
+
+	}, [objref, svcid, parid, autoRefresh, refreshSec, addTabCB, remTabCB, isActiveTabCB, tabKey]);	
+
+	if (validProps === false) {
+		throw new Error(`Internal Error : Service Trace Dashboard validProps check failed`);
 	}	
+
+	useEffect(() => {
+		if (autoRefresh) {
+			return;
+		}	
+
+		if (objref.current.lastAutoRefresh === autoRefresh && objref.current.laststarttime === starttime && objref.current.lastendtime === endtime) {
+			return;
+		}	
+
+		objref.current.nextfetchtime = Date.now() + 1000;
+		
+		setstate((prev) => { 
+			return {
+				...prev,
+				tstart : (autoRefresh || !starttime) ? moment().subtract(1, 'minutes') : moment(starttime, moment.ISO_8601),
+				tend : (autoRefresh || !endtime) ? moment() : moment(endtime, moment.ISO_8601),
+				svckey : prev.svckey + 1, // Force SvcMonitor to remount
+			};	
+		});		
+	}, [autoRefresh, starttime, endtime, objref, setstate]);
+
+	useEffect(() => {
+		console.log(`isPauseRefresh Changes seen : isPauseRefresh = ${isPauseRefresh}`);
+
+		objref.current.isPauseRefresh = isPauseRefresh;
+		objref.current.pauseRefresh = isPauseRefresh;
+	}, [isPauseRefresh, objref]);
+
+	useEffect(() => {
+		
+		let 		timer1;
+
+		timer1 = setTimeout(function apiCall() {
+			try {
+				let		conf, currtime = Date.now();
+				let		compause = (objref.current.tracePauseUpdate || objref.current.netPauseUpdate || objref.current.svcMonPauseUpdate);
+
+				const		oldpause = objref.current.pauseRefresh;
+
+				if (isActiveTabCB && tabKey) {
+					objref.current.pauseRefresh = !isActiveTabCB(tabKey);
+				}
+
+				if (objref.current.isPauseRefresh === true) {
+					objref.current.pauseRefresh = true;
+				}	
+
+				if (compause) {
+					objref.current.pauseRefresh = true;
+				}	
+
+				if (true === objref.current.pauseRefresh || currtime < objref.current.nextfetchtime) {
+					if (oldpause === false && objref.current.pauseRefresh) {
+						setForceUpdate(true);
+					}	
+
+					return;
+				}
+
+				if (!autoRefresh) {
+					objref.current.nextfetchtime = 0;
+					return;
+				}	
+
+				objref.current.nextfetchtime = Date.now() + objref.current.refreshSec * 1000;
+
+				setstate(prev => ({
+							...prev,
+							tstart : moment().subtract(1, 'minute'),
+							tend : moment(),
+							svckey : prev.svckey + 1,
+							offset : 0,
+						}));	
+			}
+			catch(e) {
+				notification.error({message : "Trace Dashboard Error", 
+						description : `Exception occured : ${e.message}`});
+
+				console.log(`Exception caught in Trace effect : ${e}\n${e.stack}\n`);
+
+				if (objref.current.nerrorretries++ < 5) {
+					objref.current.nextfetchtime = Date.now() + 10000;
+				}
+				else {
+					objref.current.nextfetchtime = Date.now() + 60000;
+				}	
+			}	
+			finally {
+				timer1 = setTimeout(apiCall, 500);
+			}
+		}, 1000);
+
+		return () => { 
+			console.log(`Destructor called for Trace interval effect...`);
+			if (timer1) clearTimeout(timer1);
+		};
+		
+	}, [objref, autoRefresh, isActiveTabCB, tabKey, setstate]);	
 	
+	useEffect(() => {
+		
+		let 		timer1;
+
+		timer1 = setTimeout(async function apiCall() {
+			try {
+				let		isact = true;
+
+				if (true === objref.current.pauseRefresh) {
+					if (objref.current.svcinfo) {
+						return;
+					}	
+				}
+
+				if (tabKey && typeof isActiveTabCB === 'function') {
+					isact = isActiveTabCB(tabKey);
+				}
+
+				if (false === isact) {
+					if (objref.current.svcinfo) {
+						return;
+					}	
+				}	
+
+				const conf = 
+				{
+					url 	: NodeApis.svcinfo,
+					method	: 'post',
+					data : {
+						parid 			: parid,
+						options : {
+							filter		: `{ svcid = '${svcid}' }`,
+						},	
+					},
+					timeout 	: 10000,
+				};
+
+				console.log(`Fetching next interval svcinfo data...`);
+
+				let 		res = await axios(conf);
+
+				validateApi(res.data);
+
+				if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && (safetypeof(res.data[0].svcinfo) === 'array')) { 
+					const				stat = res.data[0].svcinfo[0];
+
+					if (safetypeof(stat) === 'object' && stat.name) {
+						objref.current.svcinfo = {
+							name : stat.name,
+							ip : stat.ip,
+							port : stat.port,
+							tstart : stat.tstart,
+							region : stat.region,
+							zone : stat.zone,
+							host : res.data[0].hostinfo?.host,
+							cluster : res.data[0].hostinfo?.cluster,
+						};	
+					}	
+				}
+				else {
+					notification.warning({message : "Service Info Format", description : "No Data or Invalid Data for Service Info query..."});
+				}	
+			}
+			catch(e) {
+				notification.error({message : "Service Info Data Fetch Exception Error", 
+							description : `Exception occured while waiting for new Service Info data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				console.log(`Exception caught while waiting for fetch response of Service Info : ${e}\n${e.stack}\n`);
+			}	
+			finally {
+				// Repeat every 10 min
+				timer1 = setTimeout(apiCall, 600000);
+			}
+		}, 0);
+
+		return () => { 
+			if (timer1) clearTimeout(timer1);
+		};
+		
+	}, [objref, svcid, parid, autoRefresh, tabKey, isActiveTabCB, setForceUpdate]);	
+
+	useEffect(() => {
+		
+		let 		timer1;
+
+		timer1 = setTimeout(async function apiCall() {
+			try {
+				let		isact = true;
+
+				if (true === objref.current.pauseRefresh) {
+					if (objref.current.tracestatus) {
+						return;
+					}	
+				}
+
+				if (tabKey && typeof isActiveTabCB === 'function') {
+					isact = isActiveTabCB(tabKey);
+				}
+
+				if (false === isact) {
+					return;
+				}	
+
+				const conf = 
+				{
+					url 	: NodeApis.tracestatus,
+					method	: 'post',
+					data : {
+						parid 			: parid,
+						options : {
+							filter		: `{ svcid = '${svcid}' }`,
+						},	
+					},
+					timeout 	: 10000,
+				};
+
+				console.log(`Fetching next interval tracestatus data...`);
+
+				let 		res = await axios(conf);
+
+				validateApi(res.data);
+
+				if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && (safetypeof(res.data[0].tracestatus) === 'array')) { 
+					const				stat = res.data[0].tracestatus[0];
+
+					if (safetypeof(stat) !== 'object') {
+						objref.current.tracestatus = { state : 'Inactive' };
+					}	
+					else {
+						objref.current.tracestatus = stat;
+					}	
+				}
+				else {
+					notification.warning({message : "Service Trace Status Format", description : "No Data or Invalid Data for Service Trace Status query..."});
+				}	
+			}
+			catch(e) {
+				notification.error({message : "Service Trace Status Data Fetch Exception Error", 
+							description : `Exception occured while waiting for new Service Trace Status data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				console.log(`Exception caught while waiting for fetch response of Service Trace Status : ${e}\n${e.stack}\n`);
+			}	
+			finally {
+				// Repeat every 60 sec
+				timer1 = setTimeout(apiCall, 60000);
+			}
+		}, 0);
+
+		return () => { 
+			if (timer1) clearTimeout(timer1);
+		};
+		
+	}, [objref, svcid, parid, autoRefresh, tabKey, isActiveTabCB, setForceUpdate]);	
+	
+	const dataRowsCb = useCallback(val => setnrows(Number(val)), [setnrows]);
+
+	const tracereq = useMemo(() => {
+
+		return <TracereqSearch {...props} parid={parid} filter={objref.current.svcfilter} starttime={tstart.format()} endtime={tend.format()} maxrecs={currmax} recoffset={offset}
+				dataRowsCb={dataRowsCb} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} iscontainer={true} />
+
+	}, [parid, objref, props, tstart, tend, currmax, offset, dataRowsCb, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+
+	const tracenet = useMemo(() => {
+
+		return <NetDashboard {...props} svcid={svcid} svcname={svcname} parid={parid} autoRefresh={false} starttime={tstart.format()} endtime={tend.format()}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+
+	}, [svcid, parid, svcname, props, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+
+	const tracesvc = useMemo(() => {
+		let			st;
+
+		if (tend.unix() - tstart.unix() < 300) {
+			st = moment(tend.format(), moment.ISO_8601).subtract(5, 'minute');
+		}	
+		else {
+			st = tstart;
+		}	
+
+		if (!autoRefresh && tend.unix() > tstart.unix() + 1800) {
+			objref.current.svcaggrsec = 60;
+		}	
+		else {
+			objref.current.svcaggrsec = 0;
+		}	
+
+		return <SvcMonitor {...props} svcid={svcid} svcname={svcname} parid={parid} key={svckey} starttime={st.format()} endtime={tend.format()} isRealTime={false}
+				aggregatesec={objref.current.svcaggrsec} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+
+	}, [svcid, parid, svcname, svckey, objref, props, autoRefresh, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+
+
+	const onHistorical = useCallback((date, dateString) => {
+		if (!date || !dateString) {
+			return;
+		}
+
+		let			tstarttime, tendtime;
+
+		if (safetypeof(date) === 'array') {
+			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
+				message.error(`Invalid Historical Date Range set...`);
+				return;
+			}	
+
+			tstarttime = dateString[0];
+			tendtime = dateString[1];
+		}
+		else {
+			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
+				message.error(`Invalid Historical Date set ${dateString}...`);
+				return;
+			}	
+
+			tstarttime = dateString;
+		}
+
+		traceMonitorTab( { svcid, svcname, parid, autoRefresh : false, starttime : tstarttime, endtime : tendtime, maxrecs, 
+					addTabCB, remTabCB, isActiveTabCB } );
+
+	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
+
+
+	const onNewAutoRefresh = useCallback(() => {
+		traceMonitorTab( { svcid, svcname, parid, autoRefresh : true, maxrecs, addTabCB, remTabCB, isActiveTabCB } );
+	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
+
+
+	const optionDiv = (width) => {
+		return (
+			<div style={{ margin: 30, width: width, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', 
+						border: '1px groove #7a7aa0', padding : 10 }} >
+
+			<div>
+			</div>
+
+			<div style={{ marginLeft : 20 }}>
+			<Space>
+			{autoRefresh && isPauseRefresh === false && (<Button onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
+			{autoRefresh && isPauseRefresh === true && (<Button onClick={() => {objref.current.nextfetchtime = Date.now() + 1000; pauseRefresh(false)}}>Resume Auto Refresh</Button>)}
+
+			{!autoRefresh && (<Button onClick={onNewAutoRefresh}>Auto Refreshed Dashboard</Button>)}
+
+			<TimeRangeAggrModal onChange={onHistorical} title='Historical Trace Data'
+					showTime={false} showRange={true} minAggrRangeMin={0} maxAggrRangeMin={0} disableFuture={true} />
+			</Space>
+			</div>
+
+			</div>
+		);
+	};	
+
+	const statusDiv = () => {
+		const			svcinfo = objref.current.svcinfo, tracestatus = objref.current.tracestatus;
+		
+		if (!svcinfo && !tracestatus) {
+			return null;
+		}	
+
+		return (
+		<>
+		<div style={{ padding : 30 }} >
+		<Descriptions bordered={true} column={{ xxl: 4, xl: 3, lg: 3, md: 3, sm: 2, xs: 1 }} >
+			{svcinfo && 
+				<Descriptions.Item label={<em>Service Name</em>}>
+					<Button type='dashed' onClick={() => getSvcInfo(svcid, parid, tstart ? tstart.format() : undefined, undefined, addTabCB, remTabCB, isActiveTabCB)} >
+						{svcinfo.name}
+					</Button>
+				</Descriptions.Item>}
+			{tracestatus && <Descriptions.Item label={<em>Trace Status</em>}>{TraceStateBadge(tracestatus.state)}</Descriptions.Item>}
+			{svcinfo && <Descriptions.Item label={<em>Listener Port</em>}>{svcinfo.port}</Descriptions.Item>}		
+			{tracestatus && tracestatus.state === 'Active' && <Descriptions.Item label={<em>Network Protocol</em>}>{tracestatus.proto}</Descriptions.Item>}
+			{svcinfo && <Descriptions.Item label={<em>Host Name</em>}>{svcinfo.host}</Descriptions.Item>}
+			{svcinfo && <Descriptions.Item label={<em>Cluster</em>}>{svcinfo.cluster}</Descriptions.Item>}
+			{tracestatus && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart)}</Descriptions.Item>}
+			{tracestatus && <Descriptions.Item label={<em>TLS Encrypted?</em>}>
+				{(tracestatus.istls === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : 'No')}
+				</Descriptions.Item>}
+		</Descriptions>
+		</div>
+		</>
+		);
+	};	
+
+	let			hdrtag = null;
+
+	if (autoRefresh && false === objref.current.pauseRefresh && false === isPauseRefresh) {
+		hdrtag = <Tag color='green'>Running with Auto Refresh every {refreshSec} sec</Tag>;
+	}
+	else if (autoRefresh) {
+		hdrtag = (
+			<>
+			<Tag color='green'>Running with Auto Refresh every {refreshSec} sec</Tag>
+			<Tag color='blue'>Auto Refresh Paused</Tag>
+			</>);
+
+	}	
+	else {
+		hdrtag = <Tag color='blue'>Auto Refresh Paused</Tag>;
+	}	
+
 	return (
 		<>
-		<TracereqSearch {...props} parid={parid} filter={svcfilter} starttime={starttime} endtime={endtime} maxrecs={maxrecs} 
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} />
+		<Title level={4}><em>Service Request Trace API Monitor</em></Title>
+		{hdrtag}
+
+		<ErrorBoundary>
+
+		{optionDiv()}
+		{statusDiv()}
+
+		<div style={{ padding : 30 }} >
+		{tracereq}
+		</div>
+		
+		{tracenet}
+		
 		<div style={{ marginTop : 40 }} />
-		<NetDashboard {...props} svcid={svcid} svcname={svcname} parid={parid} starttime={starttime} endtime={endtime}
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
-		<div style={{ marginTop : 40 }} />
-		<SvcMonitor {...props} svcid={svcid} svcname={svcname} parid={parid} key={svcmonkey} starttime={svcmonstart} endtime={endtime} aggregatesec={monaggrsec} 
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+		{tracesvc}
+
+		</ErrorBoundary>
+
 		</>
 	);
 }

@@ -439,6 +439,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				tracestatusTab({
 						starttime 	: moment().subtract(5, 'minutes').format(),
 						endtime 	: moment().format(),
+						monAutoRefresh	: true,
 						useAggr 	: true,
 						aggrMin		: 1000,
 						modal 		: true,

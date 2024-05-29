@@ -2781,7 +2781,7 @@ export function NetSummary({objref, summary, addTabCB, remTabCB, isActiveTabCB, 
 	);
 }
 
-export function NetDashboard({svcid, svcname, svcsibling, procid, procname, isprocsvc, parid, autoRefresh, refreshSec, starttime, endtime, useaggregation, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer})
+export function NetDashboard({svcid, svcname, svcsibling, procid, procname, isprocsvc, parid, autoRefresh, refreshSec, starttime, endtime, useaggregation, addTabCB, remTabCB, isActiveTabCB, tabKey, isTabletOrMobile, iscontainer, pauseUpdateCb})
 {
 	const 		objref = useRef(null);
 
@@ -2826,7 +2826,6 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			inactiveWin		: false,
 			isstarted		: false,
 			isprocessing		: false,
-			timeSliderIndex		: null,
 			sliderTimer		: null,
 			datahistarr		: [],
 		};	
@@ -2914,6 +2913,27 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 		objref.current.nextfetchtime = Date.now();
 	}, [starttime, endtime, objref]);
 
+	const setPauseUpdateCb = useCallback(() => {
+		let		isact = true;
+
+		if (typeof pauseUpdateCb !== 'function') {
+			return;
+		}
+
+		if (tabKey && typeof isActiveTabCB === 'function') {
+			isact = isActiveTabCB(tabKey);
+		}
+
+		if ((false === isact) || (objref.current.modalCount > 0)) {
+			pauseUpdateCb(true);
+		}	
+		else {
+			pauseUpdateCb(false);
+		}	
+		
+	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
+
+
 	const modalCount = useCallback((isup) => {
 		if (isup === true) {
 			objref.current.modalCount++;
@@ -2921,7 +2941,10 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 		else if (isup === false && objref.current.modalCount > 0) {
 			objref.current.modalCount--;
 		}	
-	}, [objref]);	
+
+		setPauseUpdateCb();
+
+	}, [objref, setPauseUpdateCb]);	
 
 	useEffect(() => {
 		
@@ -2946,10 +2969,6 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 						}	
 					}	
 				}
-
-				if (objref.current.timeSliderIndex !== null) {
-					objref.current.pauseRefresh = true;
-				}	
 
  				if (objref.current.modalCount > 0) {
 					objref.current.pauseRefresh = true;
@@ -3276,8 +3295,11 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 		return (
 				<>
 				{alertdata}
+			
+				<div style={{ padding : 30 }} >
 				<NetSummary objref={objref} summary={normdata.summary} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}
 						tabKey={tabKey} modalCount={modalCount} isTabletOrMobile={isTabletOrMobile} />
+				</div>		
 
 				<div style={{ width : width + 40, margin : 'auto' }}>
 				{optionDiv(width, width > window.innerWidth - 60)}

@@ -480,6 +480,15 @@ const hostCol = [
 		responsive : 	['lg'],
 	},
 	{
+		title :		'State Description',
+		key :		'desc',
+		dataIndex :	'desc',
+		gytype :	'string',
+		responsive : 	['lg'],
+		width : 	300,
+		render :	(val) => strTruncateTo(val, 100),
+	},
+	{
 		title :		'# Processes',
 		key :		'nprocs',
 		dataIndex :	'nprocs',
@@ -494,14 +503,6 @@ const hostCol = [
 		gytype :	'number',
 		width : 	100,
 		responsive : 	['lg'],
-	},
-	{
-		title :		'State Description',
-		key :		'desc',
-		dataIndex :	'desc',
-		gytype :	'string',
-		responsive : 	['lg'],
-		width : 	300,
 	},
 ];
 
@@ -855,18 +856,19 @@ const globAggrCol = (aggrType) => {
 
 const extsvcColumns = [
 	{
-		title :		'Listener IP',
-		key :		'ip',
-		dataIndex :	'ip',
-		gytype : 	'string',
-		width :		140,
-	},	
-	{
 		title :		'Listener Port',
 		key :		'port',
 		dataIndex :	'port',
 		gytype : 	'number',
 		width : 	100,
+		fixed :		'left',
+	},	
+	{
+		title :		'Listener IP',
+		key :		'ip',
+		dataIndex :	'ip',
+		gytype : 	'string',
+		width :		140,
 	},	
 	{
 		title :		'Start Time',
@@ -1922,6 +1924,7 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 
 			hinfo = (
 			<>
+			<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
 			<Descriptions title={`Service ${svc.name} Info`} bordered={true} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} style={{ textAlign: 'center' }}>
 
 			<Descriptions.Item label={<em>Host Name</em>}>{data.hostinfo ? data.hostinfo.host : svc.host ? svc.host : 'Unknown'}</Descriptions.Item>
@@ -1947,6 +1950,7 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 			<Descriptions.Item label={<em>Complete Record</em>}>{ButtonJSONDescribe({record : svc, fieldCols : svcinfofields})}</Descriptions.Item>
 
 			</Descriptions>
+			</div>
 
 			<div style={{ marginTop: 36, marginBottom: 16 }}>
 			<Space direction="vertical">
@@ -2183,8 +2187,10 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		<>
 		<ErrorBoundary>
 
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
 		{JSONDescription({jsondata : rec, titlestr : `${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`,
 					fieldCols : [...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields], xfrmDataCB : viewSvcFields })}
+		</div>
 
 		<div style={{ marginTop: 36, marginBottom: 16 }}>
 
@@ -3690,6 +3696,50 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 			);
 		}
 
+		let			columns = [], cols = (!objref.current.isrange ? (parid ? hostCol : globalCol) : hostRangeCol);
+		
+		for (let i = 0; i < cols.length; ++i) {
+			if (cols[i].key === 'name') {
+				columns.push(cols[i], 	{
+								title :		'Listener Port',
+								key :		'port',
+								dataIndex :	'port',
+								gytype : 	'number',
+								width : 	100,
+							});
+			}	
+			else {
+				columns.push(cols[i]);
+			}	
+		}	
+
+		let			colnet = [...columns], p95resp5s, p95resp5m, kbin15s, kbout15s;
+
+		for (let i = 0; i < colnet.length; ++i) {
+			if (colnet[i].key === 'p95resp5s') {
+				p95resp5s = i;
+			}	
+			else if (colnet[i].key === 'p95resp5m') {
+				p95resp5m = i;
+			}	
+			else if (colnet[i].key === 'kbin15s') {
+				kbin15s = i;
+			}	
+			else if (colnet[i].key === 'kbout15s') {
+				kbout15s = i;
+			}	
+		}	
+
+		if (p95resp5s && p95resp5m && kbin15s && kbout15s) {
+			let			col = colnet[p95resp5s], col2 = colnet[p95resp5m];
+
+			colnet[p95resp5s] = colnet[kbin15s];
+			colnet[kbin15s] = col;
+
+			colnet[p95resp5m] = colnet[kbout15s];
+			colnet[kbout15s] = col2;
+		}	
+
 		return (
 				<>
 				{alertdata}
@@ -3718,30 +3768,28 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 16 }} >
 				<Title level={4}>Top {parid && !objref.current.isrange ? 10 : 50} Services with Issues</Title>
-				<GyTable columns={!objref.current.isrange ? (parid ? hostCol : globalCol) : hostRangeCol} dataSource={normdata[0].topissue} onRow={tableOnRow} 
+				<GyTable columns={columns} dataSource={normdata[0].topissue} onRow={tableOnRow} 
 						rowKey={!objref.current.isrange ? "svcid" : ((record) => record.svcid + record.time)} 
 						modalCount={modalCount} scroll={getTableScroll()} />
 				</div>
 
 				<div style={{ textAlign: 'center', marginTop: 70, marginBottom: 16 }} >
 				<Title level={4}>Services with Top Queries/sec (QPS)</Title>
-				<GyTable columns={!objref.current.isrange ? (parid ? hostCol : globalCol) : hostRangeCol} 
-						dataSource={normdata[0].topqps} onRow={tableOnRow} 
+				<GyTable columns={columns} dataSource={normdata[0].topqps} onRow={tableOnRow} 
 						rowKey={!objref.current.isrange ? "svcid" : ((record) => record.svcid + record.time)}
 						modalCount={modalCount} scroll={getTableScroll()} />
 				</div>
 
 				<div style={{ textAlign: 'center', marginTop: 70, marginBottom: 16 }} >
 				<Title level={4}>Services with Max Active Connections</Title>
-				<GyTable columns={!objref.current.isrange ? (parid ? hostCol : globalCol) : hostRangeCol} 
-						dataSource={normdata[0].topactconn} onRow={tableOnRow} 
+				<GyTable columns={columns} dataSource={normdata[0].topactconn} onRow={tableOnRow} 
 						rowKey={!objref.current.isrange ? "svcid" : ((record) => record.svcid + record.time)}
 						modalCount={modalCount} scroll={getTableScroll()} />
 				</div>
 
 				<div style={{ textAlign: 'center', marginTop: 70, marginBottom: 16 }} >
 				<Title level={4}>Services with Max Network In + Out Traffic</Title>
-				<GyTable columns={!objref.current.isrange ? (parid ? hostCol : globalCol) : hostRangeCol} dataSource={normdata[0].topnet} onRow={tableOnRow} 
+				<GyTable columns={colnet} dataSource={normdata[0].topnet} onRow={tableOnRow} 
 						rowKey={!objref.current.isrange ? "svcid" : ((record) => record.svcid + record.time)}
 						modalCount={modalCount} scroll={getTableScroll()} />
 				</div>

@@ -1647,12 +1647,13 @@ export function SearchWrapConfig({starttime, endtime, maxrecs, recoffset, origCo
 
 	}, [objref]);	
 
+	const dataRowsCb = useCallback(val => setnrows(Number(val)), [setnrows]);
+
 	const component = useMemo(() => {
 
-		return <Comp {...props} starttime={tstart} endtime={tend} maxrecs={currmax} recoffset={offset > 1 ? offset : undefined} 
-						dataRowsCb={(val) => setnrows(Number(val))} />;
+		return <Comp {...props} starttime={tstart} endtime={tend} maxrecs={currmax} recoffset={offset > 1 ? offset : undefined} dataRowsCb={dataRowsCb} />;
 
-	}, [tstart, tend, currmax, offset, props, setnrows]);	
+	}, [tstart, tend, currmax, offset, props, dataRowsCb]);	
 
 	if (!Comp) return null;
 
