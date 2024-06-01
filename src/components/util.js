@@ -1,6 +1,6 @@
 
 import 		React, { useState, useEffect, useReducer, useRef } from 'react';
-import 		{Alert, Button, Modal, Descriptions, Spin} from 'antd';
+import 		{Alert, Button, Modal, Descriptions, Spin, InputNumber} from 'antd';
 import 		axios from 'axios';
 import 		moment from 'moment';
 
@@ -466,6 +466,27 @@ export function ButtonModal({buttontext, buttontype, title, contentCB, width = '
 	return <Button type={buttontype} onClick={modonclick} >{buttontext}</Button>;
 }
 
+// Number Input with Button 
+export function NumButton({max, min, defaultValue, okText = 'Set Input', buttontype, onCB, ...props})
+{
+	const [currval, setval] = useState(defaultValue);
+
+	const onset = () => {
+		if (typeof onCB === 'function') {
+			onCB(currval);
+		}	
+	};
+
+	return (
+		<>
+		<div style={{ display: 'inline-flex', }} >
+		<InputNumber {...props} min={min} max={max} defaultValue={defaultValue} value={currval} onChange={setval} />
+		<Button type={buttontype} onClick={onset} disabled={typeof currval !== 'number'}>{okText}</Button>
+		</div>
+		</>
+	);	
+}
+	
 // Sorts in-place
 export function sortTimeArray(arr, field = 'time')
 {

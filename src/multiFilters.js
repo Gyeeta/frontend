@@ -19,6 +19,8 @@ import		{hoststatefields, aggrhoststatefields, HostStateMultiQuickFilter, HostSt
 		hostinfofields, HostInfoFilters, hostinfoTableTab} from './hostViewPage.js';
 import		{cpumemfields, aggrcpumemfields, CpuMemMultiQuickFilter, CpuMemAggrFilter, cpumemTableTab} from './cpuMemPage.js';
 import		{svcmeshclustfields, SvcMeshFilter, svcMeshTab, svcipclustfields, SvcVirtIPFilter, svcVirtIPTab} from './svcClusterGroups.js';
+import		{tracereqfields, exttracefields, tracestatusfields, aggrtracestatusfields, tracereqTableTab, tracestatusTableTab, 
+		TracereqMultiQuickFilter, TracestatusMultiFilter, TracestatusAggrFilter} from './traceDashboard.js';
 
 import		{alertsfields, aggralertsfields, AlertMultiQuickFilter, AlertAggrFilter, alertsTableTab} from './alertDashboard.js';
 import		{alertdeffields, AlertdefMultiQuickFilter, alertdefTableTab} from './alertDefs.js';
@@ -264,8 +266,9 @@ export function getFieldsFromTableColumns(colarr, subsys, extraarr = [])
 export const subsysCategories = [
 	{ name : 'Service',		value : 'service' },
 	{ name : 'Process',		value : 'process' },
-	{ name : 'Cluster',		value : 'cluster' },
 	{ name : 'Network',		value : 'network' },
+	{ name : 'Trace',		value : 'trace' },
+	{ name : 'Cluster',		value : 'cluster' },
 	{ name : 'Hosts',		value : 'hosts' },
 	{ name : 'Alerts',		value : 'alerts' },
 ];
@@ -278,11 +281,11 @@ export const getSubsysFromCategory = (category) => {
 	return [ 
 		{ name : 'Extended Service State', 		value : 'extsvcstate',		skipalert : false, },
 		{ name : 'Service State', 			value : 'svcstate',		skipalert : false, },
-		{ name : 'Service Summary', 			value : 'svcsumm',		skipalert : false, },
 		{ name : 'Extended Inbound Network Stats',	value : 'extactiveconn',	skipalert : false, },
-		{ name : 'Service Inbound Network Stats', 	value : 'activeconn',		skipalert : false, },
+		{ name : 'Extended Trace Request',		value : 'exttracereq',		skipalert : true, },
 		{ name : 'Interconnected Service Groups',	value : 'svcmeshclust',		skipalert : true, },
 		{ name : 'Virtual IP Service Groups',		value : 'svcipclust',		skipalert : true, },
+		{ name : 'Service Summary', 			value : 'svcsumm',		skipalert : false, },
 		{ name : 'Service Info', 			value : 'svcinfo',		skipalert : false, },
 	];
 
@@ -299,11 +302,6 @@ export const getSubsysFromCategory = (category) => {
 		*/
 	];	
 
-	case 'cluster'	:	
-	return [ 
-		{ name : 'Cluster State', 			value : 'clusterstate',		skipalert : false, },
-	];
-
 	case 'network'	:	
 	return [ 
 		{ name : 'Extended Service Inbound Network',	value : 'extactiveconn',	skipalert : false, },
@@ -311,6 +309,20 @@ export const getSubsysFromCategory = (category) => {
 		{ name : 'Extended Client Outbound Network',	value : 'extclientconn',	skipalert : false, },
 		{ name : 'Client Outbound Network Stats', 	value : 'clientconn',		skipalert : false, },
 	];
+
+	case 'trace'	:	
+	return [ 
+		{ name : 'Extended Trace Request',		value : 'exttracereq',		skipalert : true, },
+		{ name : 'Trace Request', 			value : 'tracereq',		skipalert : true, },
+		{ name : 'Trace Status',			value : 'tracestatus',		skipalert : true, },
+		{ name : 'Trace Definitions', 			value : 'tracedef',		skipalert : true, },
+	];
+
+	case 'cluster'	:	
+	return [ 
+		{ name : 'Cluster State', 			value : 'clusterstate',		skipalert : false, },
+	];
+
 
 	case 'hosts'	:	
 	return [
@@ -449,7 +461,33 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			tablecb		: (params) => clientConnTab({...params, isext : true}),
 		};	
 
-	
+	case 'exttracereq' :
+		return {
+			fields 		: !useHostFields ? [...tracereqfields, ...exttracefields] : [...hostfields, ...tracereqfields, ...exttracefields],
+			aggrfields	: undefined,
+			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params, isext : true, }),
+			aggrfiltercb	: undefined,
+			tablecb		: (params) => tracereqTableTab({...params, isext : true}),
+		};	
+
+	case 'tracereq' :
+		return {
+			fields 		: !useHostFields ? tracereqfields : [...hostfields, ...tracereqfields],
+			aggrfields	: undefined,
+			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params}),
+			aggrfiltercb	: undefined,
+			tablecb		: tracereqTableTab,
+		};	
+
+	case 'tracestatus' :
+		return {
+			fields 		: !useHostFields ? tracestatusfields : [...hostfields, ...tracestatusfields],
+			aggrfields	: aggrtracestatusfields,
+			filtercb	: (params) => TracestatusMultiFilter({useHostFields, ...params}),
+			aggrfiltercb	: TracestatusAggrFilter,
+			tablecb		: tracestatusTableTab,
+		};	
+
 	case 'procstate' :
 		return {
 			fields 		: !useHostFields ? procstatefields : [...hostfields, ...procstatefields],
@@ -1471,7 +1509,7 @@ export function MultiFilters({filterCB, filterfields, useHostFields})
 export function SearchTimeFilter({callback, title = 'Search', timecompcb, filtercompcb, aggrfiltercb, rangefiltermandatory = false, ismaxrecs, maxallowedrecs, defaultmaxrecs})
 {
 	const			[timeobj, settimeobj] = useState(null);
-	const			[isfilter, setisfilter] = useState(true);
+	const			[isfilter, setisfilter] = useState(!!filtercompcb);
 	const			[filterstr, setfilterstr] = useState('');
 	const			[aggrfilterstr, setaggrfilterstr] = useState('');
 	const			[maxrecs, setmaxrecs] = useState(ismaxrecs === true ? defaultmaxrecs ?? maxallowedrecs ?? 10000000 : 10000000);
@@ -1945,7 +1983,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		<>
 		<ErrorBoundary>
 
-		<Title level={4} style={{ textAlign : 'left', marginBottom : 30, }} ><em>{title ?? "Global Search"}</em></Title>
+		<Title level={4} style={{ textAlign : 'center', marginBottom : 30, }} ><em>{title ?? "Global Search"}</em></Title>
 		
 		<Form {...formItemLayout} form={form} name="search" onFinish={onFinish} scrollToFirstError >
 
@@ -2037,7 +2075,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 				{!filterstr && <SubsysFilterCB filterCB={onfiltercb} linktext={canaggr ? "Set Pre-Aggregation Multi Filters" : "Set Multi Filters"} quicklinktext="Set Quick Filters" />}
 				{filterstr && (
-					<Button onClick={() => setfilterstr()} >{useAggr ? "Reset Pre-Aggregation Filters" : "Reset Filters"}</Button>
+					<Button onClick={() => setfilterstr()} >{canaggr ? "Reset Pre-Aggregation Filters" : "Reset Filters"}</Button>
 				)}
 				
 			</Form.Item>

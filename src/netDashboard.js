@@ -2914,24 +2914,19 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 	}, [starttime, endtime, objref]);
 
 	const setPauseUpdateCb = useCallback(() => {
-		let		isact = true;
 
 		if (typeof pauseUpdateCb !== 'function') {
 			return;
 		}
 
-		if (tabKey && typeof isActiveTabCB === 'function') {
-			isact = isActiveTabCB(tabKey);
-		}
-
-		if ((false === isact) || (objref.current.modalCount > 0)) {
+		if (objref.current.modalCount > 0) {
 			pauseUpdateCb(true);
 		}	
 		else {
 			pauseUpdateCb(false);
 		}	
 		
-	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
+	}, [objref, pauseUpdateCb]);	
 
 
 	const modalCount = useCallback((isup) => {

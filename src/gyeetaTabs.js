@@ -25,7 +25,7 @@ import {HostMonitor} from './hostMonitor.js';
 import {SvcMonitor} from './svcMonitor.js';
 import {SvcClusterGroups} from './svcClusterGroups.js';
 import {ProcMonitor} from './procMonitor.js';
-import {tracestatusTab} from './traceDashboard.js';
+import {tracestatusTableTab} from './traceDashboard.js';
 import {GyeetaStatusTag, GyeetaStatus} from './aboutStatus.js';
 import {ActionConfig, ActionDashboard} from './alertActions.js';
 import {AlertdefConfig, AlertdefDashboard} from './alertDefs.js';
@@ -436,7 +436,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 		case traceMonitorKey :
 			
 			try {
-				tracestatusTab({
+				tracestatusTableTab({
 						starttime 	: moment().subtract(5, 'minutes').format(),
 						endtime 	: moment().format(),
 						monAutoRefresh	: true,

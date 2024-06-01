@@ -967,24 +967,19 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 
 	
 	const setPauseUpdateCb = useCallback(() => {
-		let		isact = true;
 
 		if (typeof pauseUpdateCb !== 'function') {
 			return;
 		}
 
-		if (tabKey && typeof isActiveTabCB === 'function') {
-			isact = isActiveTabCB(tabKey);
-		}
-
-		if (objref.current.isdrilldown || (false === isact) || (objref.current.timeSliderIndex !== null) || (objref.current.modalCount > 0)) {
+		if (objref.current.isdrilldown || (objref.current.timeSliderIndex !== null) || (objref.current.modalCount > 0)) {
 			pauseUpdateCb(true);
 		}	
 		else {
 			pauseUpdateCb(false);
 		}	
 		
-	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
+	}, [objref, pauseUpdateCb]);	
 
 	const modalCount = useCallback((isup) => {
 		if (isup === true) {

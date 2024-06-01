@@ -1,7 +1,7 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
-import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Radio, Statistic, Empty, 
-			Space} from 'antd';
+import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Empty, 
+			Space, Popover} from 'antd';
 import 			{ CheckSquareTwoTone, CloseOutlined } from '@ant-design/icons';
 
 import 			moment from 'moment';
@@ -10,9 +10,9 @@ import 			{format} from "d3-format";
 
 import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
-import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, ButtonModal, usecStrFormat, bytesStrFormat,
-			strTruncateTo, JSONDescription, timeDiffString, splitAndTrim, capitalFirstLetter, LoadingAlert, CreateLinkTab,
-			mergeMultiMadhava, getLocalTime, useDidMountEffect} from './components/util.js';
+import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecStrFormat, bytesStrFormat,
+			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab,
+			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
 import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
@@ -31,7 +31,7 @@ const traceStatusEnum = [
 	'Active', 'Stopped', 'Failed', 'Starting', 
 ];
 
-const tracereqfields = [
+export const tracereqfields = [
 	{ field : 'req',		desc : 'Trace Request API',		type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'resp',		desc : 'Response in usec',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'netin',		desc : 'Request Inbound Bytes',		type : 'number',	subsys : 'tracereq',	valid : null, },
@@ -40,7 +40,7 @@ const tracereqfields = [
 	{ field : 'errtxt',		desc : 'Resp Error Text String',	type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'status',		desc : 'HTTP Status Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'app',		desc : 'Client Application String',	type : 'string',	subsys : 'tracereq',	valid : null, },
-	{ field : 'user',		desc : 'Client Username String',	type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'user',		desc : 'Login Username String',		type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'db',			desc : 'Database Name',			type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'svcname',		desc : 'Service Name',			type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'proto',		desc : 'Network Protocol',		type : 'enum',		subsys : 'tracereq',	valid : null, 		esrc : createEnumArray(protocolEnum) },
@@ -54,7 +54,7 @@ const tracereqfields = [
 	{ field : 'connid',		desc : 'Connection Gyeeta ID',		type : 'string',	subsys : 'tracereq',	valid : null, },	
 ];
 
-const exttracefields = [
+export const exttracefields = [
 	{ field : 'cname',		desc : 'Client Process Name',		type : 'string',	subsys : 'exttracereq',	valid : null, },	
 	{ field : 'csvc',		desc : 'Is Client a Service?',		type : 'boolean',	subsys : 'exttracereq',	valid : null, },	
 	{ field : 'cprocid',		desc : 'Client Process Gyeeta ID',	type : 'string',	subsys : 'exttracereq',	valid : null, },	
@@ -63,7 +63,7 @@ const exttracefields = [
 ];
 
 
-const tracestatusfields = [
+export const tracestatusfields = [
 	{ field : 'name',		desc : 'Service Name',			type : 'string',	subsys : 'tracestatus',	valid : null, },
 	{ field : 'port',		desc : 'Listener Port',			type : 'number',	subsys : 'tracestatus',	valid : null, },
 	{ field : 'state',		desc : 'Trace Status',			type : 'enum',		subsys : 'tracestatus',	valid : null, 		esrc : createEnumArray(traceStatusEnum) },
@@ -79,6 +79,11 @@ const tracestatusfields = [
 	{ field : 'zone',		desc : 'Service Zone Name',		type : 'string',	subsys : 'tracestatus',	valid : null, },
 	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracestatus',	valid : null, },	
 	{ field : 'defid',		desc : 'Trace Definition ID',		type : 'string',	subsys : 'tracestatus',	valid : null, },	
+];
+
+export const aggrtracestatusfields = [
+	...tracestatusfields,
+	{ field : 'inrecs',		desc : '# Records in Aggregation',	type : 'number',	subsys : 'tracestatus',	valid : null, },
 ];
 
 const tracehistoryfields = [
@@ -197,7 +202,7 @@ function getTracereqColumns(useextFields, useHostFields)
 			render :	(val) => strTruncateTo(val, 40),
 		},
 		{
-			title :		'Username',
+			title :		'Login Username',
 			key :		'user',
 			dataIndex :	'user',
 			gytype :	'string',
@@ -317,7 +322,7 @@ function getTracereqColumns(useextFields, useHostFields)
 	return colarr;
 }
 
-export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount})
+function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount})
 {
 	return (record, rowIndex) => {
 		return {
@@ -342,7 +347,7 @@ export function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB
 	};
 }	
 
-export function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
+function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
 {
 	const			fieldCols = rec.cname !== undefined ? [...tracereqfields, ...exttracefields] : tracereqfields;
 
@@ -763,7 +768,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 	);
 }
 
-export function tracestatusTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
+export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, monAutoRefresh, extraComp = null})
 {
 	if (starttime || endtime) {
@@ -926,7 +931,7 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 	);
 }
 
-export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, 
+export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, titlestr, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, 
 					sortColumns, sortDir, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -1009,24 +1014,18 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 	}, [data, isloading, isapierror, isext, dataRowsCb]);	
 
 	const setPauseUpdateCb = useCallback(() => {
-		let		isact = true;
-
 		if (typeof pauseUpdateCb !== 'function') {
 			return;
 		}
 
-		if (tabKey && typeof isActiveTabCB === 'function') {
-			isact = isActiveTabCB(tabKey);
-		}
-
-		if ((false === isact) || (objref.current.modalCount > 0)) {
+		if (objref.current.modalCount > 0) {
 			pauseUpdateCb(true);
 		}	
 		else {
 			pauseUpdateCb(false);
 		}	
 		
-	}, [objref, pauseUpdateCb, tabKey, isActiveTabCB]);	
+	}, [objref, pauseUpdateCb]);	
 
 
 	const modalCount = useCallback((isup) => {
@@ -1054,10 +1053,9 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
 			}
 
-			let			columns, rowKey, titlestr, timestr;
+			let			columns, rowKey, timestr;
 
 			rowKey = 'rowid';
-			titlestr = 'Trace Requests';
 
 			if (!isrange) {
 				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM DD YYYY HH:mm:ss.SSS Z")} </strong></span>;
@@ -1071,7 +1069,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? 'Trace Requests'}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} rowKey={rowKey} scroll={getTableScroll()} />
@@ -1105,7 +1103,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 	);
 }
 
-export function traceRequestTab({starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title,
+export function tracereqTableTab({starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title, titlestr,
 					customColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
@@ -1140,7 +1138,7 @@ export function traceRequestTab({starttime, endtime, isext, filter, maxrecs, tab
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} 
+					<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
 						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
 						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
@@ -1155,7 +1153,7 @@ export function traceRequestTab({starttime, endtime, isext, filter, maxrecs, tab
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} 
+				<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
 					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
 					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
@@ -1170,6 +1168,290 @@ export function traceRequestTab({starttime, endtime, isext, filter, maxrecs, tab
 		});	
 	}	
 }
+
+
+export function TracereqQuickFilters({filterCB, useHostFields})
+{
+	if (typeof filterCB !== 'function') return null;
+
+	const 		numregex = /^\d+$/;
+
+	const onReq = (value) => {
+		filterCB(`{ req like ${value[0] !== "'" ? "'" + value + "'" : value} }`);
+	};	
+
+	const onError = () => {
+		filterCB(`{ err != 0 }`);
+	};	
+
+	const onResponse = (value) => {
+		if (numregex.test(value)) {
+			filterCB(`{ resp > ${value} }`);
+		}
+		else {
+			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
+		}	
+	};	
+
+	const onnetout = (value) => {
+		if (numregex.test(value)) {
+			filterCB(`{ netout > ${value} }`);
+		}
+		else {
+			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
+		}	
+	};	
+
+	const onApp = (value) => {
+		filterCB(`{ app like ${value[0] !== "'" ? "'" + value + "'" : value} }`);
+	};	
+
+	const onUser = (value) => {
+		filterCB(`{ user like ${value[0] !== "'" ? "'" + value + "'" : value} }`);
+	};	
+
+	const onHost = (value) => {
+		filterCB(`{ host ~ ${value[0] !== "'" ? "'" + value + "'" : value} }`);
+	};	
+
+
+	return (
+	<>	
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Request API Like </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Regex like" allowClear onSearch={onReq} style={{ width: 300 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Requests with Errors </strong></i></span>
+	</div>
+	<div style={{ width : 220, display: 'flex', justifyContent: 'flex-end' }}>
+	<Button onClick={onError} size='small' >Set Filter</Button>
+	</div>
+	</div>
+	</>
+
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Response Time in usec greater than </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Response usec" allowClear onSearch={onResponse} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Response Outbound Bytes greater than </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Outbound Bytes" allowClear onSearch={onnetout} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Client Application String Like </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Regex like" allowClear onSearch={onApp} style={{ width: 300 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Login Username Like </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Regex like" allowClear onSearch={onUser} style={{ width: 300 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+	{useHostFields === true && 
+		<>
+		<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+		<div>
+		<span style={{ fontSize : 14, marginRight : 30 }}><i><strong>Hostname of Traced Service Like </strong></i></span>
+		</div>
+		<div>
+		<Search placeholder="Regex like" allowClear onSearch={onHost} style={{ width: 300 }} enterButton={<Button>Set Filter</Button>} size='small' />
+		</div>
+		</div>
+		</>}
+
+	</>
+	);
+}	
+
+export function TracereqMultiQuickFilter({filterCB, useHostFields = true, isext = false, linktext, quicklinktext})
+{
+	const		objref = useRef(null);
+
+	if (objref.current === null) {
+		objref.current = {
+			modal		:	null,
+		};	
+	}
+
+	const onFilterCB = useCallback((newfilter) => {
+		if (objref.current.modal) {
+			objref.current.modal.destroy();
+			objref.current.modal = null;
+		}
+
+		if (newfilter && newfilter.length > 0 && typeof filterCB === 'function') {
+			filterCB(newfilter);
+		}	
+		
+	}, [objref, filterCB]);
+
+	const multifilters = useCallback(() => {
+		
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Request Advanced Filters</Title>,
+
+			content : <MultiFilters filterCB={onFilterCB} filterfields={isext ? [...tracereqfields, ...exttracefields] : tracereqfields} useHostFields={useHostFields} 
+					title='Trace Request Advanced Filters' />,
+			width : '80%',	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, isext, useHostFields, onFilterCB]);	
+
+	const quickfilter = useCallback(() => {
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Request Quick Filters</Title>,
+
+			content : <TracereqQuickFilters filterCB={onFilterCB} useHostFields={useHostFields} />,
+			width : 850,	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, useHostFields, onFilterCB]);
+
+	return (
+		<>
+		<Space>
+		<Button onClick={quickfilter} >{quicklinktext ?? "Quick Filters"}</Button>
+		<span> OR </span>
+		<Button onClick={multifilters} >{linktext ?? "Advanced Filters"}</Button>
+		</Space>
+		</>
+	);	
+}	
+
+export function TracestatusMultiFilter({filterCB, useHostFields = true, linktext, quicklinktext})
+{
+	const		objref = useRef(null);
+
+	if (objref.current === null) {
+		objref.current = {
+			modal		:	null,
+		};	
+	}
+
+	const onFilterCB = useCallback((newfilter) => {
+		if (objref.current.modal) {
+			objref.current.modal.destroy();
+			objref.current.modal = null;
+		}
+
+		if (newfilter && newfilter.length > 0 && typeof filterCB === 'function') {
+			filterCB(newfilter);
+		}	
+		
+	}, [objref, filterCB]);
+
+	const multifilters = useCallback(() => {
+		
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Request Advanced Filters</Title>,
+
+			content : <MultiFilters filterCB={onFilterCB} filterfields={tracestatusfields} useHostFields={useHostFields} 
+					title='Trace Status Advanced Filters' />,
+			width : '80%',	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, useHostFields, onFilterCB]);	
+
+	return (
+		<>
+		<Button onClick={multifilters} >{linktext ?? "Advanced Filters"}</Button>
+		</>
+	);	
+}	
+
+export function TracestatusAggrFilter({filterCB, linktext})
+{
+	const		objref = useRef(null);
+
+	if (objref.current === null) {
+		objref.current = {
+			modal		:	null,
+		};	
+	}
+
+	const onFilterCB = useCallback((newfilter) => {
+		if (objref.current.modal) {
+			objref.current.modal.destroy();
+			objref.current.modal = null;
+		}
+
+		if (newfilter && newfilter.length > 0 && typeof filterCB === 'function') {
+			filterCB(newfilter);
+		}	
+		
+	}, [objref, filterCB]);
+
+	const multifilters = useCallback(() => {
+		
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Status Aggregation Filters</Title>,
+			content : <MultiFilters filterCB={onFilterCB} filterfields={aggrtracestatusfields} title='Trace Status Aggregation Filters' />,
+			width : '80%',	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, onFilterCB]);	
+
+	return <Button onClick={multifilters} >{linktext ?? "Optional Post Aggregation Filters"}</Button>;	
+}	
 
 
 export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
@@ -1250,7 +1532,7 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 
 export function traceMonitorTab({svcid, svcname, parid, autoRefresh, refreshSec, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, extraComp = null, ...props})
 {
-	const				tabKey = `Trace ${svcname ?? ''} ${Date.now()}..`;
+	const				tabKey = `Trace ${svcname ?? ''} ${autoRefresh ? svcid : Date.now()}..`;
 
 	CreateTab(`Trace ${svcname ?? ''} ${svcid.slice(0, 5)}..`, 
 		() => {
@@ -1282,6 +1564,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 									offset : 0,
 								});
 	const				[isPauseRefresh, pauseRefresh] = useState(false);
+	const				[filterStr, setFilterStr] = useState();
 	const 				[nrows, setnrows] = useState(0);
 	const				[, setForceUpdate] = useState(false);
 
@@ -1364,12 +1647,24 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [isPauseRefresh, objref]);
 
 	useEffect(() => {
+		if (!autoRefresh) {
+			return;
+		}
+
+		console.log('Filter Changes seen : Current Filter is ', filterStr);
+
+		objref.current.nextfetchtime = Date.now() + 1000;
+		objref.current.pauseRefresh = false;
+
+	}, [objref, autoRefresh, filterStr]);
+
+	useEffect(() => {
 		
 		let 		timer1;
 
 		timer1 = setTimeout(function apiCall() {
 			try {
-				let		conf, currtime = Date.now();
+				let		currtime = Date.now();
 				let		compause = (objref.current.tracePauseUpdate || objref.current.netPauseUpdate || objref.current.svcMonPauseUpdate);
 
 				const		oldpause = objref.current.pauseRefresh;
@@ -1388,7 +1683,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 
 				if (true === objref.current.pauseRefresh || currtime < objref.current.nextfetchtime) {
 					if (oldpause === false && objref.current.pauseRefresh) {
-						setForceUpdate(true);
+						setForceUpdate(val => !val);
 					}	
 
 					return;
@@ -1432,7 +1727,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			if (timer1) clearTimeout(timer1);
 		};
 		
-	}, [objref, autoRefresh, isActiveTabCB, tabKey, setstate]);	
+	}, [objref, autoRefresh, isActiveTabCB, tabKey, setstate, setForceUpdate]);	
 	
 	useEffect(() => {
 		
@@ -1513,7 +1808,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			if (timer1) clearTimeout(timer1);
 		};
 		
-	}, [objref, svcid, parid, autoRefresh, tabKey, isActiveTabCB, setForceUpdate]);	
+	}, [objref, svcid, parid, autoRefresh, tabKey, isActiveTabCB]);	
 
 	useEffect(() => {
 		
@@ -1563,7 +1858,13 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 						objref.current.tracestatus = { state : 'Inactive' };
 					}	
 					else {
+						const			oldstat = objref.current.tracestatus;
+
 						objref.current.tracestatus = stat;
+
+						if (!oldstat) {
+							setForceUpdate(val => !val);
+						}	
 					}	
 				}
 				else {
@@ -1588,21 +1889,45 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		
 	}, [objref, svcid, parid, autoRefresh, tabKey, isActiveTabCB, setForceUpdate]);	
 	
+	const tracePauseUpdate = useCallback(val => {
+		objref.current.tracePauseUpdate = val;
+	}, [objref]);
+
+	const netPauseUpdate = useCallback(val => {
+		objref.current.netPauseUpdate = val;
+	}, [objref]);
+
+	const svcMonPauseUpdate = useCallback(val => {
+		objref.current.svcMonPauseUpdate = val;
+	}, [objref]);
+
 	const dataRowsCb = useCallback(val => setnrows(Number(val)), [setnrows]);
 
 	const tracereq = useMemo(() => {
+		
+		let			fstr;
 
-		return <TracereqSearch {...props} parid={parid} filter={objref.current.svcfilter} starttime={tstart.format()} endtime={tend.format()} maxrecs={currmax} recoffset={offset}
-				dataRowsCb={dataRowsCb} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} iscontainer={true} />
+		if (!filterStr) {
+			fstr = objref.current.svcfilter;
+		}	
+		else {
+			fstr = `( ${objref.current.svcfilter} and ${filterStr} )`
+		}	
 
-	}, [parid, objref, props, tstart, tend, currmax, offset, dataRowsCb, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+		return (
+			<TracereqSearch {...props} parid={parid} filter={fstr} starttime={tstart.format()} endtime={tend.format()} maxrecs={currmax} recoffset={offset}
+				dataRowsCb={dataRowsCb} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} tabKey={tabKey} 
+				iscontainer={true} pauseUpdateCb={tracePauseUpdate} />
+		);
+
+	}, [parid, objref, props, tstart, tend, filterStr, currmax, offset, dataRowsCb, addTabCB, remTabCB, isActiveTabCB, tabKey, tracePauseUpdate]);
 
 	const tracenet = useMemo(() => {
 
 		return <NetDashboard {...props} svcid={svcid} svcname={svcname} parid={parid} autoRefresh={false} starttime={tstart.format()} endtime={tend.format()}
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} pauseUpdateCb={netPauseUpdate} />
 
-	}, [svcid, parid, svcname, props, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+	}, [svcid, parid, svcname, props, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey, netPauseUpdate]);
 
 	const tracesvc = useMemo(() => {
 		let			st;
@@ -1622,9 +1947,10 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		}	
 
 		return <SvcMonitor {...props} svcid={svcid} svcname={svcname} parid={parid} key={svckey} starttime={st.format()} endtime={tend.format()} isRealTime={false}
-				aggregatesec={objref.current.svcaggrsec} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+				aggregatesec={objref.current.svcaggrsec} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+				iscontainer={true} pauseUpdateCb={svcMonPauseUpdate} />
 
-	}, [svcid, parid, svcname, svckey, objref, props, autoRefresh, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey]);
+	}, [svcid, parid, svcname, svckey, objref, props, autoRefresh, tstart, tend, addTabCB, remTabCB, isActiveTabCB, tabKey, svcMonPauseUpdate]);
 
 
 	const onHistorical = useCallback((date, dateString) => {
@@ -1663,20 +1989,108 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
 
 
+	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
+		if (!date || !dateString) {
+			return;
+		}
+
+		let			tstarttime, tendtime, fstr;
+
+		if (safetypeof(date) === 'array') {
+			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
+				return `Invalid Search Historical Date Range set...`;
+			}	
+
+			tstarttime = dateString[0];
+			tendtime = dateString[1];
+		}
+		else {
+			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
+				return `Invalid Search Historical Date set ${dateString}...`;
+			}	
+
+			tstarttime = dateString;
+		}
+
+		if (newfilter) {
+			fstr = `( { svcid = '${svcid}' } and ${newfilter} )`; 
+		}	
+		else {
+			fstr = `{ svcid = '${svcid}' }`;
+		}	
+
+		// Now close the search modal
+		Modal.destroyAll();
+
+		tracereqTableTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, isext : true, titlestr : `Trace Requests for service ${svcname}`, 
+					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
+
+	}, [svcid, svcname, addTabCB, remTabCB, isActiveTabCB]);	
+
+
+	const onFilterCB = useCallback((newfilter) => {
+		objref.current.nextfetchtime = Date.now() + 1000;
+		setFilterStr(newfilter);
+	}, [objref]);	
+
+	const onResetFilters = useCallback(() => {
+		objref.current.nextfetchtime = Date.now() + 1000;
+		setFilterStr();
+	}, [objref]);	
+
+	const timecb = useCallback((ontimecb) => {
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} maxAggrRangeMin={0} disableFuture={true} />;
+	}, []);
+
+	const filtercb = useCallback((onfiltercb) => {
+		return <TracereqMultiQuickFilter filterCB={onfiltercb} />;
+	}, []);	
+
 	const optionDiv = (width) => {
 		return (
 			<div style={{ margin: 30, width: width, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', 
 						border: '1px groove #7a7aa0', padding : 10 }} >
 
-			<div>
+			<div style={{ display: 'flex', flexDirection: 'row' }}>
+			<Space>
+
+			{!filterStr && autoRefresh && (
+			<Popover title='Apply Trace Request Filters' content=<TracereqMultiQuickFilter filterCB={onFilterCB} /> >
+			<Button>Apply Auto Refresh Request Filters</Button>
+			</Popover>
+			)}
+
+			{filterStr && autoRefresh && (
+			<Popover title='Filters Active' content=<Tag color='cyan'>{filterStr}</Tag>>
+			<Button onClick={onResetFilters}>Reset All Filters</Button>
+			</Popover>
+			)}
+
+			<ButtonModal buttontext='Search Service Trace Requests' width={1200} okText="Cancel"
+				contentCB={() => (
+					<SearchTimeFilter callback={onTraceSearch} title='Search Service Trace Requests' 
+						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={10000} maxallowedrecs={500000} />
+				)} />
+					
+
+			</Space>
 			</div>
+
 
 			<div style={{ marginLeft : 20 }}>
 			<Space>
-			{autoRefresh && isPauseRefresh === false && (<Button onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
-			{autoRefresh && isPauseRefresh === true && (<Button onClick={() => {objref.current.nextfetchtime = Date.now() + 1000; pauseRefresh(false)}}>Resume Auto Refresh</Button>)}
+			{autoRefresh && (isPauseRefresh === false && !objref.current.pauseRefresh) && (<Button onClick={() => {pauseRefresh(true)}}>Pause Auto Refresh</Button>)}
+			{autoRefresh && (isPauseRefresh === true || objref.current.pauseRefresh === true) && (<Button onClick={() => {
+					objref.current.nextfetchtime = Date.now() + 1000; 
+					objref.current.tracePauseUpdate = false;
+					objref.current.netPauseUpdate = false;
+					objref.current.svcMonPauseUpdate = false;
 
-			{!autoRefresh && (<Button onClick={onNewAutoRefresh}>Auto Refreshed Dashboard</Button>)}
+					pauseRefresh(false);
+				}
+			}>Resume Auto Refresh</Button>)}
+
+			{!autoRefresh && (<Button onClick={onNewAutoRefresh}>Start Auto Refreshed Dashboard</Button>)}
 
 			<TimeRangeAggrModal onChange={onHistorical} title='Historical Trace Data'
 					showTime={false} showRange={true} minAggrRangeMin={0} maxAggrRangeMin={0} disableFuture={true} />
@@ -1690,10 +2104,6 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	const statusDiv = () => {
 		const			svcinfo = objref.current.svcinfo, tracestatus = objref.current.tracestatus;
 		
-		if (!svcinfo && !tracestatus) {
-			return null;
-		}	
-
 		return (
 		<>
 		<div style={{ padding : 30 }} >
@@ -1719,16 +2129,41 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		);
 	};	
 
+	let 			recelem = null;
+
+	if (nrows > 0 && currmax > 0) {
+		recelem = (
+			<div style={{ border: '1px dotted #7a7aa0', padding : 10, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}} >
+			<>		
+			<div style={{ borderRight : '1px dotted #7a7aa0', paddingRight : 30 }} >
+			<NumButton max={500000} min={1} defaultValue={currmax} okText='Set Max Records to fetch' 				
+							onCB={(newval) => setstate(prevstate => ({...prevstate, currmax : newval}))} />
+			</div>				
+			<Button onClick={() => setstate(prevstate => ({...prevstate, offset : offset - currmax}))} 
+							disabled={offset < currmax}>Get Previous {currmax} records within same time range</Button>
+			<span>Record Range Returned : {offset + 1} to {nrows + offset}</span>
+			<Button onClick={() => setstate(prevstate => ({...prevstate, offset : offset + currmax}))}
+							disabled={nrows < currmax}>Get Next {currmax} records within same time range</Button>
+			</>
+			</div>
+		);
+	}	
+
 	let			hdrtag = null;
 
 	if (autoRefresh && false === objref.current.pauseRefresh && false === isPauseRefresh) {
-		hdrtag = <Tag color='green'>Running with Auto Refresh every {refreshSec} sec</Tag>;
+		hdrtag = (
+			<>
+			<Tag color='green'>Running with Auto Refresh every {refreshSec} sec</Tag>
+			{filterStr && <Tag color='cyan'>Filters Set</Tag>}
+			</>);
 	}
 	else if (autoRefresh) {
 		hdrtag = (
 			<>
 			<Tag color='green'>Running with Auto Refresh every {refreshSec} sec</Tag>
 			<Tag color='blue'>Auto Refresh Paused</Tag>
+			{filterStr && <Tag color='cyan'>Filters Set</Tag>}
 			</>);
 
 	}	
@@ -1738,7 +2173,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 
 	return (
 		<>
-		<Title level={4}><em>Service Request Trace API Monitor</em></Title>
+		<Title level={4}><em>Request Trace API Monitor</em></Title>
 		{hdrtag}
 
 		<ErrorBoundary>
@@ -1747,7 +2182,10 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		{statusDiv()}
 
 		<div style={{ padding : 30 }} >
+
 		{tracereq}
+		{recelem}
+
 		</div>
 		
 		{tracenet}

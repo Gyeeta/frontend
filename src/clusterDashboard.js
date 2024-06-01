@@ -651,8 +651,7 @@ export function ClusterStateAggrFilter({filterCB, linktext})
 		
 		objref.current.modal = Modal.info({
 			title : <Title level={4}>Cluster State Aggregation Filters</Title>,
-
-			content : <MultiFilters filterCB={onFilterCB} filterfields={clusterstatefields} title='Cluster State Aggregation Filters' />,
+			content : <MultiFilters filterCB={onFilterCB} filterfields={aggrclusterstatefields} title='Cluster State Aggregation Filters' />,
 			width : '80%',	
 			closable : true,
 			destroyOnClose : false,
