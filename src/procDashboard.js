@@ -1944,8 +1944,10 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		<>
 		<ErrorBoundary>
 
-		{JSONDescription({jsondata : rec, titlestr : `${isaggr ? 'Aggregated' : '' } Process State for '${rec.name}'`,
-					fieldCols : [...procstatefields, ...aggrprocstatefields, ...extprocfields, ...hostfields], xfrmDataCB : viewProcFields })}
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
+		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Process State for '${rec.name}'`}
+					fieldCols={[...procstatefields, ...aggrprocstatefields, ...extprocfields, ...hostfields]} xfrmDataCB={viewProcFields}  />
+		</div>			
 		
 		<div style={{ marginTop: 36, marginBottom: 16 }}>
 

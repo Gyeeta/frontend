@@ -1041,7 +1041,14 @@ export function HostInfoDesc({parid, addTabCB, remTabCB, isActiveTabCB, hostInfo
 	if (isloading === false && isapierror === false) { 
 
 		if (safetypeof(data) === 'object' && data.parid && data.parid === parid) { 
-			hinfo = JSONDescription({jsondata : data, fieldCols : hostinfofields, titlestr : `Host ${data.host} System Info`, column : 3});
+			hinfo = (
+				<>
+				<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
+				<JSONDescription jsondata={data} fieldCols={hostinfofields} titlestr={`Host ${data.host} System Info`} 
+							column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} />
+				</div>
+				</>
+			);
 		}
 		else {
 			hinfo = (<Alert type="warning" showIcon message="No Valid data found on server..." description=<Empty /> />);

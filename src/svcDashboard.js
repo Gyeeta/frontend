@@ -2188,8 +2188,10 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		<ErrorBoundary>
 
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
-		{JSONDescription({jsondata : rec, titlestr : `${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`,
-					fieldCols : [...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields], xfrmDataCB : viewSvcFields })}
+		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`}
+					column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }}
+					fieldCols={[...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields]} xfrmDataCB={viewSvcFields} />
+
 		</div>
 
 		<div style={{ marginTop: 36, marginBottom: 16 }}>

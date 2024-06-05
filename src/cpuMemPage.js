@@ -1719,7 +1719,9 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 		<>
 		<ErrorBoundary>
 
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
 		<JSONDescription jsondata={rec} fieldCols={[...cpumemfields, ...aggrcpumemfields, ...hostfields]} titlestr={`${isaggr ? 'Aggregated ' : ''}CPU Memory Status`} column={3} />
+		</div>
 
 		<div style={{ marginTop: 36, marginBottom: 16 }}>
 

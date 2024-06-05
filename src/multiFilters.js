@@ -19,8 +19,8 @@ import		{hoststatefields, aggrhoststatefields, HostStateMultiQuickFilter, HostSt
 		hostinfofields, HostInfoFilters, hostinfoTableTab} from './hostViewPage.js';
 import		{cpumemfields, aggrcpumemfields, CpuMemMultiQuickFilter, CpuMemAggrFilter, cpumemTableTab} from './cpuMemPage.js';
 import		{svcmeshclustfields, SvcMeshFilter, svcMeshTab, svcipclustfields, SvcVirtIPFilter, svcVirtIPTab} from './svcClusterGroups.js';
-import		{tracereqfields, exttracefields, tracestatusfields, aggrtracestatusfields, tracereqTableTab, tracestatusTableTab, 
-		TracereqMultiQuickFilter, TracestatusMultiFilter, TracestatusAggrFilter} from './traceDashboard.js';
+import		{tracereqfields, exttracefields, tracestatusfields, aggrtracestatusfields, tracedeffields, tracereqTableTab, tracestatusTableTab, 
+		tracedefTableTab, TracereqMultiQuickFilter, TracestatusMultiFilter, TracestatusAggrFilter, TracedefMultiFilter} from './traceDashboard.js';
 
 import		{alertsfields, aggralertsfields, AlertMultiQuickFilter, AlertAggrFilter, alertsTableTab} from './alertDashboard.js';
 import		{alertdeffields, AlertdefMultiQuickFilter, alertdefTableTab} from './alertDefs.js';
@@ -267,7 +267,7 @@ export const subsysCategories = [
 	{ name : 'Service',		value : 'service' },
 	{ name : 'Process',		value : 'process' },
 	{ name : 'Network',		value : 'network' },
-	{ name : 'Trace',		value : 'trace' },
+	{ name : 'Tracing',		value : 'trace' },
 	{ name : 'Cluster',		value : 'cluster' },
 	{ name : 'Hosts',		value : 'hosts' },
 	{ name : 'Alerts',		value : 'alerts' },
@@ -279,10 +279,10 @@ export const getSubsysFromCategory = (category) => {
 
 	case 'service'	:	
 	return [ 
-		{ name : 'Extended Service State', 		value : 'extsvcstate',		skipalert : false, },
-		{ name : 'Service State', 			value : 'svcstate',		skipalert : false, },
-		{ name : 'Extended Inbound Network Stats',	value : 'extactiveconn',	skipalert : false, },
-		{ name : 'Extended Trace Request',		value : 'exttracereq',		skipalert : true, },
+		{ name : 'Service State Extended ', 		value : 'extsvcstate',		skipalert : false, },
+		{ name : 'Service State Basic', 		value : 'svcstate',		skipalert : false, },
+		{ name : 'Inbound Network Stats Extended',	value : 'extactiveconn',	skipalert : false, },
+		{ name : 'Trace Requests Extended',		value : 'exttracereq',		skipalert : true, },
 		{ name : 'Interconnected Service Groups',	value : 'svcmeshclust',		skipalert : true, },
 		{ name : 'Virtual IP Service Groups',		value : 'svcipclust',		skipalert : true, },
 		{ name : 'Service Summary', 			value : 'svcsumm',		skipalert : false, },
@@ -291,8 +291,8 @@ export const getSubsysFromCategory = (category) => {
 
 	case 'process'	:	
 	return [ 
-		{ name : 'Extended Process State', 		value : 'extprocstate',		skipalert : false, },
-		{ name : 'Process State', 			value : 'procstate',		skipalert : false, },
+		{ name : 'Process States Extended', 		value : 'extprocstate',		skipalert : false, },
+		{ name : 'Process States Basic', 		value : 'procstate',		skipalert : false, },
 		{ name : 'Process Info', 			value : 'procinfo',		skipalert : false, },
 		/*
 		{ name : 'Host Top CPU Processes', 		value : 'topcpu',		skipalert : false, },
@@ -304,16 +304,16 @@ export const getSubsysFromCategory = (category) => {
 
 	case 'network'	:	
 	return [ 
-		{ name : 'Extended Service Inbound Network',	value : 'extactiveconn',	skipalert : false, },
-		{ name : 'Service Inbound Network Stats', 	value : 'activeconn',		skipalert : false, },
-		{ name : 'Extended Client Outbound Network',	value : 'extclientconn',	skipalert : false, },
-		{ name : 'Client Outbound Network Stats', 	value : 'clientconn',		skipalert : false, },
+		{ name : 'Service Inbound Network Extended ',	value : 'extactiveconn',	skipalert : false, },
+		{ name : 'Service Inbound Network Basic', 	value : 'activeconn',		skipalert : false, },
+		{ name : 'Client Outbound Network Extended ',	value : 'extclientconn',	skipalert : false, },
+		{ name : 'Client Outbound Network Basic', 	value : 'clientconn',		skipalert : false, },
 	];
 
 	case 'trace'	:	
 	return [ 
-		{ name : 'Extended Trace Request',		value : 'exttracereq',		skipalert : true, },
-		{ name : 'Trace Request', 			value : 'tracereq',		skipalert : true, },
+		{ name : 'Trace Requests Extended',		value : 'exttracereq',		skipalert : true, },
+		{ name : 'Trace Requests Basic', 			value : 'tracereq',		skipalert : true, },
 		{ name : 'Trace Status',			value : 'tracestatus',		skipalert : true, },
 		{ name : 'Trace Definitions', 			value : 'tracedef',		skipalert : true, },
 	];
@@ -371,6 +371,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => SvcStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: SvcStateAggrFilter,
 			tablecb		: svcTableTab,
+			isnotime	: false,
 		};	
 
 	case 'extsvcstate' :
@@ -380,6 +381,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => SvcStateMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => SvcStateAggrFilter({useHostFields, ...params, isext : true, }),
 			tablecb		: (params) => svcTableTab({...params, isext : true}),
+			isnotime	: false,
 		};	
 
 	case 'svcinfo' : 
@@ -389,6 +391,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => SvcinfoFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => SvcinfoFilter({useHostFields, ...params}),
 			tablecb		: svcInfoTab,
+			isnotime	: false,
 		};	
 
 
@@ -399,6 +402,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => SvcSummFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => SvcSummFilter({useHostFields, ...params}),
 			tablecb		: svcSummTab,
+			isnotime	: false,
 		};	
 
 	case 'svcmeshclust' : 
@@ -408,6 +412,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: SvcMeshFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: svcMeshTab,
+			isnotime	: false,
 		};	
 
 	case 'svcipclust' : 
@@ -417,6 +422,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: SvcVirtIPFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: svcVirtIPTab,
+			isnotime	: false,
 		};	
 
 
@@ -428,6 +434,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ActiveConnFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ActiveConnFilter({useHostFields, ...params}),
 			tablecb		: activeConnTab,
+			isnotime	: false,
 		};	
 
 
@@ -439,6 +446,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ActiveConnFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ActiveConnFilter({useHostFields, ...params, isext : true, }),
 			tablecb		: (params) => activeConnTab({...params, isext : true}),
+			isnotime	: false,
 		};	
 
 	case 'clientconn' :
@@ -448,6 +456,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ClientConnFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ClientConnFilter({useHostFields, ...params}),
 			tablecb		: clientConnTab,
+			isnotime	: false,
 		};	
 
 
@@ -459,6 +468,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ClientConnFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ClientConnFilter({useHostFields, ...params, isext : true, }),
 			tablecb		: (params) => clientConnTab({...params, isext : true}),
+			isnotime	: false,
 		};	
 
 	case 'exttracereq' :
@@ -468,6 +478,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: undefined,
 			tablecb		: (params) => tracereqTableTab({...params, isext : true}),
+			isnotime	: false,
 		};	
 
 	case 'tracereq' :
@@ -477,6 +488,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: undefined,
 			tablecb		: tracereqTableTab,
+			isnotime	: false,
 		};	
 
 	case 'tracestatus' :
@@ -488,6 +500,16 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			tablecb		: tracestatusTableTab,
 		};	
 
+	case 'tracedef' :
+		return {
+			fields 		: tracedeffields,
+			aggrfields	: undefined,
+			filtercb	: TracedefMultiFilter,
+			aggrfiltercb	: undefined,
+			tablecb		: tracedefTableTab,
+			isnotime	: true,
+		};	
+
 	case 'procstate' :
 		return {
 			fields 		: !useHostFields ? procstatefields : [...hostfields, ...procstatefields],
@@ -495,6 +517,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ProcStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: ProcStateAggrFilter,
 			tablecb		: procTableTab,
+			isnotime	: false,
 		};	
 
 	case 'extprocstate' :
@@ -504,6 +527,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ProcStateMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ProcStateAggrFilter({useHostFields, ...params, isext : true, }),
 			tablecb		: (params) => procTableTab({...params, isext : true}),
+			isnotime	: false,
 		};	
 
 	case 'procinfo' : 
@@ -513,6 +537,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => ProcinfoFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ProcinfoFilter({useHostFields, ...params}),
 			tablecb		: procInfoTab,
+			isnotime	: false,
 		};	
 
 
@@ -523,6 +548,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: ClusterStateMultiQuickFilter,
 			aggrfiltercb	: ClusterStateAggrFilter,
 			tablecb		: clusterTableTab,
+			isnotime	: false,
 		};	
 
 	case 'hoststate' : 
@@ -532,6 +558,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => HostStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => HostStateAggrFilter({useHostFields, ...params}),
 			tablecb		: hostTableTab,
+			isnotime	: false,
 		};	
 
 	case 'hostinfo' : 
@@ -541,6 +568,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: HostInfoFilters,
 			aggrfiltercb	: HostInfoFilters,
 			tablecb		: hostinfoTableTab,
+			isnotime	: false,
 		};	
 
 	case 'cpumem' : 
@@ -550,6 +578,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: (params) => CpuMemMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => CpuMemAggrFilter({useHostFields, ...params}),
 			tablecb		: cpumemTableTab,
+			isnotime	: false,
 		};	
 
 	case 'alerts' : 
@@ -559,6 +588,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: AlertMultiQuickFilter,
 			aggrfiltercb	: AlertAggrFilter,
 			tablecb		: alertsTableTab,
+			isnotime	: false,
 		};	
 
 	case 'alertdef' : 
@@ -568,6 +598,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: AlertdefMultiQuickFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: alertdefTableTab,
+			isnotime	: true,
 		};	
 
 	case 'actions' : 
@@ -577,6 +608,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: ActionMultiQuickFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: actionsTableTab,
+			isnotime	: true,
 		};	
 
 
@@ -587,6 +619,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: SilenceMultiQuickFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: silencesTableTab,
+			isnotime	: true,
 		};	
 
 	case 'inhibits' : 
@@ -596,6 +629,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			filtercb	: InhibitMultiQuickFilter,
 			aggrfiltercb	: undefined,
 			tablecb		: inhibitsTableTab,
+			isnotime	: true,
 		};	
 
 
@@ -1748,9 +1782,16 @@ export function SearchWrapConfig({starttime, endtime, maxrecs, recoffset, origCo
 	);
 
 }
+export function GenericSearchWrap({...props})
+{
+	const [key, setkey]			= useState(0);
+	
+	const resetCB = () => setkey(key + 1);
 
+	return <GenericSearch {...props} key={key} resetCB={resetCB} />;
+}	
 
-export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTabCB, remTabCB, isActiveTabCB})
+export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTabCB, remTabCB, isActiveTabCB, resetCB})
 {
 	const [form] 					= Form.useForm();
 	const objref 					= useRef(null);
@@ -1759,7 +1800,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 	const [isrange, setIsrange]			= useState(true);
 	const [timerange, setTimerange]			= useState([]);
 	const [canaggr, setcanagg]			= useState(false);
-	const [useAggr, setUseAggr]			= useState(true);
+	const [useAggr, setUseAggr]			= useState(false);
 	const [filterstr, setfilterstr] 		= useState('');
 	const [custaggrdef, setcustaggrdef]		= useState();
 	const [aggrfilterstr, setaggrfilterstr] 	= useState('');
@@ -1820,6 +1861,22 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 	}, [objref, timerange, canaggr, filterstr, aggrfilterstr, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
 
+	const onTimerangeChange = useCallback((dateObjs) => {
+		if ((safetypeof(dateObjs) !== 'array') || (dateObjs.length !== 2)) {
+			return;
+		}	
+
+		setTimerange(dateObjs);
+
+		if (dateObjs[0].unix() + 60 <= dateObjs[1].unix() && objref.current.subsysobj?.aggrfields !== undefined) {
+			setcanagg(true);
+		}	
+		else {
+			setcanagg(false);
+		}	
+	}, [objref]);	
+
+
 	const onNewSubsystem = useCallback((newsub) => {
 		setSubsys(newsub);
 		objref.current.subsysobj = getSubsysHandlers(newsub);
@@ -1841,7 +1898,11 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		setcustaggrdef();	
 		setsortcol();
 
-	}, [objref, isrange]);	
+		if (objref.current.subsysobj.isnotime === true) {
+			onTimerangeChange([moment().subtract(5, 'seconds'), moment()]);
+		}	
+
+	}, [objref, isrange, onTimerangeChange]);	
 
 	const onCategoryChange = useCallback((e) => { 
 		const 		val = e.target.value;
@@ -1880,21 +1941,6 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		else {
 			setcanagg(false);	// Set as false
 			setsortcol();
-		}	
-	}, [objref]);	
-
-	const onTimerangeChange = useCallback((dateObjs) => {
-		if ((safetypeof(dateObjs) !== 'array') || (dateObjs.length !== 2)) {
-			return;
-		}	
-
-		setTimerange(dateObjs);
-
-		if (dateObjs[0].unix() + 60 <= dateObjs[1].unix() && objref.current.subsysobj?.aggrfields !== undefined) {
-			setcanagg(true);
-		}	
-		else {
-			setcanagg(false);
 		}	
 	}, [objref]);	
 
@@ -2007,14 +2053,16 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				</Radio.Group>
 			</Form.Item>
 
+			{!objref.current.subsysobj.isnotime && 
 			<Form.Item name="isrange" label="Time Range or a Specific Time" initialValue="range" >
 				<Radio.Group onChange={onisrangeChange}>
 					<Radio.Button value="range">Time Range</Radio.Button>
 					<Radio.Button value="point">Specific Time</Radio.Button>
 				</Radio.Group>
 			</Form.Item>
+			}
 
-			{isrange && 
+			{isrange && !objref.current.subsysobj.isnotime &&
 			<Form.Item label="Select Time Range">
 				<Space>
 				
@@ -2023,13 +2071,13 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<RangeTimeZonePicker onChange={onRangeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Time Set : {timerange[0].format("MMM Do HH:mm:ss Z")} to {timerange[1].format("MMM Do HH:mm:ss Z")})</span> 
+				<span>(Time Set as {timerange[0].format("MMM DD HH:mm:ss Z")} to {timerange[1].format("MMM DD HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>
 			}
 			
-			{!isrange && 
+			{!isrange && !objref.current.subsysobj.isnotime &&
 			<Form.Item label="Select Specific Time">
 				<Space>
 				
@@ -2038,7 +2086,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<DateTimeZonePicker onChange={onTimeChange} disableFuture={true} />
 
 				{timerange.length > 0 && 
-				<span>(Time Set : {timerange[0].format("MMM Do HH:mm:ss Z")})</span> 
+				<span>(Time Set as {timerange[0].format("MMM Do HH:mm:ss Z")})</span> 
 				}
 				</Space>
 			</Form.Item>
@@ -2046,7 +2094,11 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 			{canaggr && 
 			<Form.Item name="useAggr" label="Apply DB Aggregation" valuePropName="checked" initialValue={true} >
+				<Space>
 				<Switch onChange={onUseAggrChange} />
+				
+				{!useAggr && <span>(Enable to limit the number of records to fetch)</span>}
+				</Space>
 			</Form.Item>
 			}
 
@@ -2066,18 +2118,23 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					</Radio.Group>
 				</Form.Item>	
 
+				<span>(Aggregation Periods within the selected Time range : No Step implies over entire Time range)</span>
+
 				</Space>
 			</Form.Item>
 			}
 
 			{SubsysFilterCB && timerange.length > 0 &&
 			<Form.Item label={canaggr ? "Optional Pre-Aggregation Filters" : "Optional Filters"} >
+				<Space>
 
-				{!filterstr && <SubsysFilterCB filterCB={onfiltercb} linktext={canaggr ? "Set Pre-Aggregation Multi Filters" : "Set Multi Filters"} quicklinktext="Set Quick Filters" />}
+				{!filterstr && <SubsysFilterCB filterCB={onfiltercb} linktext={canaggr ? "Pre-Aggregation Advanced Filters" : "Advanced Filters"} quicklinktext="Quick Filters" />}
 				{filterstr && (
 					<Button onClick={() => setfilterstr()} >{canaggr ? "Reset Pre-Aggregation Filters" : "Reset Filters"}</Button>
 				)}
 				
+				{!filterstr && <span>(Optional Filters to limit the number of records)</span>}
+				</Space>
 			</Form.Item>
 			}
 
@@ -2100,6 +2157,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 			{SubsysAggrFilterCB && timerange.length > 0 && canaggr && useAggr &&
 			<Form.Item label="Optional Custom Aggregation Fields" >
+				<Space>
 				{!custaggrdef && 
 					<CustomAggrColModal subsysFields={getFieldsExcludingHost(objref.current.subsysobj.fields)} 
 							aggrsubsysFields={objref.current.subsysobj.aggrfields} doneCB={onCustomAggr} 
@@ -2113,18 +2171,25 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					</Space>
 					</>
 				}
+
+				{!custaggrdef && <span>(Use in case Custom columns needed based on Aggregation Operations)</span>}
+
+				</Space>
 			</Form.Item>
 			}
 
 			{SubsysAggrFilterCB && timerange.length > 0 && canaggr && useAggr &&
 			<Form.Item label="Optional Post-Aggregation Filters" >
+				<Space>
 
-				{!aggrfilterstr && <SubsysAggrFilterCB filterCB={onaggrfiltercb} linktext="Set Post Aggregation Filters" 
+				{!aggrfilterstr && <SubsysAggrFilterCB filterCB={onaggrfiltercb} linktext="Post Aggregation Filters" 
 					subsysFields={custaggrdef ? objref.current.customcols : undefined} title="Aggregation Filters" />}
 				{aggrfilterstr && (
 					<Button onClick={() => setaggrfilterstr()} >Reset Post Aggregation Filters</Button>
 				)}
-				
+
+				{!aggrfilterstr && <span>(Optional Filters after Aggregation is done)</span>}
+				</Space>
 			</Form.Item>
 			}
 
@@ -2161,6 +2226,10 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				<>
 				<Space>
 				<Button type="primary" htmlType="submit" disabled={!timerange || timerange.length === 0}>Search</Button>
+
+				{typeof resetCB === 'function' && (
+					<Button onClick={resetCB} >Reset</Button>
+				)}
 				</Space>
 				</>
 			</Form.Item>

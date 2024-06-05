@@ -18,14 +18,14 @@ import {SvcDashboard, svcTableTab, svcstatefields, extsvcfields} from './svcDash
 import {ProcDashboard, procTableTab, procstatefields, extprocfields} from './procDashboard.js';
 import {AlertDashboard} from './alertDashboard.js';
 import {isEmptyObj} from './components/util.js';
-import {hostfields, MultiFilters, GenericSearch} from './multiFilters.js';
+import {hostfields, MultiFilters, GenericSearchWrap} from './multiFilters.js';
 import {CPUMemPage} from './cpuMemPage.js';
 import {NetDashboard} from './netDashboard.js';
 import {HostMonitor} from './hostMonitor.js';
 import {SvcMonitor} from './svcMonitor.js';
 import {SvcClusterGroups} from './svcClusterGroups.js';
 import {ProcMonitor} from './procMonitor.js';
-import {tracestatusTableTab} from './traceDashboard.js';
+import {tracestatusTableTab, TraceStatusPage} from './traceDashboard.js';
 import {GyeetaStatusTag, GyeetaStatus} from './aboutStatus.js';
 import {ActionConfig, ActionDashboard} from './alertActions.js';
 import {AlertdefConfig, AlertdefDashboard} from './alertDefs.js';
@@ -98,20 +98,22 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 	const addTabCB = useCallback((title, content, key, closable = (key !== loginKey)) => {
 
 		if (objref.current.activekey === loginKey) {
-			return;
+			return false;
 		}
 
 		for (let i = 0; i < objref.current.panearr.length; ++i) {
 			let 		pane = objref.current.panearr[i];
 
 			if (pane.key === key) {
+				Modal.destroyAll();
+
 				if (objref.current.activekey !== key) {
 					objref.current.activekey = key;
 	
 					setActiveKey(key);
 				}
 				
-				return;
+				return false;
 			}	
 		}
 
@@ -154,6 +156,8 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 		objref.current.activekey = key;
 
 		setActiveKey(key);
+
+		return true;
 	}, [objref]);	
 	
 	// Specify timeoutms to have the tab close after those many msec
@@ -469,6 +473,42 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				notification.error({message : "Trace Monitor", description : `Exception during data fetch : ${emsg}`});
 			}	
 			break;
+
+		case tracestatusKey :
+			
+			try {
+
+				const		tabKey = tracestatusKey + Date.now();
+
+				const		statdash = () => (
+					<>
+					<ErrorBoundary>
+					<TraceStatusPage addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
+					</ErrorBoundary>
+					</>
+				);	
+
+				addTabCB('Trace Status', statdash, tabKey);
+			}
+			catch(e) {
+				let		emsg;
+
+				console.log(`Exception seen while fetching Trace Status Dashboard data : ${e.message}`);
+
+				if (e.response && e.response.data) {
+					emsg = e.response.data;
+				}	
+				else if (e.message) {
+					emsg = e.message;
+				}	
+				else {
+					emsg = 'Exception Caught while fetching Process Dashboard';
+				}	
+
+				notification.error({message : "Process Dashboard", description : `Exception during Process Dashboard fetch : ${emsg}`});
+			}	
+			break;
+
 
 		case alertDashKey :
 			
@@ -1860,12 +1900,12 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				const		searchpage = () => (
 					<>
 					<ErrorBoundary>
-					<GenericSearch addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+					<GenericSearchWrap addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 					</ErrorBoundary>
 					</>
 				);	
 
-				addTabCB(`Search ${sid}`, searchpage, tabKey);
+				addTabCB(`Search ${'n' + sid}`, searchpage, tabKey);
 			}
 			catch(e) {
 				let		emsg;

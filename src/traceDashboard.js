@@ -1,14 +1,14 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
 import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Empty, 
-			Space, Popover} from 'antd';
+			Space, Popover, Popconfirm} from 'antd';
 import 			{ CheckSquareTwoTone, CloseOutlined } from '@ant-design/icons';
 
 import 			moment from 'moment';
 import 			axios from 'axios';
 import 			{format} from "d3-format";
 
-import 			{GyTable, getTableScroll} from './components/gyTable.js';
+import 			{GyTable, TimeFieldSorter, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecStrFormat, bytesStrFormat,
 			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab,
@@ -32,7 +32,7 @@ const traceStatusEnum = [
 ];
 
 export const tracereqfields = [
-	{ field : 'req',		desc : 'Trace Request API',		type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'req',		desc : 'Trace Request',			type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'resp',		desc : 'Response in usec',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'netin',		desc : 'Request Inbound Bytes',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'netout',		desc : 'Response Outbound Bytes',	type : 'number',	subsys : 'tracereq',	valid : null, },
@@ -99,6 +99,14 @@ const tracehistoryfields = [
 	{ field : 'svcid',		desc : 'Service Gyeeta ID',		type : 'string',	subsys : 'tracehistory',	valid : null, },	
 ];
 
+
+export const tracedeffields = [
+	{ field : 'name',		desc : 'Trace Definition Name',		type : 'string',	subsys : 'tracedef',	valid : null, },
+	{ field : 'tstart',		desc : 'Creation Time',			type : 'timestamptz',	subsys : 'tracedef',	valid : null, },
+	{ field : 'tend',		desc : 'End Time of Definition',	type : 'timestamptz',	subsys : 'tracedef',	valid : null, },
+	{ field : 'filter',		desc : 'Trace Filters for Service',	type : 'string',	subsys : 'tracedef',	valid : null, },
+	{ field : 'defid',		desc : 'Tracedef Gyeeta ID',		type : 'string',	subsys : 'tracedef',	valid : null, },	
+];
 
 function getTraceStateColor(state)
 {
@@ -359,8 +367,11 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		<code style={{ fontFamily: 'Consolas,"courier new"', fontSize: '105%', textAlign: 'center' }}>{rec.req}</code>
 		</p>
 		</div>
-		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} 
+
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
+		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2}
 				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} />
+		</div>
 		</>
 	);	
 }
@@ -524,7 +535,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 						<Button onClick={() => traceMonitorTab({ 
 							svcid : record.svcid, svcname : record.name, parid : record.parid, 
 							autoRefresh : !!monAutoRefresh, starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
-							})} size='small' type='primary' >Set Trace Monitor</Button>
+							})} size='small' type='primary' shape='round' >View Trace Monitor</Button>
 					)}
 					</>
 					);
@@ -544,6 +555,10 @@ const tracehistoryCol = [
 		gytype :	'string',
 		width :		160,
 		fixed : 	'left',
+		sorter :	TimeFieldSorter,
+		defaultSortOrder :	'descend',
+		render :	(val) => getLocalTime(val),
+		
 	},
 	{
 		title :		'Service Name',
@@ -627,6 +642,116 @@ const tracehistoryCol = [
 	},
 ];
 
+
+function getTracedefColumns(viewCB, updateCB, deleteCB)
+{
+	const		colarr = [
+	{
+		title :		'Tracedef Name',
+		key :		'name',
+		dataIndex :	'name',
+		gytype : 	'string',
+		width : 	300,
+		render : 	(val, record) => <Button type="link" onClick={viewCB ? () => viewCB(record) : undefined}>{strTruncateTo(val, 100)}</Button>,
+	},
+	{
+		title :		'Creation Time',
+		key :		'tstart',
+		dataIndex :	'tstart',
+		gytype : 	'string',
+		width : 	160,
+		render : 	(val) => timeDiffString(val),
+	},
+	{
+		title :		'Trace End Time',
+		key :		'tend',
+		dataIndex :	'tend',
+		gytype : 	'string',
+		width : 	160,
+		render : 	(val) => timeDiffString(val),
+	},
+	{
+		title :		'Trace Service Filters',
+		key :		'filter',
+		dataIndex :	'filter',
+		gytype : 	'string',
+		width : 	360,
+		render : 	(val) => <code>{strTruncateTo(val, 100)}</code>,
+	},
+	];
+
+	if (typeof deleteCB === 'function' || typeof updateCB === 'function') {
+
+		colarr.push({
+			title :		'Operations',
+			dataIndex :	'delupd',
+			render : 	(_, record) => {
+						return (
+						<>
+						<Space>
+
+						{typeof updateCB === 'function' && (
+						<Popconfirm title="Do you want to change the Trace Definition End Time?" onConfirm={() => updateCB(record)}>
+							<Button type="link">Change End Time</Button>
+						</Popconfirm>	
+						)}
+
+						{typeof deleteCB === 'function' && (
+						<Popconfirm title="Do you want to Delete this Trace Definition?" onConfirm={() => deleteCB(record)}>
+							<Button type="link">Delete</Button>
+						</Popconfirm>	
+						)}
+
+						</Space>
+						</>
+						);
+					},	
+		});	
+	}
+
+	return colarr;
+}	
+
+export function TracedefMultiFilter({filterCB, linktext})
+{
+	const		objref = useRef(null);
+
+	if (objref.current === null) {
+		objref.current = {
+			modal		:	null,
+		};	
+	}
+
+	const onFilterCB = useCallback((newfilter) => {
+		if (objref.current.modal) {
+			objref.current.modal.destroy();
+			objref.current.modal = null;
+		}
+
+		if (newfilter && newfilter.length > 0 && typeof filterCB === 'function') {
+			filterCB(newfilter);
+		}	
+		
+	}, [objref, filterCB]);
+
+	const multifilters = useCallback(() => {
+		
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Definition Filters</Title>,
+
+			content : <MultiFilters filterCB={onFilterCB} filterfields={tracedeffields} title='Trace Definition Filters' />,
+			width : 850,	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, onFilterCB]);	
+
+	return (<Button onClick={multifilters} >{linktext ?? "Trace Definition Filters"}</Button>);	
+}	
 
 function getSvcInfo(svcid, parid, starttime, modalCount, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile)
 {
@@ -835,7 +960,7 @@ export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrT
 }
 
 
-export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
+export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -846,8 +971,6 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 			url 	: NodeApis.tracehistory,
 			method	: 'post',
 			data : {
-				starttime,
-				endtime,
 				options : {
 					maxrecs,
 					filter,
@@ -872,7 +995,7 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 			return;
 		}	
 
-	}, [doFetch, endtime, filter, maxrecs, starttime, ]);
+	}, [doFetch, filter, maxrecs, ]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "tracehistory";
@@ -891,15 +1014,12 @@ export function TracehistorySearch({starttime, endtime, filter, maxrecs, tableOn
 			rowKey = ((record) => record.time + record.svcid);
 			columns = tracehistoryCol;
 
-			titlestr = 'Trace History';
+			titlestr = 'Trace History Log';
 			
-			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
-
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
 				<Title level={4}>{titlestr}</Title>
-				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.tracehistory} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
@@ -1185,8 +1305,8 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 	};	
 
 	const onResponse = (value) => {
-		if (numregex.test(value)) {
-			filterCB(`{ resp > ${value} }`);
+		if (numregex.test(value) && Number.isInteger(Number(value))) {
+			filterCB(`{ resp > ${Number(value) * 1000} }`);
 		}
 		else {
 			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
@@ -1194,8 +1314,8 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 	};	
 
 	const onnetout = (value) => {
-		if (numregex.test(value)) {
-			filterCB(`{ netout > ${value} }`);
+		if (numregex.test(value) && Number.isInteger(Number(value))) {
+			filterCB(`{ netout > ${Number(value) * 1024} }`);
 		}
 		else {
 			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
@@ -1244,10 +1364,10 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 	<>
 	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
 	<div>
-	<span style={{ fontSize : 14 }}><i><strong>Response Time in usec greater than </strong></i></span>
+	<span style={{ fontSize : 14 }}><i><strong>Response Time in msec greater than </strong></i></span>
 	</div>
 	<div>
-	<Search placeholder="Response usec" allowClear onSearch={onResponse} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	<Search placeholder="Response msec" allowClear onSearch={onResponse} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
 	</div>
 	</div>
 	</>
@@ -1255,10 +1375,10 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 	<>
 	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
 	<div>
-	<span style={{ fontSize : 14 }}><i><strong>Response Outbound Bytes greater than </strong></i></span>
+	<span style={{ fontSize : 14 }}><i><strong>Response Outbound Bytes in KB greater than </strong></i></span>
 	</div>
 	<div>
-	<Search placeholder="Outbound Bytes" allowClear onSearch={onnetout} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	<Search placeholder="Outbound Bytes in KB " allowClear onSearch={onnetout} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
 	</div>
 	</div>
 	</>
@@ -1454,9 +1574,167 @@ export function TracestatusAggrFilter({filterCB, linktext})
 }	
 
 
+export function viewTracedef(record, modal = true)
+{
+	if (modal) {
+		Modal.info({
+			title : <Title level={4}><em>Trace Definition '{strTruncateTo(record.alertname, 32)}'</em></Title>,
+			content : (
+				<JSONDescription jsondata={record} titlestr="Trace Definition" column={1} fieldCols={tracedeffields} />
+				),
+
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+			okText : 'Close', 
+		});
+	}
+	else {
+		return <JSONDescription jsondata={record} titlestr="Trace Definition" column={1} fieldCols={tracedeffields} />;
+	}	
+}
+
+export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
+{
+	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	let			hinfo = null, closetab = 0;
+
+	useEffect(() => {
+		const conf = 
+		{
+			url 	: NodeApis.tracedef,
+			method	: 'post',
+			data : {
+				qrytime		: Date.now(),
+				timeoutsec 	: 30,
+				options 	: {
+					filter	: filter,
+					maxrecs	: maxrecs,
+				},	
+			},
+			timeout : 30000,
+		};	
+
+		const xfrmresp = (apidata) => {
+
+			validateApi(apidata);
+
+			if ((safetypeof(apidata) !== 'array') || (safetypeof(apidata[0]) !== 'object')) {
+				throw new Error("Invalid Data Format seen");
+			}	
+
+			return apidata[0];
+		};
+
+		try {
+			doFetch({config : conf, xfrmresp : xfrmresp});
+		}
+		catch(e) {
+			notification.error({message : "Data Fetch Exception Error for Trace Definition Table", 
+						description : `Exception occured while waiting for Trace Definition Table data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+			console.log(`Exception caught while waiting for Trace Definition Table fetch response : ${e}\n${e.stack}\n`);
+			return;
+		}	
+
+	}, [doFetch, filter, maxrecs]);
+
+	if (isloading === false && isapierror === false) { 
+		const			field = "tracedef";
+
+		if (!data || !data[field]) {
+			hinfo = <Alert type="error" showIcon message="Error Encountered" description={"Invalid response received from server..."} />;
+			closetab = 30000;
+		}
+		else if (data[field].length === 0) {
+			hinfo = <Alert type="info" showIcon message="No Trace Definition found on server..." description=<Empty /> />;
+			closetab = 10000;
+		}	
+		else {
+
+			let		columns;
+
+			columns = getTracedefColumns(typeof tableOnRow !== 'function' ? viewTracedef : undefined);
+
+			hinfo = (
+				<>
+				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
+				<Title level={4}>List of Trace Definitions</Title>
+				<GyTable columns={columns} dataSource={data.tracedef} rowKey="defid" onRow={tableOnRow} />
+				
+				</div>
+				</>
+			);
+
+		}
+	}
+	else if (isapierror) {
+		const emsg = `Error while fetching data : ${typeof data === 'string' ? data : ""}`;
+
+		hinfo = <Alert type="error" showIcon message="Error Encountered" description={emsg} />;
+		closetab = 60000;
+	}	
+	else {
+		hinfo = <LoadingAlert />;
+	}
+
+	if (closetab > 1000 && tabKey && remTabCB) {
+		remTabCB(tabKey, closetab);
+	}	
+
+	return (
+		<>
+		<ErrorBoundary>
+		{hinfo}
+		</ErrorBoundary>
+		</>
+	);
+}	
+
+
+export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
+{
+	if (!modal) {
+		const			tabKey = `Tracedef_${Date.now()}`;
+
+		CreateTab(title ?? "Tracedef", 
+			() => { return (
+					<>
+					{typeof extraComp === 'function' ? extraComp() : extraComp}
+					<TracedefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} title={title} /> 
+					</>
+				);		
+				}, tabKey, addTabCB);
+	}
+	else {
+		Modal.info({
+			title : title ?? "Trace Definitions",
+
+			content : (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<TracedefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						title={title} />
+				</>
+				),
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : false,
+			okText : 'Close',
+			okType : 'default',
+		});	
+	}	
+}
+
+
 export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
 {
-	const [tstart, setStart]		= useState(starttime);
+	const [{tstart, tend}, setTimes]	= useState({ 
+							tstart : starttime ? moment(starttime, moment.ISO_8601) : moment().subtract(10, 'seconds'),  
+							tend : endtime ? moment(endtime, moment.ISO_8601) : moment(),  
+						});
 
 	const onHistorical = useCallback((date, dateString, useAggr, aggrMin, aggrType) => {
 		if (!date || !dateString) {
@@ -1503,7 +1781,7 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 			<div style={{ marginLeft : 20 }}>
 			<Space>
 
-			{!starttime && <Button onClick={() => setStart(moment().startOf('minute').format())} >Refresh Trace Status</Button>}
+			{!starttime && <Button onClick={() => setTimes({tstart : moment().subtract(5, 'seconds'), tend : moment()})} >Refresh Trace Status</Button>}
 
 			<TimeRangeAggrModal onChange={onHistorical} title='Historical Trace Status Activity'
 					showTime={true} showRange={true} minAggrRangeMin={1} alwaysShowAggrType={true} disableFuture={true} />
@@ -1513,19 +1791,18 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 			</div>
 		);
 	};	
-	
+
 	return (
 		<>
 		<Title level={4}><em>{starttime ? 'Historical ' : ''}Trace Status Activity</em></Title>
 		{optionDiv()}
 		
-		<TracestatusSearch starttime={tstart} endtime={endtime}
+		<TracestatusSearch starttime={tstart.format()} endtime={tend.format()}
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				
 		<div style={{ marginTop: 40, marginBottom: 40 }} />
 
-		<TracehistorySearch starttime={tstart} endtime={endtime}
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+		<TracehistorySearch addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 		</>		
 	);
 }
