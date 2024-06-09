@@ -19,8 +19,9 @@ import		{hoststatefields, aggrhoststatefields, HostStateMultiQuickFilter, HostSt
 		hostinfofields, HostInfoFilters, hostinfoTableTab} from './hostViewPage.js';
 import		{cpumemfields, aggrcpumemfields, CpuMemMultiQuickFilter, CpuMemAggrFilter, cpumemTableTab} from './cpuMemPage.js';
 import		{svcmeshclustfields, SvcMeshFilter, svcMeshTab, svcipclustfields, SvcVirtIPFilter, svcVirtIPTab} from './svcClusterGroups.js';
-import		{tracereqfields, exttracefields, tracestatusfields, aggrtracestatusfields, tracedeffields, tracereqTableTab, tracestatusTableTab, 
-		tracedefTableTab, TracereqMultiQuickFilter, TracestatusMultiFilter, TracestatusAggrFilter, TracedefMultiFilter} from './traceDashboard.js';
+import		{tracereqfields, exttracefields, aggrtracereqfields, tracestatusfields, aggrtracestatusfields, tracedeffields, tracereqTableTab, tracestatusTableTab, 
+		tracedefTableTab, TracereqMultiQuickFilter, TracereqAggrMultiFilter, TracestatusMultiFilter, TracestatusAggrFilter, 
+		TracedefMultiFilter} from './traceDashboard.js';
 
 import		{alertsfields, aggralertsfields, AlertMultiQuickFilter, AlertAggrFilter, alertsTableTab} from './alertDashboard.js';
 import		{alertdeffields, AlertdefMultiQuickFilter, alertdefTableTab} from './alertDefs.js';
@@ -139,7 +140,7 @@ export const aggregateOpers = [
 	{
 		oper	:	'count',
 		label	:	'Count of condition',
-		desc	:	'Count of a boolean expression : count(sererr + clierr > 0) for expression count. Specify count(*) for total number of records',
+		desc	:	'Count of a boolean expression : e.g. count(sererr + clierr > 0) for expression count. Specify count(*) for total number of records',
 		types	:	['number', 'string', 'timestamptz', 'boolean', 'enum'],
 		outtype	:	'number',
 		regex	:	null,
@@ -148,7 +149,7 @@ export const aggregateOpers = [
 	{
 		oper	:	'first_elem',
 		label	:	'First Value',
-		desc	:	'First encountered value of a field or expression as in : first_elem(port)',
+		desc	:	'First encountered value of a field or expression as in : e.g. first_elem(port)',
 		types	:	['number', 'string', 'timestamptz', 'boolean', 'enum'],
 		outtype	:	'field',
 		regex	:	null,
@@ -157,7 +158,7 @@ export const aggregateOpers = [
 	{
 		oper	:	'last_elem',
 		label	:	'Last Value',
-		desc	:	'Last encountered value of a field or expression as in : last_elem(svcip1)',
+		desc	:	'Last encountered value of a field or expression as in : e.g. last_elem(svcip1)',
 		types	:	['number', 'string', 'timestamptz', 'boolean', 'enum'],
 		outtype	:	'field',
 		regex	:	null,
@@ -313,7 +314,7 @@ export const getSubsysFromCategory = (category) => {
 	case 'trace'	:	
 	return [ 
 		{ name : 'Trace Requests Extended',		value : 'exttracereq',		skipalert : true, },
-		{ name : 'Trace Requests Basic', 			value : 'tracereq',		skipalert : true, },
+		{ name : 'Trace Requests Basic', 		value : 'tracereq',		skipalert : true, },
 		{ name : 'Trace Status',			value : 'tracestatus',		skipalert : true, },
 		{ name : 'Trace Definitions', 			value : 'tracedef',		skipalert : true, },
 	];
@@ -347,7 +348,7 @@ export const getSubsysFromCategory = (category) => {
 
 export function getAlertSubsysCategories()
 {
-	return subsysCategories.filter((item) => item.value !== 'alerts');
+	return subsysCategories.filter((item) => item.value !== 'alerts' && item.value !== 'trace');
 }
 
 export function getAlertSubsysFromCategory(category)
@@ -474,9 +475,9 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 	case 'exttracereq' :
 		return {
 			fields 		: !useHostFields ? [...tracereqfields, ...exttracefields] : [...hostfields, ...tracereqfields, ...exttracefields],
-			aggrfields	: undefined,
+			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params, isext : true, }),
-			aggrfiltercb	: undefined,
+			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, isext : true, }),
 			tablecb		: (params) => tracereqTableTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -484,9 +485,9 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 	case 'tracereq' :
 		return {
 			fields 		: !useHostFields ? tracereqfields : [...hostfields, ...tracereqfields],
-			aggrfields	: undefined,
+			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params}),
-			aggrfiltercb	: undefined,
+			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, }),
 			tablecb		: tracereqTableTab,
 			isnotime	: false,
 		};	
@@ -1082,7 +1083,7 @@ export function SortColumn({subsysFields, doneCB})
 			</Form.Item>
 
 			<Form.Item {...tailFormItemLayout}>
-				<Button type="primary" htmlType="submit" >Set Sort Options</Button>
+				<Button htmlType="submit" >Set Sort Column</Button>
 			</Form.Item>
 		</Form>
 
@@ -1822,7 +1823,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 	
 		let		aggrMin;
 
-		if (values.useAggr && Number(values.aggrdur) > 0) {
+		if (useAggr && Number(values.aggrdur) > 0) {
 			if (values.aggrunit === 'nostep') {
 				aggrMin = 365 * 24 * 60;
 			}	
@@ -1841,7 +1842,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			{
 				starttime 		: timerange[0].format(),
 				endtime 		: timerange[1].format(),
-				useAggr			: canaggr ? values.useAggr : undefined, 
+				useAggr			: canaggr ? useAggr : undefined, 
 				aggrMin			: aggrMin, 
 				aggrType		: values.aggrType,
 				filter 			: filterstr, 
@@ -1859,7 +1860,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 		);
 
-	}, [objref, timerange, canaggr, filterstr, aggrfilterstr, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
+	}, [objref, timerange, canaggr, useAggr, filterstr, aggrfilterstr, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
 
 	const onTimerangeChange = useCallback((dateObjs) => {
 		if ((safetypeof(dateObjs) !== 'array') || (dateObjs.length !== 2)) {
@@ -1884,6 +1885,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		// Skip aggregation for non supported subsystems or for Alert category
 		if (!objref.current.subsysobj.aggrfields || !isrange || newsub === 'alerts') {
 			setcanagg(false);
+			setUseAggr(false);
 		}	
 		else {
 			setcanagg(true);
@@ -2093,7 +2095,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 
 			{canaggr && 
-			<Form.Item name="useAggr" label="Apply DB Aggregation" valuePropName="checked" initialValue={true} >
+			<Form.Item name="useAggr" label="Apply DB Aggregation" valuePropName="checked" initialValue={false} >
 				<Space>
 				<Switch onChange={onUseAggrChange} />
 				
@@ -2118,7 +2120,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					</Radio.Group>
 				</Form.Item>	
 
-				<span>(Aggregation Periods within the selected Time range : No Step implies over entire Time range)</span>
+				<span>(Aggregation Periods within the selected Time range : No Step implies single aggregate over entire Time range)</span>
 
 				</Space>
 			</Form.Item>
@@ -2145,7 +2147,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 
 			{canaggr && useAggr && 
-			<Form.Item name="aggrType" label="Default Numerical Aggregation Operation" initialValue="avg">
+			<Form.Item name="aggrType" label="Default Numerical Aggregation Operator" initialValue="avg">
 				<Radio.Group>
 				<Radio.Button value='avg'>Average of Interval</Radio.Button>
 				<Radio.Button value='max'>Max of Interval</Radio.Button>
@@ -2202,7 +2204,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			{timerange.length > 0 && outputfields && 
 			<Form.Item label="Optional Output Sort Options" >
 
-				{!sortcol && <SortColumnModal doneCB={(col, dir) => { objref.current.sortdir = dir; setsortcol(col); }} linktext="Set Sort Column" 
+				{!sortcol && <SortColumnModal doneCB={(col, dir) => { objref.current.sortdir = dir; setsortcol(col); }} linktext="Sort Column" 
 					subsysFields={outputfields} />}
 				{sortcol && (
 					<>
@@ -2225,7 +2227,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			<Form.Item {...tailFormItemLayout}>
 				<>
 				<Space>
-				<Button type="primary" htmlType="submit" disabled={!timerange || timerange.length === 0}>Search</Button>
+				<Button htmlType="submit" disabled={!timerange || timerange.length === 0}>Search</Button>
 
 				{typeof resetCB === 'function' && (
 					<Button onClick={resetCB} >Reset</Button>

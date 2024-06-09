@@ -295,11 +295,12 @@ function ClusterSummary({cluster, objref, isRealTime, aggregatesec, aggroper, ti
 
 	const title = (<div style={{ textAlign : 'center' }}><Title level={4}>Summary for Cluster <em>{cluster}</em></Title></div>);
 
-	let 			lastitem = null;
+	let 			lastitem = null, ismid = false;
 	
 	if (summary.dataarr && safetypeof(summary.dataarr) === 'array' && summary.dataarr.length > 0) {
 		if (timeSliderIndex >= 0 && (timeSliderIndex < summary.dataarr.length)) {
 			lastitem = summary.dataarr[timeSliderIndex];
+			ismid = true;
 		}	
 		else {
 			lastitem = summary.dataarr[summary.dataarr.length - 1];
@@ -309,14 +310,14 @@ function ClusterSummary({cluster, objref, isRealTime, aggregatesec, aggroper, ti
 	let			ltime;
 
 	if (lastitem && lastitem.time) {
-		ltime = `Statistics at time ${lastitem.time}`;
+		ltime = `Last Seen Statistics at time ${lastitem.time}`;
 	}	
 	else {
 		ltime = 'Last Seen Statistics';
 	}	
 
 	const lasttitle = (<div style={{ textAlign : 'center', marginTop: 20 }}><span style={{ fontSize: 16 }}> 
-				<em><strong>Time Range {aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
+				<em><strong>{aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
 
 	const getClusterHostList = () => {
 
@@ -478,7 +479,7 @@ function ClusterSummary({cluster, objref, isRealTime, aggregatesec, aggroper, ti
 
 		</Descriptions>
 
-		{ lastitem && (
+		{ lastitem && (isRealTime || ismid) && (
 
 			<Descriptions title={lasttitle} bordered={true} column={{ xxl: 4, xl: 4, lg: 3, md: 3, sm: 2, xs: 1 }} >
 

@@ -12,7 +12,7 @@ import 			{format} from "d3-format";
 import 			{FixedPrioQueue} from './components/fixedPrioQueue.js';
 import 			{safetypeof, NullID, validateApi, fixedArrayAddItems, kbStrFormat, msecStrFormat, useFetchApi, CreateLinkTab, ComponentLife,
 			CreateTab, mergeMultiMadhava, ButtonModal, capitalFirstLetter, ButtonJSONDescribe, stateEnum, LoadingAlert, JSONDescription,
-			strTruncateTo, getMinEndtime, timeDiffString, getLocalTime} from './components/util.js';
+			strTruncateTo, getMinEndtime, timeDiffString, getLocalTime, isStateIssue} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import 			{ProcMonitor, ProcIssueSource} from './procMonitor.js';
@@ -379,6 +379,7 @@ const hostAggrCol = [
 		gytype :	'string',
 		responsive : 	['lg'],
 		width : 	300,
+		render :	(val, rec) => <span style={{ color : isStateIssue(rec.state) ? 'red' : undefined }} >{strTruncateTo(val, 100)}</span>,
 	},
 	
 ];
@@ -994,48 +995,6 @@ function getProcinfoColumns(istime, useHostFields)
 			render : 	(val) => timeDiffString(val),
 		},	
 		{
-			title :		'Region Name',
-			key :		'region',
-			dataIndex :	'region',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		120,
-		},	
-		{
-			title :		'Zone Name',
-			key :		'zone',
-			dataIndex :	'zone',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		120,
-		},	
-		{
-			title :		'Tag Name',
-			key :		'tag',
-			dataIndex :	'tag',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		150,
-		},	
-		{
-			title :		'Service Process',
-			key :		'relsvcid',
-			dataIndex :	'relsvcid',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		100,
-			render : 	(val, rec) => (val !== NullID ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'red'}}/>),
-		},	
-		{
-			title :		'Privileged Process',
-			key :		'hicap',
-			dataIndex :	'hicap',
-			gytype : 	'boolean',
-			responsive : 	['lg'],
-			width :		100,
-			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
-		},	
-		{
 			title :		'CPU Throttled Process',
 			key :		'cputhr',
 			dataIndex :	'cputhr',
@@ -1054,24 +1013,6 @@ function getProcinfoColumns(istime, useHostFields)
 			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
 		},	
 		{
-			title :		'Realtime Process',
-			key :		'rtproc',
-			dataIndex :	'rtproc',
-			gytype : 	'boolean',
-			responsive : 	['lg'],
-			width :		100,
-			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
-		},	
-		{
-			title :		'Container Process',
-			key :		'conproc',
-			dataIndex :	'conproc',
-			gytype : 	'boolean',
-			responsive : 	['lg'],
-			width :		100,
-			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
-		},	
-		{
 			title :		'# Processes',
 			key :		'nproc',
 			dataIndex :	'nproc',
@@ -1083,22 +1024,6 @@ function getProcinfoColumns(istime, useHostFields)
 			title :		'# Threads',
 			key :		'nthr',
 			dataIndex :	'nthr',
-			gytype : 	'number',
-			responsive : 	['lg'],
-			width :		100,
-		},	
-		{
-			title :		'User ID Number',
-			key :		'uid',
-			dataIndex :	'uid',
-			gytype : 	'number',
-			responsive : 	['lg'],
-			width :		100,
-		},	
-		{
-			title :		'Group ID Number',
-			key :		'gid',
-			dataIndex :	'gid',
 			gytype : 	'number',
 			responsive : 	['lg'],
 			width :		100,
@@ -1145,7 +1070,83 @@ function getProcinfoColumns(istime, useHostFields)
 			width : 	100,
 			responsive : 	['lg'],
 		},
+		{
+			title :		'Tag Name',
+			key :		'tag',
+			dataIndex :	'tag',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		150,
+		},	
+		{
+			title :		'Privileged Process',
+			key :		'hicap',
+			dataIndex :	'hicap',
+			gytype : 	'boolean',
+			responsive : 	['lg'],
+			width :		100,
+			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
+		},	
+		{
+			title :		'Realtime Process',
+			key :		'rtproc',
+			dataIndex :	'rtproc',
+			gytype : 	'boolean',
+			responsive : 	['lg'],
+			width :		100,
+			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
+		},	
+		{
+			title :		'Container Process',
+			key :		'conproc',
+			dataIndex :	'conproc',
+			gytype : 	'boolean',
+			responsive : 	['lg'],
+			width :		100,
+			render : 	(val, rec) => (val === true ? <CheckSquareTwoTone twoToneColor='red'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'green'}}/>),
+		},	
 
+		{
+			title :		'Service Process',
+			key :		'relsvcid',
+			dataIndex :	'relsvcid',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		100,
+			render : 	(val, rec) => (val !== NullID ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : <CloseOutlined style={{ color: 'red'}}/>),
+		},	
+		{
+			title :		'User ID Number',
+			key :		'uid',
+			dataIndex :	'uid',
+			gytype : 	'number',
+			responsive : 	['lg'],
+			width :		100,
+		},	
+		{
+			title :		'Group ID Number',
+			key :		'gid',
+			dataIndex :	'gid',
+			gytype : 	'number',
+			responsive : 	['lg'],
+			width :		100,
+		},	
+		{
+			title :		'Region Name',
+			key :		'region',
+			dataIndex :	'region',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		120,
+		},	
+		{
+			title :		'Zone Name',
+			key :		'zone',
+			dataIndex :	'zone',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		120,
+		},	
 	];
 
 	if (useHostFields) {
@@ -1926,12 +1927,15 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		});
 	};	
 
-	const viewProcFields = (key, value) => {
+	const viewProcFields = (key, value, rec) => {
 		if (key === 'state') {
 			return StateBadge(value, value);
 		}	
 		else if (key === 'issue') {
 			value = ProcIssueSource[value] ? ProcIssueSource[value].name : '';
+		}	
+		else if (key === 'desc') {
+			return <span style={{ color : isStateIssue(rec.state) ? 'red' : undefined }} >{value}</span>;
 		}	
 		else if (typeof value === 'object' || typeof value === 'boolean') {
 			value = JSON.stringify(value);
@@ -1945,7 +1949,7 @@ export function AggrProcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTa
 		<ErrorBoundary>
 
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
-		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Process State for '${rec.name}'`}
+		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Process State for '${rec.name}'`} column={2} 
 					fieldCols={[...procstatefields, ...aggrprocstatefields, ...extprocfields, ...hostfields]} xfrmDataCB={viewProcFields}  />
 		</div>			
 		

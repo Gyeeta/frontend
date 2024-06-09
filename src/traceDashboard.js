@@ -11,13 +11,16 @@ import 			{format} from "d3-format";
 import 			{GyTable, TimeFieldSorter, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecStrFormat, bytesStrFormat,
-			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab,
+			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab, getMinEndtime,
 			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
-import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, hostfields, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
 import			{SvcInfoDesc} from './svcDashboard.js';
+import 			{HostInfoDesc} from './hostViewPage.js';
+import			{procInfoTab} from './procDashboard.js';
+import			{ProcMonitor} from './procMonitor.js';
 
 const 			{ErrorBoundary} = Alert;
 const 			{Title} = Typography;
@@ -33,16 +36,17 @@ const traceStatusEnum = [
 
 export const tracereqfields = [
 	{ field : 'req',		desc : 'Trace Request',			type : 'string',	subsys : 'tracereq',	valid : null, },
-	{ field : 'resp',		desc : 'Response in usec',		type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'netin',		desc : 'Request Inbound Bytes',		type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'netout',		desc : 'Response Outbound Bytes',	type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'err',		desc : 'Response Error Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'errtxt',		desc : 'Resp Error Text String',	type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'respus',		desc : 'Response in usec',		type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'netin',		desc : 'Inbound Request Bytes',		type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'netout',		desc : 'Outbound Response Bytes',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'err',		desc : 'Error Response Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'errtxt',		desc : 'Error Text String',		type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'status',		desc : 'HTTP Status Code',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'app',		desc : 'Client Application String',	type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'user',		desc : 'Login Username String',		type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'db',			desc : 'Database Name',			type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'svcname',		desc : 'Service Name',			type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'sport',		desc : 'Service Listen Port',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'proto',		desc : 'Network Protocol',		type : 'enum',		subsys : 'tracereq',	valid : null, 		esrc : createEnumArray(protocolEnum) },
 	{ field : 'time',		desc : 'Timestamp of Record',		type : 'timestamptz',	subsys : 'tracereq',	valid : null, },
 	{ field : 'tconn',		desc : 'Connection Start Timestamp',	type : 'timestamptz',	subsys : 'tracereq',	valid : null, },
@@ -60,6 +64,34 @@ export const exttracefields = [
 	{ field : 'cprocid',		desc : 'Client Process Gyeeta ID',	type : 'string',	subsys : 'exttracereq',	valid : null, },	
 	{ field : 'cparid',		desc : 'Client Partha ID',		type : 'string',	subsys : 'exttracereq',	valid : null, },
 	{ field : 'cmadid',		desc : 'Client Madhava ID',		type : 'string',	subsys : 'exttracereq',	valid : null, },
+];
+
+export const aggrtracereqfields = [
+	{ field : 'nreq',		desc : 'Number of Trace Requests',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'avgrespus',		desc : 'Avg Response Time in usec',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'maxrespus',		desc : 'Max Response Time in usec',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'p99respus',		desc : 'p99 Percentile Response Time usec',			type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'nerr',		desc : 'Number of Errors',					type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'sumnetin',		desc : 'Total Inbound Request Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'sumnetout',		desc : 'Total Outbound Response Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'maxnetin',		desc : 'Max Inbound Request Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'maxnetout',		desc : 'Max Outbound Response Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'nconns',		desc : 'Number of TCP connections',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt300us',	desc : '# Req with Response less than 300 usec',		type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt1ms',		desc : '# Req with Response between 300 usec and 1 msec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt10ms',		desc : '# Req with Response between 1 msec and 10 msec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt30ms',		desc : '# Req with Response between 10 msec and 30 msec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt100ms',	desc : '# Req with Response between 30 msec and 100 msec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt300ms',	desc : '# Req with Response between 100 msec and 300 msec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'resplt1sec',		desc : '# Req with Response between 300 msec and 1 sec',	type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'respgt1sec',		desc : '# Req with Response greater than 1 sec',		type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'svcname',		desc : 'Service Name',						type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'sport',		desc : 'Service Listen Port',					type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'proto',		desc : 'Network Protocol',					type : 'enum',		subsys : 'tracereq',	valid : null, 		
+																esrc : createEnumArray(protocolEnum) },
+	{ field : 'time',		desc : 'Timestamp of Record',					type : 'timestamptz',	subsys : 'tracereq',	valid : null, },
+	{ field : 'svcid',		desc : 'Service Gyeeta ID',					type : 'string',	subsys : 'tracereq',	valid : null, },	
+	{ field : 'inrecs',		desc : '# Records in Aggregation',				type : 'number',	subsys : 'tracereq',	valid : null, }
 ];
 
 
@@ -154,8 +186,8 @@ function getTracereqColumns(useextFields, useHostFields)
 		},	
 		{
 			title :		'Response Time',
-			key :		'resp',
-			dataIndex :	'resp',
+			key :		'respus',
+			dataIndex :	'respus',
 			gytype :	'number',
 			width : 	120,
 			render :	(num) => usecStrFormat(num),
@@ -175,6 +207,14 @@ function getTracereqColumns(useextFields, useHostFields)
 			gytype : 	'string',
 			width : 	120,
 			render :	(val) => <Button type="link">{val}</Button>,
+		},	
+		{
+			title :		'Listener Port',
+			key :		'sport',
+			dataIndex :	'sport',
+			gytype : 	'number',
+			width : 	100,
+			responsive : 	['lg'],
 		},	
 		{
 			title :		'Request Bytes',
@@ -330,7 +370,218 @@ function getTracereqColumns(useextFields, useHostFields)
 	return colarr;
 }
 
-function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount})
+function getAggrTracereqColumns(useHostFields)
+{
+	const colarr = [
+		{
+			title :		'Time',
+			key :		'time',
+			dataIndex :	'time',
+			gytype :	'string',
+			width :		170,
+			fixed : 	'left',
+			render :	(val) => getLocalTime(val, true),
+		},	
+		{
+			title :		'Service Name',
+			key :		'svcname',
+			dataIndex :	'svcname',
+			gytype : 	'string',
+			width : 	120,
+			fixed : 	'left',
+			render :	(val) => <Button type="link">{val}</Button>,
+		},	
+		{
+			title :		'Listener Port',
+			key :		'sport',
+			dataIndex :	'sport',
+			gytype : 	'number',
+			width : 	100,
+			fixed : 	'left',
+			responsive : 	['lg'],
+		},	
+		{
+			title :		'# Requests',
+			key :		'nreq',
+			dataIndex :	'nreq',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'Avg Response',
+			key :		'avgrespus',
+			dataIndex :	'avgrespus',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => usecStrFormat(num),
+		},
+		{
+			title :		'Max Response',
+			key :		'maxrespus',
+			dataIndex :	'maxrespus',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => usecStrFormat(num),
+		},
+		{
+			title :		'p99 Response',
+			key :		'p99respus',
+			dataIndex :	'p99respus',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => usecStrFormat(num),
+		},
+		{
+			title :		'# Errors',
+			key :		'nerr',
+			dataIndex :	'nerr',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }} >{format(",")(num)}</span>,
+		},
+		{
+			title :		'Total Request Bytes',
+			key :		'sumnetin',
+			dataIndex :	'sumnetin',
+			gytype :	'number',
+			width : 	140,
+			render :	(num) => bytesStrFormat(num),
+		},
+		{
+			title :		'Total Response Bytes',
+			key :		'sumnetout',
+			dataIndex :	'sumnetout',
+			gytype :	'number',
+			width : 	140,
+			render :	(num) => bytesStrFormat(num),
+		},
+		{
+			title :		'# Connections',
+			key :		'nconns',
+			dataIndex :	'nconns',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 300us',
+			key :		'resplt300us',
+			dataIndex :	'resplt300us',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 1ms',
+			key :		'resplt1ms',
+			dataIndex :	'resplt1ms',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 10ms',
+			key :		'resplt10ms',
+			dataIndex :	'resplt10ms',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 30ms',
+			key :		'resplt30ms',
+			dataIndex :	'resplt30ms',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 100ms',
+			key :		'resplt100ms',
+			dataIndex :	'resplt100ms',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 300ms',
+			key :		'resplt300ms',
+			dataIndex :	'resplt300ms',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response < 1sec',
+			key :		'resplt1sec',
+			dataIndex :	'resplt1sec',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'# Response > 1sec',
+			key :		'respgt1sec',
+			dataIndex :	'respgt1sec',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => format(",")(num),
+		},
+		{
+			title :		'Max Request Bytes',
+			key :		'maxnetin',
+			dataIndex :	'maxnetin',
+			gytype :	'number',
+			width : 	140,
+			responsive : 	['lg'],
+			render :	(num) => bytesStrFormat(num),
+		},
+		{
+			title :		'Max Response Bytes',
+			key :		'maxnetout',
+			dataIndex :	'maxnetout',
+			gytype :	'number',
+			width : 	140,
+			responsive : 	['lg'],
+			render :	(num) => bytesStrFormat(num),
+		},
+		{
+			title :		'Net Protocol',
+			key :		'proto',
+			dataIndex :	'proto',
+			gytype :	'string',
+			width : 	120,
+			responsive : 	['lg'],
+		},
+	];
+
+	if (useHostFields) colarr.push(
+		{
+			title :		'Host',
+			key :		'host',
+			dataIndex :	'host',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		150,
+			fixed : 	'right',
+		},
+		{
+			title :		'Cluster Name',
+			key :		'cluster',
+			dataIndex :	'cluster',
+			gytype :	'string',
+			responsive : 	['lg'],
+			width :		150,
+			fixed : 	'right',
+		}
+	);
+
+	return colarr;
+}
+
+
+function traceReqOnRow({parid, endtime, useAggr, aggrMin, addTabCB, remTabCB, isActiveTabCB, modalCount})
 {
 	return (record, rowIndex) => {
 		return {
@@ -355,13 +606,187 @@ function traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modal
 	};
 }	
 
+function aggrTraceReqOnRow({parid, endtime, aggrMin, addTabCB, remTabCB, isActiveTabCB, modalCount})
+{
+	return (record, rowIndex) => {
+		return {
+			onClick: event => {
+				Modal.info({
+					title : <span style={{ textAlign: 'center' }}><strong>{record.svcname} Trace API</strong></span>,
+					content : (
+						<>
+						<ComponentLife stateCB={modalCount} />
+						<AggrTraceReqModalCard rec={record} parid={parid ?? record.parid} endtime={endtime} aggrMin={aggrMin}
+								addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+						</>
+						),
+
+					width : '90%',	
+					closable : true,
+					destroyOnClose : true,
+					maskClosable : true,
+				});
+			}
+		};		
+	};
+}	
+
+
 function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
 {
-	const			fieldCols = rec.cname !== undefined ? [...tracereqfields, ...exttracefields] : tracereqfields;
+	const			fieldCols = rec.cname !== undefined ? [...tracereqfields, ...exttracefields, ...hostfields] : tracereqfields;
+	const			keyNames = { respus : 'Response Time', };
+
+	if (!rec) {
+		throw new Error(`No Data record specified for Trace Request Modal`);
+	}
+
+	const			tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
+	const 			tend = moment(rec.time, moment.ISO_8601).add(rec.respus/60000000 + 1, 'minute').format();
+
+	const getSvcInfo = () => {
+		Modal.info({
+			title : <span><strong>Service {rec.name} Info</strong></span>,
+			content : <SvcInfoDesc svcid={rec.svcid} parid={parid ?? rec.parid} starttime={rec.time} isTabletOrMobile={isTabletOrMobile}
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+		});
+	};	
+
+	const getHostInfo = () => {
+		Modal.info({
+			title : <span><strong>Host of service {rec.name} Info</strong></span>,
+			content : <HostInfoDesc parid={parid ?? rec.parid}  addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+		});
+	};	
+
+	const getSvcTimeState = () => {
+		const		tabKey = `SvcState_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service State around Record Time</i></span>, 'Service State as per time',
+				() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+	};
+
+	const getCliTimeState = () => {
+
+		if (!rec.cprocid) return;
+
+		const		tabKey = `CliState_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Client State around Record Time</i></span>, 'Client State as per time',
+				() => { return <ProcMonitor procid={rec.cprocid} parid={rec.cparid} isRealTime={false} starttime={tstart} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+	};
+
+	const getSvcMonitor = () => {
+		const		tabKey = `SvcMon_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service State Monitor</i></span>, 'Service Realtime Monitor', 
+					() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={true}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+	};
+
+	const getSvcNetFlows = () => {
+		const		tabKey = `NetFlow_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service Network Flows around Record Time</i></span>, 'Service Network Flows', 
+					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+	};
+
+	const getCliNetFlows = () => {
+
+		if (!rec.cprocid) return;
+
+		const		tabKey = `NetFlow_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Client Network Flows around Record Time</i></span>, 'Client Network Flows', 
+					() => { return <NetDashboard procid={rec.cprocid} procname={rec.cname} parid={rec.cparid} isprocsvc={rec.csvc} 
+							autoRefresh={false} starttime={tstart} endtime={tend}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+	};
+
+	const getRelSvcID = async () => {
+		const conf = 
+		{
+			url 	: NodeApis.svcinfo,
+			method	: 'post',
+			data : {
+				starttime	:	tstart,
+				endtime		:	tend,
+				parid		:	parid ?? rec.parid,
+				options : {
+					maxrecs 	: 100,
+					aggregate	: true,
+					aggrsec		: 30 * 60 * 24,
+					filter		: `svcid = '${rec.svcid}'`,
+				},	
+			},
+		};	
+		
+		try {
+			let 		res = await axios(conf);
+
+			validateApi(res.data);
+
+			if (safetypeof(res.data) === 'array') { 
+				if (safetypeof(res.data[0]?.svcinfo) === 'array') {
+					return  res.data[0].svcinfo[0]?.relsvcid;
+				}	
+			}
+			return null;
+		}	
+		catch(e) {
+			return null;
+		}	
+	};	
+
+	const getSvcProcInfo = () => {
+		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 300 * 60 * 24,
+				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
+				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.name}` }) : null)
+			.catch((e) => {
+			});	
+	};	
+
+
+	const viewTraceFields = (key, value, rec) => {
+		if (key === 'respus') {
+			value = usecStrFormat(value);
+		}	
+		else if (key === 'netin' || key === 'netout') {
+			value = bytesStrFormat(value);
+		}	
+		else if (key === 'err' && value !== 0) {
+			return <span style={{ color : 'red'}} >{value}</span>;
+		}	
+		else if (key === 'errtxt') {
+			return <span style={{ color : 'red'}} >{value}</span>;
+		}	
+		else if (typeof value === 'object' || typeof value === 'boolean') {
+			value = JSON.stringify(value);
+		}	
+
+		return <span>{value}</span>;
+	};
+
 
 	return (
 		<>
-		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 200 }} >
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 30, border: '1px groove #d9d9d9', maxHeight : 200 }} >
 		<h2 style={{ textAlign: 'center' }}>Request API</h2>
 		<p>
 		<code style={{ fontFamily: 'Consolas,"courier new"', fontSize: '105%', textAlign: 'center' }}>{rec.req}</code>
@@ -370,7 +795,45 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
 		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2}
-				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} />
+				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} xfrmDataCB={viewTraceFields} keyNames={keyNames} />
+		</div>
+		</>
+	);	
+}
+
+function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
+{
+	const			fieldCols = [...aggrtracereqfields, ...hostfields];
+	const			keyNames = { avgrespus : 'Avg Response Time', maxrespus : 'Max Response Time', p99respus : 'p99 Response Time', };
+
+	if (!rec) {
+		throw new Error(`No Data record specified for Aggr Trace Request Modal`);
+	}
+
+	const			tstart = moment(rec.time, moment.ISO_8601).subtract(1, 'minute').format();
+	const 			tend = getMinEndtime(rec.time, aggrMin ?? 1, endtime);
+
+	const viewTraceFields = (key, value, rec) => {
+		if (key === 'avgrespus' || key === 'maxrespus' || key === 'p99respus') {
+			value = usecStrFormat(value);
+		}	
+		else if (key === 'sumnetin' || key === 'sumnetout' || key === 'maxnetin' || key === 'maxnetout') {
+			value = bytesStrFormat(value);
+		}	
+		else if (key === 'nerr' && value !== 0) {
+			return <span style={{ color : 'red'}} >{format(',')(value)}</span>;
+		}	
+		else if (typeof value === 'object' || typeof value === 'boolean') {
+			value = JSON.stringify(value);
+		}	
+
+		return <span>{value}</span>;
+	};
+
+	return (
+		<>
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
+		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2} xfrmDataCB={viewTraceFields} keyNames={keyNames} />
 		</div>
 		</>
 	);	
@@ -753,6 +1216,7 @@ export function TracedefMultiFilter({filterCB, linktext})
 	return (<Button onClick={multifilters} >{linktext ?? "Trace Definition Filters"}</Button>);	
 }	
 
+
 function getSvcInfo(svcid, parid, starttime, modalCount, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile)
 {
 	Modal.info({
@@ -770,6 +1234,23 @@ function getSvcInfo(svcid, parid, starttime, modalCount, addTabCB, remTabCB, isA
 	});
 }	
 
+function getHostInfo(parid, modalCount, addTabCB, remTabCB, isActiveTabCB)
+{
+	Modal.info({
+		title : <span><strong>Service Host Info</strong></span>,
+		content : (
+			<>
+			<ComponentLife stateCB={modalCount} />
+			<HostInfoDesc parid={parid}  addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+			</>
+		),
+
+		width : '90%',	
+		closable : true,
+		destroyOnClose : true,
+		maskClosable : true,
+	});
+}	
 
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, monAutoRefresh})
@@ -1051,8 +1532,9 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 	);
 }
 
-export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, titlestr, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, 
-					sortColumns, sortDir, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
+export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, titlestr, tableOnRow, 
+					addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, customTableColumns, sortColumns, sortDir, 
+					recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -1085,17 +1567,21 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				starttime,
 				endtime,
 				parid,
-				timeoutsec 		: 180,
+				timeoutsec 		: useAggr ? 500 : 200,
 				options : {
 					maxrecs 	: maxrecs,
+					aggregate	: useAggr,
+					aggrsec		: aggrMin ? aggrMin * 60 : 300,
+					aggroper	: aggrType,
 					filter		: filter,
-					columns		: customColumns,
+					aggrfilter	: useAggr ? aggrfilter : undefined,
+					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
 					recoffset       : recoffset > 0 ? recoffset : undefined,
 				},	
 			},
-			timeout : 180 * 1000,
+			timeout : useAggr ? 500 * 1000 : 200 * 1000,
 		};	
 
 		const xfrmresp = (apidata) => {
@@ -1115,7 +1601,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			return;
 		}	
 
-	}, [parid, doFetch, endtime, filter, maxrecs, starttime, isext, customColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, doFetch, endtime, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1170,12 +1656,51 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		}
 		else {
 			if (typeof tableOnRow !== 'function') {
-				tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
+				if (!customTableColumns) {
+					if (!useAggr) {
+						tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
+					}	
+					else {
+						tableOnRow = aggrTraceReqOnRow({parid, aggrMin, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
+					}	
+				}
+				else {
+					tableOnRow = (record, rowIndex) => {
+						return {
+							onClick: event => {
+								Modal.info({
+									title : <span><strong>{record.name} Trace Record</strong></span>,
+									content : (
+										<>
+										<JSONDescription jsondata={record} />
+										</>
+										),
+
+									width : '90%',	
+									closable : true,
+									destroyOnClose : true,
+									maskClosable : true,
+								});
+							}
+						};		
+					};
+				}	
 			}
 
 			let			columns, rowKey, timestr;
 
 			rowKey = 'rowid';
+
+			if (customColumns && customTableColumns) {
+				columns = customTableColumns;
+				rowKey = "rowid";
+			}
+			else if (!useAggr) {
+				columns = getTracereqColumns(isext, !parid);
+			}	
+			else {
+				columns = getAggrTracereqColumns(!parid);
+			}	
 
 			if (!isrange) {
 				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM DD YYYY HH:mm:ss.SSS Z")} </strong></span>;
@@ -1184,21 +1709,17 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss.SSS Z")} to {moment(endtime, moment.ISO_8601).format("MMM DD YYYY HH:mm:ss.SSS Z")}</strong></span>;
 			}	
 
-			columns = getTracereqColumns(isext, !parid);
-
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr ?? 'Trace Requests'}</Title>
+				<Title level={4}>{titlestr ?? `${useAggr ? 'Aggregated ' : ''} Trace Requests`}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} rowKey={rowKey} scroll={getTableScroll()} />
 				</div>
 				</>
 			);
-
 		}
-
 	}
 	else if (isapierror) {
 		const emsg = `Error while fetching data : ${typeof data === 'string' ? data : ""}`;
@@ -1223,8 +1744,9 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 	);
 }
 
-export function tracereqTableTab({starttime, endtime, isext, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title, titlestr,
-					customColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, 
+					tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title, titlestr,
+					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1258,9 +1780,10 @@ export function tracereqTableTab({starttime, endtime, isext, filter, maxrecs, ta
 			() => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
-						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
+						maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
 						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
 					</>	
 				);
@@ -1273,9 +1796,10 @@ export function tracereqTableTab({starttime, endtime, isext, filter, maxrecs, ta
 			content : (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
-					maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} sortColumns={sortColumns} sortDir={sortDir} 
+				<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
+					maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter}
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
 					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
 				</>	
 				),
@@ -1306,7 +1830,7 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 
 	const onResponse = (value) => {
 		if (numregex.test(value) && Number.isInteger(Number(value))) {
-			filterCB(`{ resp > ${Number(value) * 1000} }`);
+			filterCB(`{ respus > ${Number(value) * 1000} }`);
 		}
 		else {
 			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
@@ -1321,6 +1845,11 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 			notification.error({message : "Input Format Error", description : `Input ${value} not a numeric format`});
 		}	
 	};	
+
+	const onSvcname = (value) => {
+		filterCB(`{ svcname like ${value[0] !== "'" ? "'" + value + "'" : value} }`);
+	};	
+
 
 	const onApp = (value) => {
 		filterCB(`{ app like ${value[0] !== "'" ? "'" + value + "'" : value} }`);
@@ -1379,6 +1908,17 @@ export function TracereqQuickFilters({filterCB, useHostFields})
 	</div>
 	<div>
 	<Search placeholder="Outbound Bytes in KB " allowClear onSearch={onnetout} style={{ width: 250 }} enterButton={<Button>Set Filter</Button>} size='small' />
+	</div>
+	</div>
+	</>
+
+	<>
+	<div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'space-around', margin: 30, border: '1px groove #d9d9d9', padding : 10}}>
+	<div>
+	<span style={{ fontSize : 14 }}><i><strong>Service Name Like </strong></i></span>
+	</div>
+	<div>
+	<Search placeholder="Regex like" allowClear onSearch={onSvcname} style={{ width: 300 }} enterButton={<Button>Set Filter</Button>} size='small' />
 	</div>
 	</div>
 	</>
@@ -1486,6 +2026,48 @@ export function TracereqMultiQuickFilter({filterCB, useHostFields = true, isext 
 		</>
 	);	
 }	
+
+export function TracereqAggrMultiFilter({filterCB, isext = false, linktext})
+{
+	const		objref = useRef(null);
+
+	if (objref.current === null) {
+		objref.current = {
+			modal		:	null,
+		};	
+	}
+
+	const onFilterCB = useCallback((newfilter) => {
+		if (objref.current.modal) {
+			objref.current.modal.destroy();
+			objref.current.modal = null;
+		}
+
+		if (newfilter && newfilter.length > 0 && typeof filterCB === 'function') {
+			filterCB(newfilter);
+		}	
+		
+	}, [objref, filterCB]);
+
+	const multifilters = useCallback(() => {
+		
+		objref.current.modal = Modal.info({
+			title : <Title level={4}>Trace Request Aggregation Filters</Title>,
+
+			content : <MultiFilters filterCB={onFilterCB} filterfields={[...aggrtracereqfields, ...hostfields]} />,
+			width : '80%',	
+			closable : true,
+			destroyOnClose : false,
+			maskClosable : false,
+			okText : 'Cancel',
+			okType : 'default',
+		});
+
+	}, [objref, onFilterCB]);	
+
+	return <Button onClick={multifilters} >{linktext ?? "Optional Post Aggregation Filters"}</Button>;	
+}
+
 
 export function TracestatusMultiFilter({filterCB, useHostFields = true, linktext, quicklinktext})
 {
@@ -2394,7 +2976,11 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			{tracestatus && <Descriptions.Item label={<em>Trace Status</em>}>{TraceStateBadge(tracestatus.state)}</Descriptions.Item>}
 			{svcinfo && <Descriptions.Item label={<em>Listener Port</em>}>{svcinfo.port}</Descriptions.Item>}		
 			{tracestatus && tracestatus.state === 'Active' && <Descriptions.Item label={<em>Network Protocol</em>}>{tracestatus.proto}</Descriptions.Item>}
-			{svcinfo && <Descriptions.Item label={<em>Host Name</em>}>{svcinfo.host}</Descriptions.Item>}
+			{svcinfo && <Descriptions.Item label={<em>Host Name</em>}>
+				<Button type='dashed' onClick={() => getHostInfo(parid, undefined, addTabCB, remTabCB, isActiveTabCB)} >
+					{svcinfo.host}
+				</Button>
+			</Descriptions.Item>}
 			{svcinfo && <Descriptions.Item label={<em>Cluster</em>}>{svcinfo.cluster}</Descriptions.Item>}
 			{tracestatus && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart)}</Descriptions.Item>}
 			{tracestatus && <Descriptions.Item label={<em>TLS Encrypted?</em>}>

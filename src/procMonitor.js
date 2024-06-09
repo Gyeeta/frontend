@@ -424,18 +424,18 @@ function ProcHostSummary({procid, parid, objref, isRealTime, aggregatesec, aggro
 	let			ltime;
 
 	if (lastitem && lastitem.time) {
-		ltime = `Statistics at time ${lastitem.time}`;
+		ltime = `Last Seen Statistics at time ${lastitem.time}`;
 	}	
 	else {
 		ltime = 'Last Seen Statistics';
 	}	
 
 	const lasttitle = (<div style={{ textAlign : 'center', marginTop: 20 }}><span style={{ fontSize: 16 }}> 
-				<em><strong>Time Range {aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
+				<em><strong>{aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
 
 	const getHostInfo = () => {
 		Modal.info({
-			title : <span><strong>Service Host Info</strong></span>,
+			title : <span><strong>Process Host Info</strong></span>,
 			content : (
 				<>
 				<ComponentLife stateCB={modalCount} />
@@ -755,7 +755,7 @@ function ProcHostSummary({procid, parid, objref, isRealTime, aggregatesec, aggro
 
 		</Descriptions>
 
-		{ lastitem && (
+		{ lastitem && (isRealTime || ismid) && (
 
 			<Descriptions title={lasttitle} bordered={true} column={{ xxl: 4, xl: 4, lg: 3, md: 3, sm: 2, xs: 1 }} >
 

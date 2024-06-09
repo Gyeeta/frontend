@@ -11,7 +11,7 @@ import 			{format} from "d3-format";
 import 			{FixedPrioQueue} from './components/fixedPrioQueue.js';
 import 			{safetypeof, validateApi, fixedArrayAddItems, kbStrFormat, usecStrFormat, useFetchApi, CreateLinkTab, CreateTab, ComponentLife, 
 			mergeMultiMadhava, ButtonModal, capitalFirstLetter, stateEnum, ButtonJSONDescribe, LoadingAlert, JSONDescription, strTruncateTo,
-			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime} from './components/util.js';
+			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime, isStateIssue} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
@@ -486,7 +486,7 @@ const hostCol = [
 		gytype :	'string',
 		responsive : 	['lg'],
 		width : 	300,
-		render :	(val) => strTruncateTo(val, 100),
+		render :	(val, rec) => <span style={{ color : isStateIssue(rec.state) ? 'red' : undefined }} >{strTruncateTo(val, 100)}</span>,
 	},
 	{
 		title :		'# Processes',
@@ -1075,22 +1075,6 @@ function getSvcinfoColumns(istime, useHostFields)
 			width :		150,
 		},	
 		{
-			title :		'Region Name',
-			key :		'region',
-			dataIndex :	'region',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		120,
-		},	
-		{
-			title :		'Zone Name',
-			key :		'zone',
-			dataIndex :	'zone',
-			gytype : 	'string',
-			responsive : 	['lg'],
-			width :		120,
-		},	
-		{
 			title :		'Virtual IP 1',
 			key :		'svcip1',
 			dataIndex :	'svcip1',
@@ -1156,6 +1140,23 @@ function getSvcinfoColumns(istime, useHostFields)
 			responsive : 	['lg'],
 			width : 	100,
 		},	
+		{
+			title :		'Region Name',
+			key :		'region',
+			dataIndex :	'region',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		120,
+		},	
+		{
+			title :		'Zone Name',
+			key :		'zone',
+			dataIndex :	'zone',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		120,
+		},	
+
 	];
 
 	if (useHostFields) {
@@ -2148,7 +2149,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.name}` });
 		}	
 
-		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 30 * 60 * 24,
+		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 300 * 60 * 24,
 				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
 				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.name}` }) : null)
 			.catch((e) => {
@@ -2169,12 +2170,15 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 			});	
 	};	
 
-	const viewSvcFields = (key, value) => {
+	const viewSvcFields = (key, value, rec) => {
 		if (key === 'state') {
 			return StateBadge(value, value);
 		}	
 		else if (key === 'issue') {
 			value = SvcIssueSource[value] ? SvcIssueSource[value].name : '';
+		}	
+		else if (key === 'desc') {
+			return <span style={{ color : isStateIssue(rec.state) ? 'red' : undefined }} >{value}</span>;
 		}	
 		else if (typeof value === 'object' || typeof value === 'boolean') {
 			value = JSON.stringify(value);
@@ -2189,8 +2193,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
 		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`}
-					column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }}
-					fieldCols={[...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields]} xfrmDataCB={viewSvcFields} />
+					column={2} fieldCols={[...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields]} xfrmDataCB={viewSvcFields} />
 
 		</div>
 

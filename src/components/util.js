@@ -95,6 +95,11 @@ export const stateEnum = [
 	{ name : 'Down',		value : 'Down' },
 ];
 
+export function isStateIssue(state)
+{
+	return (state === 'Bad' || state === 'Severe' || state === 'Down');
+}
+
 export function formatFloat(fval, nDecimal = 3)
 {
 	return +parseFloat(fval).toFixed(nDecimal);
@@ -537,7 +542,7 @@ export function JSONDescription({jsondata, titlestr, column = 2, keyNames, field
 
 	const printData = (key, value) => {
 		if (typeof xfrmDataCB === 'function') {
-			return xfrmDataCB(key, value);
+			return xfrmDataCB(key, value, jsondata);
 		}
 		else {
 			if (typeof value === 'object' || typeof value === 'boolean') {

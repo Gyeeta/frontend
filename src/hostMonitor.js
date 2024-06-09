@@ -473,14 +473,14 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 	let			ltime;
 
 	if (lastitem && lastitem.time) {
-		ltime = `Statistics at time ${lastitem.time}`;
+		ltime = `Last Seen Statistics at time ${lastitem.time}`;
 	}	
 	else {
 		ltime = 'Last Seen Statistics';
 	}	
 
 	const lasttitle = (<div style={{ textAlign : 'center', marginTop: 20 }}><span style={{ fontSize: 16 }}> 
-				<em><strong>Time Range {aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
+				<em><strong>{aggregatesec ? `${aggregatesec/60} min ${aggroper} Aggregated` : ""} {ltime}</strong></em></span></div>);
 
 	return (
 		<>
@@ -580,7 +580,7 @@ function HostMonitorSummary({objref, isRealTime, aggregatesec, aggroper, timeSli
 
 		</Descriptions>
 
-		{ lastitem && (
+		{ lastitem && (isRealTime || ismid) && (
 
 			<Descriptions title={lasttitle} bordered={true} column={{ xxl: 4, xl: 4, lg: 3, md: 3, sm: 2, xs: 1 }} >
 

@@ -1275,7 +1275,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			}
 
 			{canaggr && 
-			<Form.Item name="aggroper" label="Default Numerical Aggregation Operation" initialValue="avg">
+			<Form.Item name="aggroper" label="Default Numerical Aggregation Operator" initialValue="avg">
 				<Radio.Group>
 				<Radio.Button value='avg'>Average of Interval</Radio.Button>
 				<Radio.Button value='max'>Max of Interval</Radio.Button>

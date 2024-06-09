@@ -478,7 +478,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 			
 			try {
 
-				const		tabKey = tracestatusKey + Date.now();
+				const		tabKey = tracestatusKey;
 
 				const		statdash = () => (
 					<>
