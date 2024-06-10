@@ -928,7 +928,7 @@ export function CustomAggrColumns({subsysFields, aggrsubsysFields, addtime, addi
 
 					<Radio.Group onChange={onCurrColChange} value="NoSuchField" >
 						{subsysFields.filter((field) => aoper.types.includes(field.type)).map((item, index) => (
-							<Radio.Button key={index} value={item.field}>{item.desc}</Radio.Button>
+							<Radio.Button key={index} value={item.field}>{`${item.desc} (${item.field})`}</Radio.Button>
 						))}
 					</Radio.Group>	
 

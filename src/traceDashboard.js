@@ -67,10 +67,10 @@ export const exttracefields = [
 ];
 
 export const aggrtracereqfields = [
-	{ field : 'nreq',		desc : 'Number of Trace Requests',				type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'nreq',		desc : 'Total Request Count',					type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'avgrespus',		desc : 'Avg Response Time in usec',				type : 'number',	subsys : 'tracereq',	valid : null, },
-	{ field : 'maxrespus',		desc : 'Max Response Time in usec',				type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'p99respus',		desc : 'p99 Percentile Response Time usec',			type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'maxrespus',		desc : 'Max Response Time in usec',				type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'nerr',		desc : 'Number of Errors',					type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'sumnetin',		desc : 'Total Inbound Request Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'sumnetout',		desc : 'Total Outbound Response Bytes',				type : 'number',	subsys : 'tracereq',	valid : null, },
@@ -401,7 +401,7 @@ function getAggrTracereqColumns(useHostFields)
 			responsive : 	['lg'],
 		},	
 		{
-			title :		'# Requests',
+			title :		'Total Requests',
 			key :		'nreq',
 			dataIndex :	'nreq',
 			gytype :	'number',
@@ -417,14 +417,6 @@ function getAggrTracereqColumns(useHostFields)
 			render :	(num) => usecStrFormat(num),
 		},
 		{
-			title :		'Max Response',
-			key :		'maxrespus',
-			dataIndex :	'maxrespus',
-			gytype :	'number',
-			width : 	120,
-			render :	(num) => usecStrFormat(num),
-		},
-		{
 			title :		'p99 Response',
 			key :		'p99respus',
 			dataIndex :	'p99respus',
@@ -433,7 +425,15 @@ function getAggrTracereqColumns(useHostFields)
 			render :	(num) => usecStrFormat(num),
 		},
 		{
-			title :		'# Errors',
+			title :		'Max Response',
+			key :		'maxrespus',
+			dataIndex :	'maxrespus',
+			gytype :	'number',
+			width : 	120,
+			render :	(num) => usecStrFormat(num),
+		},
+		{
+			title :		'Total Errors',
 			key :		'nerr',
 			dataIndex :	'nerr',
 			gytype :	'number',
@@ -494,7 +494,7 @@ function getAggrTracereqColumns(useHostFields)
 			dataIndex :	'resplt30ms',
 			gytype :	'number',
 			width : 	120,
-			render :	(num) => format(",")(num),
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 100ms',
