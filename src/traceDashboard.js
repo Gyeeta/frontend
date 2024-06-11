@@ -145,6 +145,16 @@ export const tracedeffields = [
 	{ field : 'defid',		desc : 'Tracedef Gyeeta ID',		type : 'string',	subsys : 'tracedef',	valid : null, },	
 ];
 
+export const traceAggrOutputArr = [ 
+				{ label : 'Service Level Aggregation', value : 'svc' } ,
+				{ label : 'Application Name', value : 'app' },
+				{ label : 'Username', value : 'user' },
+				{ label : 'DB Name', value : 'db' },
+				{ label : 'Client IP', value : 'cip' },
+				{ label : 'All Columns Aggregation', value : 'all' },
+				{ label : 'Custom Columns', value : 'custom' } 
+];
+
 function getTraceStateColor(state)
 {
 	let		color;
@@ -1749,7 +1759,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				}	
 			}
 
-			let			columns, rowKey, timestr;
+			let			columns, rowKey, timestr, titaggr = '';
 
 			rowKey = 'rowid';
 
@@ -1768,6 +1778,12 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 						useCliIP : !aggrOutput || aggrOutput === 'cip' || aggrOutput === 'all', 
 						useHostFields : !parid,
 					});
+
+				if (aggrOutput === 'app') titaggr = 'Application Name';
+				else if (aggrOutput === 'user') titaggr = 'Username';
+				else if (aggrOutput === 'db') titaggr = 'Database Name';
+				else if (aggrOutput === 'cip') titaggr = 'Client IP';
+				else if (aggrOutput === 'svc') titaggr = 'Service Level';
 			}	
 
 			if (!isrange) {
@@ -1780,7 +1796,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr ?? `${useAggr ? 'Aggregated ' : ''} Trace Requests`}</Title>
+				<Title level={4}>{titlestr ?? `${titaggr} ${useAggr ? 'Aggregation ' : ''} Trace Requests`}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} rowKey={rowKey} scroll={getTableScroll()} />
@@ -3002,7 +3018,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			<ButtonModal buttontext='Search Service Trace Requests' width={1200} okText="Cancel"
 				contentCB={() => (
 					<SearchTimeFilter callback={onTraceSearch} title='Search Service Trace Requests' 
-						timecompcb={timecb} filtercompcb={filtercb}  aggrfiltercb={aggrfiltercb}
+						timecompcb={timecb} filtercompcb={filtercb}  aggrfiltercb={aggrfiltercb} aggrOutputArr={traceAggrOutputArr}
 						ismaxrecs={true} defaultmaxrecs={10000} maxallowedrecs={500000} />
 				)} />
 					

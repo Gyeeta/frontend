@@ -21,7 +21,7 @@ import		{cpumemfields, aggrcpumemfields, CpuMemMultiQuickFilter, CpuMemAggrFilte
 import		{svcmeshclustfields, SvcMeshFilter, svcMeshTab, svcipclustfields, SvcVirtIPFilter, svcVirtIPTab} from './svcClusterGroups.js';
 import		{tracereqfields, exttracefields, aggrtracereqfields, tracestatusfields, aggrtracestatusfields, tracedeffields, tracereqTableTab, tracestatusTableTab, 
 		tracedefTableTab, TracereqMultiQuickFilter, TracereqAggrMultiFilter, TracestatusMultiFilter, TracestatusAggrFilter, 
-		TracedefMultiFilter} from './traceDashboard.js';
+		TracedefMultiFilter, traceAggrOutputArr} from './traceDashboard.js';
 
 import		{alertsfields, aggralertsfields, AlertMultiQuickFilter, AlertAggrFilter, alertsTableTab} from './alertDashboard.js';
 import		{alertdeffields, AlertdefMultiQuickFilter, alertdefTableTab} from './alertDefs.js';
@@ -488,13 +488,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, isext : true, }),
-			aggroutput	: [ 	{ label : 'Service Level Aggregation', value : 'svc' } ,
-						{ label : 'Application Name', value : 'app' },
-						{ label : 'Username', value : 'user' },
-						{ label : 'DB Name', value : 'db' },
-						{ label : 'Client IP', value : 'cip' },
-						{ label : 'All Columns Aggregation', value : 'all' },
-						{ label : 'Custom Columns', value : 'custom' } ],
+			aggroutput	: traceAggrOutputArr,
 			tablecb		: (params) => tracereqTableTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -505,7 +499,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, }),
-			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
+			aggroutput	: traceAggrOutputArr,
 			tablecb		: tracereqTableTab,
 			isnotime	: false,
 		};	
@@ -1573,11 +1567,12 @@ export function MultiFilters({filterCB, filterfields, useHostFields})
 }	
 
 
-export function SearchTimeFilter({callback, title = 'Search', timecompcb, filtercompcb, aggrfiltercb, rangefiltermandatory = false, ismaxrecs, maxallowedrecs, defaultmaxrecs})
+export function SearchTimeFilter({callback, title = 'Search', timecompcb, filtercompcb, aggrfiltercb, rangefiltermandatory = false, ismaxrecs, maxallowedrecs, defaultmaxrecs, aggrOutputArr})
 {
 	const			[timeobj, settimeobj] = useState(null);
 	const			[filterstr, setfilterstr] = useState('');
 	const			[aggrfilterstr, setaggrfilterstr] = useState('');
+	const 			[aggroutput, setaggroutput] = useState('default');
 	const			[maxrecs, setmaxrecs] = useState(ismaxrecs === true ? defaultmaxrecs ?? maxallowedrecs ?? 10000000 : 10000000);
 
 	const			isfilter = !!filtercompcb;
@@ -1599,18 +1594,21 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 		setaggrfilterstr(newfilter);
 	}, []);
 
+	const onAggrOutputChg = useCallback(({ target: { value } }) => {
+		setaggroutput(value);
+	}, []);
 
 	
 	const onsearch =  useCallback(() => {
 		if (timeobj && timeobj.date && timeobj.dateString && typeof callback === 'function') {
 
-			const		emsg = callback(timeobj.date, timeobj.dateString, timeobj.useAggr, timeobj.aggrMin, timeobj.aggrType, filterstr, maxrecs, aggrfilterstr);
+			const		emsg = callback(timeobj.date, timeobj.dateString, timeobj.useAggr, timeobj.aggrMin, timeobj.aggrType, filterstr, maxrecs, aggrfilterstr, aggroutput);
 
 			if (typeof emsg === 'string') {
 				notification.error({message : "Search Parameter Error", description : `Invalid Search Parameters : ${emsg}`});
 			}	
 		}
-	}, [callback, timeobj, filterstr, aggrfilterstr, maxrecs]);	
+	}, [callback, timeobj, filterstr, aggrfilterstr, aggroutput, maxrecs]);	
 
 	let			mrecs = null;
 
@@ -1667,6 +1665,23 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 			)
 		}
 		{aggrfilterstr.length > 0 && <Button onClick={() => setaggrfilterstr('')}>Reset Aggregation Filters</Button>}
+		</div>
+
+		<div style={{ marginBottom : 30 }}>
+		{aggrfiltercb && typeof aggrfiltercb === 'function' && timeobj && timeobj.useAggr && Array.isArray(aggrOutputArr) &&
+			(
+			<>
+			<Space>
+			<span>Aggregation Column List</span>
+
+			<Radio.Group onChange={onAggrOutputChg} defaultValue={aggrOutputArr[0].value} value={aggroutput} >
+			{aggrOutputArr.map(item =><Radio.Button key={item.value} value={item.value}>{item.label}</Radio.Button>)}
+			</Radio.Group>
+			
+			</Space>
+			</>
+			)
+		}
 		</div>
 
 		{timeobj && mrecs}
