@@ -1544,10 +1544,11 @@ export function MultiFilters({filterCB, filterfields, useHostFields})
 export function SearchTimeFilter({callback, title = 'Search', timecompcb, filtercompcb, aggrfiltercb, rangefiltermandatory = false, ismaxrecs, maxallowedrecs, defaultmaxrecs})
 {
 	const			[timeobj, settimeobj] = useState(null);
-	const			[isfilter, setisfilter] = useState(!!filtercompcb);
 	const			[filterstr, setfilterstr] = useState('');
 	const			[aggrfilterstr, setaggrfilterstr] = useState('');
 	const			[maxrecs, setmaxrecs] = useState(ismaxrecs === true ? defaultmaxrecs ?? maxallowedrecs ?? 10000000 : 10000000);
+
+	const			isfilter = !!filtercompcb;
 
 	const ontimecb = useCallback((date, dateString, useAggr, aggrMin, aggrType) => {
 		if (!date || !dateString) {
@@ -1592,6 +1593,8 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 			);
 	}	
 
+	const nosubmit = ((timeobj === null) || (rangefiltermandatory === true && (safetypeof(timeobj.date) === 'array') && filterstr.length === 0));
+
 	return (
 		<>
 		<div style={{ display: 'flex', justifyContent: 'left', flexWrap: 'wrap', marginTop: 30, marginBottom: 30 }}>
@@ -1602,31 +1605,43 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 
 		<div style={{ marginTop : 60, marginBottom : 30 }}>
 		<Space>
-		{timeobj && <Switch checked={isfilter} onChange={(checked) => { rangefiltermandatory !== true && setisfilter(checked); }} 
-			checkedChildren={timeobj.useAggr ? "Add Pre-Aggregation Filters" : "Add Filters"} unCheckedChildren="No Filters" /> }
-		{isfilter && timeobj && filterstr.length === 0 && filtercompcb && typeof filtercompcb === 'function' && filtercompcb(onfiltercb)}
+		{isfilter && timeobj && filterstr.length === 0 && filtercompcb && typeof filtercompcb === 'function' && (
+			<>
+			<span>{timeobj.useAggr ? "Optional Pre-Aggregation Filters to reduce Record Set" : "Optional Filters to reduce Reord Set"}</span>
+			{filtercompcb(onfiltercb)}
+			</>
+			)
+		}
 		{isfilter && filterstr.length > 0 && <Button onClick={() => setfilterstr('')}>Reset Filters</Button>}
-		</Space>
-
 		{isfilter && filterstr.length > 0 && (
 		<>
-		<div style={{ marginTop : 30 }}> <span><i>{`Filters Set : ${strTruncateTo(filterstr, 120)}`}</i></span> </div>
+		<span><i>{`Current Filters Set : ${strTruncateTo(filterstr, 120)}`}</i></span> 
 		</>
+
 		)}
+		</Space>
 		</div>
 
 
 		<div style={{ marginBottom : 30 }}>
-		{aggrfilterstr.length === 0 && aggrfiltercb && typeof aggrfiltercb === 'function' && timeobj && timeobj.useAggr && aggrfiltercb(onaggrfiltercb)}
+		{aggrfilterstr.length === 0 && aggrfiltercb && typeof aggrfiltercb === 'function' && timeobj && timeobj.useAggr && 
+			(
+			<>
+			<Space>
+			<span>Optional Post-Aggregation Filters to reduce Record Set</span>
+			{aggrfiltercb(onaggrfiltercb)}
+			</Space>
+			</>
+			)
+		}
 		{aggrfilterstr.length > 0 && <Button onClick={() => setaggrfilterstr('')}>Reset Aggregation Filters</Button>}
 		</div>
 
 		{timeobj && mrecs}
 
 		<div style={{ marginTop : 60, marginBottom : 30 }}>
-		<Popover content={`Please select the time point or range and ${rangefiltermandatory === true ? 'mandatory' : 'optional'} filters`} title={title} >
-		<Button type="primary" onClick={onsearch} 
-				disabled={((timeobj === null) || (rangefiltermandatory === true && (safetypeof(timeobj.date) === 'array') && filterstr.length === 0))}>Search</Button>
+		<Popover content={nosubmit && `Please select the time point or range and ${rangefiltermandatory === true ? 'mandatory' : 'optional'} filters`} title={title} >
+		<Button type="primary" onClick={onsearch} disabled={nosubmit}>Search</Button>
 		</Popover>
 		</div>
 
@@ -2116,11 +2131,11 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					<Radio.Button value="min">Minutes</Radio.Button>
 					<Radio.Button value="hrs">Hours</Radio.Button>
 					<Radio.Button value="day">Days</Radio.Button>
-					<Radio.Button value="nostep">No Step</Radio.Button>
+					<Radio.Button value="nostep">Single Step</Radio.Button>
 					</Radio.Group>
 				</Form.Item>	
 
-				<span>(Aggregation Periods within the selected Time range : No Step implies single aggregate over entire Time range)</span>
+				<span>(Aggregation Periods within the selected Time range : Single Step implies single aggregate over entire Time range)</span>
 
 				</Space>
 			</Form.Item>

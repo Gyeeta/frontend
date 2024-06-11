@@ -302,8 +302,22 @@ export function TimeRangeButton({onChange, linktext, buttontype, title = "Select
 	);
 }	
 
+export function TimeRangeAggrModalWrap({...props})
+{
+	const			ref = useRef(null);
+	
+	useEffect(() => {
+		const timer = setTimeout(() => { if (ref?.current?.setClick) ref.current.setClick(); }, 100);
 
-export function TimeRangeAggrModal({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, buttonType = "default",  ...props})
+		return () => { 
+			if (timer) clearTimeout(timer);
+		};
+	}, [ref]);
+
+	return <TimeRangeAggrModal {...props} ref={ref} />;
+}	
+
+export const TimeRangeAggrModal = React.forwardRef(({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, buttonType = "default",  ...props}, ref) =>
 {
 	const		objref = useRef(null);
 	const		[isTimeRange, setShowTimeRange]	= useState(showRange || !showTime ? 'range' : 'time');
@@ -373,7 +387,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 			}	
 			setMaxAggr(maxagr);
 
-			if (rangesec/60 >= minAggrRangeMin * 2 && rangesec/60 >= 5) {
+			if (rangesec/60 >= minAggrRangeMin * 2 && rangesec/60 > 180) {
 				// Enable Aggregation by default
 				setUseAggr(true);
 			}	
@@ -530,28 +544,33 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 				
 				<>
 				<Space>	
-				<span><Text><i>Apply DB Aggregation</i></Text></span>
 				<Switch checked={useAggr} onChange={(checked) => { setUseAggr(checked); }} />	
+				{!useAggr && <span><Text><i>Apply DB Aggregation to reduce Record count</i></Text></span>}
+				{useAggr && <span><Text><i>DB Aggregation Set. Please select Aggregation Step Interval below (Either Single Step or Periodic Aggregation (default))...</i></Text></span>}
 				</Space>
 				</>
 
+				</Space>
+				</div>
+
 				{useAggr && 
 				<>
-				<Space style={{ marginLeft: 15 }}>	
-				<span><Text><i>DB Aggregation with no Step Interval</i></Text></span>
+				<div style={{ marginTop : 20, marginBottom : 20, display : 'block' }}>
+				<Space>	
 				<Switch checked={singleAggr} onChange={(checked) => { setSingleAggr(checked); }} />	
+				{!singleAggr && <span><Text><i>Use DB Aggregation with Single Step Interval (Single Aggregation over entire time period)</i></Text></span>}
+				{singleAggr && <span><Text><i>Single Aggregation over entire period set...</i></Text></span>}
 				</Space>
+				</div>
 				</>
 				}
 
 
-				</Space>
-				</div>
 				{useAggr && 
 					<>
 					<div style={{ marginTop : 20, marginBottom : 20, display : 'block' }}>
 					<Space>	
-					<span><Text><i>Aggregate Step Interval </i></Text></span>
+					<span><Text><i>Periodic Aggregate Step Interval </i></Text></span>
 					<InputNumber min={minAggrRangeMin} max={maxAggr} defaultValue={5} disabled={singleAggr}
 						value={aggrMin ?? 5} onChange={(val) => {objref.current.aggrMin = val; setAggrMin(val);} } /> 
 					<span><Text><i>minutes using </i></Text></span> 
@@ -604,7 +623,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 		);
 	}, [typesel, timecomp, rangecomp]);
 
-	const modonclick = () => {
+	const modonclick = useCallback(() => {
 		objref.current.modal = Modal.confirm({
 			title : title,
 
@@ -617,7 +636,7 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 			onOk : onModalOk,
 			onCancel : onCancel,
 		});
-	};	
+	}, [objref, title, modalcontent, onModalOk, onCancel]);	
 
 	if (objref.current && objref.current.modal) {
 		objref.current.modal.update({
@@ -634,7 +653,14 @@ export function TimeRangeAggrModal({onChange, showTime = true, showRange = true,
 		});
 	}	
 	
+	React.useImperativeHandle(ref, () => ({
+		setClick : () => {
+			modonclick();
+		},
+	}), [modonclick]);
+
+	
 	return <Button type={buttonType} onClick={modonclick} >{title}</Button>;
 
-}
+});
 

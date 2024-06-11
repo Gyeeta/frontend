@@ -469,31 +469,31 @@ function getAggrTracereqColumns(useHostFields)
 			key :		'resplt300us',
 			dataIndex :	'resplt300us',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 1ms',
 			key :		'resplt1ms',
 			dataIndex :	'resplt1ms',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 10ms',
 			key :		'resplt10ms',
 			dataIndex :	'resplt10ms',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 30ms',
 			key :		'resplt30ms',
 			dataIndex :	'resplt30ms',
 			gytype :	'number',
-			width : 	120,
+			width : 	140,
 			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
@@ -501,32 +501,32 @@ function getAggrTracereqColumns(useHostFields)
 			key :		'resplt100ms',
 			dataIndex :	'resplt100ms',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 300ms',
 			key :		'resplt300ms',
 			dataIndex :	'resplt300ms',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response < 1sec',
 			key :		'resplt1sec',
 			dataIndex :	'resplt1sec',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'# Response > 1sec',
 			key :		'respgt1sec',
 			dataIndex :	'respgt1sec',
 			gytype :	'number',
-			width : 	120,
-			render :	(num) => format(",")(num),
+			width : 	140,
+			render :	(num, rec) => <span>{`${format(",")(num)} (${(num * 100/rec.inrecs).toFixed(2)} %)`}</span>,
 		},
 		{
 			title :		'Max Request Bytes',
@@ -819,6 +819,9 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 		}	
 		else if (key === 'sumnetin' || key === 'sumnetout' || key === 'maxnetin' || key === 'maxnetout') {
 			value = bytesStrFormat(value);
+		}	
+		else if (key.startsWith('resplt') || key.startsWith('respgt')) {
+			value = `${format(",")(value)} (${(value * 100/rec.inrecs).toFixed(2)} %)`;
 		}	
 		else if (key === 'nerr' && value !== 0) {
 			return <span style={{ color : 'red'}} >{format(',')(value)}</span>;
@@ -2027,7 +2030,7 @@ export function TracereqMultiQuickFilter({filterCB, useHostFields = true, isext 
 	);	
 }	
 
-export function TracereqAggrMultiFilter({filterCB, isext = false, linktext})
+export function TracereqAggrMultiFilter({filterCB, isext, linktext})
 {
 	const		objref = useRef(null);
 
@@ -2848,7 +2851,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
 
 
-	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
+	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
 		if (!date || !dateString) {
 			return;
 		}
@@ -2881,7 +2884,8 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		// Now close the search modal
 		Modal.destroyAll();
 
-		tracereqTableTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, isext : true, titlestr : `Trace Requests for service ${svcname}`, 
+		tracereqTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType,
+					filter : fstr, aggrfilter, maxrecs, isext : true, titlestr : `${useAggr ? 'Aggregated' : ''} Trace Requests for service ${svcname}`, 
 					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [svcid, svcname, addTabCB, remTabCB, isActiveTabCB]);	
@@ -2898,12 +2902,17 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [objref]);	
 
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} maxAggrRangeMin={0} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
 	const filtercb = useCallback((onfiltercb) => {
 		return <TracereqMultiQuickFilter filterCB={onfiltercb} />;
 	}, []);	
+
+	const aggrfiltercb = useCallback((onfiltercb) => {
+		return <TracereqAggrMultiFilter filterCB={onfiltercb} isext={true} />;
+	}, []);	
+
 
 	const optionDiv = (width) => {
 		return (
@@ -2928,7 +2937,8 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			<ButtonModal buttontext='Search Service Trace Requests' width={1200} okText="Cancel"
 				contentCB={() => (
 					<SearchTimeFilter callback={onTraceSearch} title='Search Service Trace Requests' 
-						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={10000} maxallowedrecs={500000} />
+						timecompcb={timecb} filtercompcb={filtercb}  aggrfiltercb={aggrfiltercb}
+						ismaxrecs={true} defaultmaxrecs={10000} maxallowedrecs={500000} />
 				)} />
 					
 
