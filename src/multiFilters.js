@@ -371,6 +371,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrsvcstatefields : [...hostfields, ...aggrsvcstatefields],
 			filtercb	: (params) => SvcStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: SvcStateAggrFilter,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: svcTableTab,
 			isnotime	: false,
 		};	
@@ -381,6 +382,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...aggrsvcstatefields, ...extsvcfields] : [...hostfields, ...aggrsvcstatefields, ...extsvcfields],
 			filtercb	: (params) => SvcStateMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => SvcStateAggrFilter({useHostFields, ...params, isext : true, }),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: (params) => svcTableTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -391,6 +393,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...svcinfofields, getInrecsField('svcinfo')] : [...hostfields, ...svcinfofields, getInrecsField('svcinfo')],
 			filtercb	: (params) => SvcinfoFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => SvcinfoFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: svcInfoTab,
 			isnotime	: false,
 		};	
@@ -402,6 +405,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...svcsummfields, getInrecsField('svcsumm')] : [...hostfields, ...svcsummfields, getInrecsField('svcsumm')],
 			filtercb	: (params) => SvcSummFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => SvcSummFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: svcSummTab,
 			isnotime	: false,
 		};	
@@ -412,6 +416,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: SvcMeshFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: svcMeshTab,
 			isnotime	: false,
 		};	
@@ -422,6 +427,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: SvcVirtIPFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: svcVirtIPTab,
 			isnotime	: false,
 		};	
@@ -434,6 +440,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...activeconnfields, getInrecsField('activeconn')] : [...hostfields, ...activeconnfields, getInrecsField('activeconn')],
 			filtercb	: (params) => ActiveConnFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ActiveConnFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: activeConnTab,
 			isnotime	: false,
 		};	
@@ -446,6 +453,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 								[...hostfields, ...activeconnfields, ...extactiveconnfields, getInrecsField('extactiveconn')],
 			filtercb	: (params) => ActiveConnFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ActiveConnFilter({useHostFields, ...params, isext : true, }),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: (params) => activeConnTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -456,6 +464,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...clientconnfields, getInrecsField('clientconn')] : [...hostfields, ...clientconnfields, getInrecsField('clientconn')],
 			filtercb	: (params) => ClientConnFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ClientConnFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: clientConnTab,
 			isnotime	: false,
 		};	
@@ -468,6 +477,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 								[...hostfields, ...clientconnfields, ...extclientconnfields, getInrecsField('extclientconn')],
 			filtercb	: (params) => ClientConnFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ClientConnFilter({useHostFields, ...params, isext : true, }),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: (params) => clientConnTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -478,6 +488,13 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, isext : true, }),
+			aggroutput	: [ 	{ label : 'Service Level Aggregation', value : 'svc' } ,
+						{ label : 'Application Name', value : 'app' },
+						{ label : 'Username', value : 'user' },
+						{ label : 'DB Name', value : 'db' },
+						{ label : 'Client IP', value : 'cip' },
+						{ label : 'All Columns Aggregation', value : 'all' },
+						{ label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: (params) => tracereqTableTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -488,6 +505,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrtracereqfields : [...hostfields, ...aggrtracereqfields],
 			filtercb	: (params) => TracereqMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => TracereqAggrMultiFilter({useHostFields, ...params, }),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: tracereqTableTab,
 			isnotime	: false,
 		};	
@@ -498,6 +516,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: aggrtracestatusfields,
 			filtercb	: (params) => TracestatusMultiFilter({useHostFields, ...params}),
 			aggrfiltercb	: TracestatusAggrFilter,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: tracestatusTableTab,
 		};	
 
@@ -507,6 +526,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: TracedefMultiFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: tracedefTableTab,
 			isnotime	: true,
 		};	
@@ -517,6 +537,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrprocstatefields : [...hostfields, ...aggrprocstatefields],
 			filtercb	: (params) => ProcStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: ProcStateAggrFilter,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: procTableTab,
 			isnotime	: false,
 		};	
@@ -527,6 +548,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...aggrprocstatefields, ...extprocfields] : [...hostfields, ...aggrprocstatefields, ...extprocfields],
 			filtercb	: (params) => ProcStateMultiQuickFilter({useHostFields, ...params, isext : true, }),
 			aggrfiltercb	: (params) => ProcStateAggrFilter({useHostFields, ...params, isext : true, }),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: (params) => procTableTab({...params, isext : true}),
 			isnotime	: false,
 		};	
@@ -537,6 +559,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? [...procinfofields, getInrecsField('procinfo')] : [...hostfields, ...procinfofields, getInrecsField('procinfo')],
 			filtercb	: (params) => ProcinfoFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => ProcinfoFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: procInfoTab,
 			isnotime	: false,
 		};	
@@ -548,6 +571,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: aggrclusterstatefields,
 			filtercb	: ClusterStateMultiQuickFilter,
 			aggrfiltercb	: ClusterStateAggrFilter,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: clusterTableTab,
 			isnotime	: false,
 		};	
@@ -558,6 +582,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrhoststatefields : [...hostfields, ...aggrhoststatefields],
 			filtercb	: (params) => HostStateMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => HostStateAggrFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: hostTableTab,
 			isnotime	: false,
 		};	
@@ -568,6 +593,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: hostinfofields,
 			filtercb	: HostInfoFilters,
 			aggrfiltercb	: HostInfoFilters,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: hostinfoTableTab,
 			isnotime	: false,
 		};	
@@ -578,6 +604,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: !useHostFields ? aggrcpumemfields : [...hostfields, ...aggrcpumemfields],
 			filtercb	: (params) => CpuMemMultiQuickFilter({useHostFields, ...params}),
 			aggrfiltercb	: (params) => CpuMemAggrFilter({useHostFields, ...params}),
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: cpumemTableTab,
 			isnotime	: false,
 		};	
@@ -588,6 +615,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: aggralertsfields,
 			filtercb	: AlertMultiQuickFilter,
 			aggrfiltercb	: AlertAggrFilter,
+			aggroutput	: [ { label : 'Default', value : 'default' }, { label : 'Custom Columns', value : 'custom' } ],
 			tablecb		: alertsTableTab,
 			isnotime	: false,
 		};	
@@ -598,6 +626,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: AlertdefMultiQuickFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: alertdefTableTab,
 			isnotime	: true,
 		};	
@@ -608,6 +637,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: ActionMultiQuickFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: actionsTableTab,
 			isnotime	: true,
 		};	
@@ -619,6 +649,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: SilenceMultiQuickFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: silencesTableTab,
 			isnotime	: true,
 		};	
@@ -629,6 +660,7 @@ export function getSubsysHandlers(subsys, useHostFields = true)
 			aggrfields	: undefined,
 			filtercb	: InhibitMultiQuickFilter,
 			aggrfiltercb	: undefined,
+			aggroutput	: undefined,
 			tablecb		: inhibitsTableTab,
 			isnotime	: true,
 		};	
@@ -1818,6 +1850,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 	const [canaggr, setcanagg]			= useState(false);
 	const [useAggr, setUseAggr]			= useState(false);
 	const [filterstr, setfilterstr] 		= useState('');
+	const [aggroutput, setaggroutput] 		= useState('default');
 	const [custaggrdef, setcustaggrdef]		= useState();
 	const [aggrfilterstr, setaggrfilterstr] 	= useState('');
 	const [sortcol, setsortcol]			= useState('');
@@ -1862,6 +1895,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				aggrType		: values.aggrType,
 				filter 			: filterstr, 
 				aggrfilter		: aggrfilterstr, 
+				aggrOutput		: aggroutput,
 				maxrecs			: Number(values.maxrecs), 
 				customColumns		: custaggrdef,
 				customTableColumns	: custaggrdef ? objref.current.customtablecols : undefined,
@@ -1875,7 +1909,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 		);
 
-	}, [objref, timerange, canaggr, useAggr, filterstr, aggrfilterstr, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
+	}, [objref, timerange, canaggr, useAggr, filterstr, aggrfilterstr, aggroutput, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
 
 	const onTimerangeChange = useCallback((dateObjs) => {
 		if ((safetypeof(dateObjs) !== 'array') || (dateObjs.length !== 2)) {
@@ -1912,6 +1946,11 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 		setfilterstr();
 		setaggrfilterstr();
+
+		const newaggrout = objref.current.subsysobj.aggroutput ? objref.current.subsysobj.aggroutput[0].value : 'default';
+
+		setaggroutput(newaggrout);
+		form.setFieldsValue({ aggrOutput : newaggrout });
 		setcustaggrdef();	
 		setsortcol();
 
@@ -1919,7 +1958,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			onTimerangeChange([moment().subtract(5, 'seconds'), moment()]);
 		}	
 
-	}, [objref, isrange, onTimerangeChange]);	
+	}, [objref, isrange, onTimerangeChange, form]);	
 
 	const onCategoryChange = useCallback((e) => { 
 		const 		val = e.target.value;
@@ -1952,14 +1991,21 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 			setcanagg(false);
 			setaggrfilterstr();
+			setaggroutput('default');
 			setcustaggrdef();	
 			setsortcol();
 		}	
 		else {
 			setcanagg(false);	// Set as false
 			setsortcol();
+
+			const newaggrout = objref.current.subsysobj.aggroutput ? objref.current.subsysobj.aggroutput[0].value : 'default';
+
+			setaggroutput(newaggrout);
+			form.setFieldsValue({ aggrOutput : newaggrout });
+
 		}	
-	}, [objref]);	
+	}, [objref, form]);	
 
 	const onPresetRangeChange = useCallback((value) => {
 		const		now = moment();
@@ -2021,26 +2067,38 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		setaggrfilterstr(value);
 	}, []);
 
+	const onAggrOutputChg = useCallback(({ target: { value } }) => {
+		setaggroutput(value);
+		setcustaggrdef();	
+	}, []);
 
-	let 			SubsysFilterCB, SubsysAggrFilterCB, outputfields;
+
+	let 			SubsysFilterCB, SubsysAggrFilterCB, outputfields, aggroutvalues;
 	
 	if (objref.current.subsysobj) {
-		SubsysFilterCB = objref.current.subsysobj.filtercb;	
+		const subsysobj		 	= objref.current.subsysobj;
+		SubsysFilterCB 			= subsysobj.filtercb;	
 		
 		if (canaggr && useAggr) {
+			aggroutvalues = subsysobj.aggroutput;
+
 			if (objref.current.customcols && custaggrdef) {
 				SubsysAggrFilterCB = SubsysMultiFilters;
 				outputfields = objref.current.customcols;
 			}	
 			else {
-				SubsysAggrFilterCB = objref.current.subsysobj.aggrfiltercb;
-				outputfields = objref.current.subsysobj.aggrfields;
+				SubsysAggrFilterCB = subsysobj.aggrfiltercb;
+				outputfields = subsysobj.aggrfields;
 			}	
 		}
 		else {
-			outputfields = objref.current.subsysobj.fields;
+			outputfields = subsysobj.fields;
 		}	
 	}
+
+	if (!aggroutvalues) {
+		aggroutvalues = [ { label : 'Default', value : 'default' }];
+	}	
 
 	return (
 		<>
@@ -2172,8 +2230,16 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			</Form.Item>
 			}
 
-			{SubsysAggrFilterCB && timerange.length > 0 && canaggr && useAggr &&
-			<Form.Item label="Optional Custom Aggregation Fields" >
+			{canaggr && useAggr && 
+			<Form.Item name="aggrOutput" label="Aggregation Column List" onChange={onAggrOutputChg} initialValue={aggroutvalues[0].value}>
+				<Radio.Group>
+				{aggroutvalues.map(item =><Radio.Button key={item.value} value={item.value}>{item.label}</Radio.Button>)}
+				</Radio.Group>
+			</Form.Item>
+			}
+
+			{SubsysAggrFilterCB && timerange.length > 0 && canaggr && useAggr && aggroutput === 'custom' &&
+			<Form.Item label="Custom Aggregation Fields" >
 				<Space>
 				{!custaggrdef && 
 					<CustomAggrColModal subsysFields={getFieldsExcludingHost(objref.current.subsysobj.fields)} 
@@ -2188,8 +2254,6 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					</Space>
 					</>
 				}
-
-				{!custaggrdef && <span>(Use in case Custom columns needed based on Aggregation Operations)</span>}
 
 				</Space>
 			</Form.Item>

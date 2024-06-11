@@ -11,12 +11,11 @@ import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, LoadingAlert, isEmptyObj, ButtonModal, splitAndTrim, strTruncateTo, timeDiffString,
 			useFetchApi, CreateTab, JSONDescription, capitalFirstLetter} from './components/util.js';
 import 			{getSubsysHandlers, getAlertSubsysFromCategory, getAlertSubsysCategories, getFieldsExcludingHost, isFieldPresent,
-			SubsysMultiFilters, CustomAggrColModal} from './multiFilters.js';
+			SubsysMultiFilters, CustomAggrColModal, MultiFilters} from './multiFilters.js';
 import 			{DateTimeZonePicker, disablePastTimes, TimeRangeButton} from './components/dateTimeZone.js';
 import			{alertsfields} from './alertDashboard.js';
 import			{getActionColumns} from './alertActions.js';
 import			{SilenceRules} from './alertSilences.js';
-import			{MultiFilters} from './multiFilters.js';
 import			{addAlertdefKey} from './gyeetaTabs.js';
 
 const 			{TextArea} = Input;
@@ -828,6 +827,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 	const [canaggr, setcanagg]			= useState(false);
 	const [filterstr, setfilterstr] 		= useState('');
 	const [custaggrdef, setcustaggrdef]		= useState();
+	const [aggroutput, setaggroutput] 		= useState('default');
 	const [aggrfilterstr, setaggrfilterstr] 	= useState('');
 	const [mutearr, setmutearr] 			= useState();
 	const [manualresolve, setManualresolve]		= useState(false);
@@ -963,6 +963,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			filter			: filterstr ? filterstr : undefined,
 			aggrfilter		: obj.alerttype !== 'realtime' ? aggrfilterstr : undefined, 
 			aggroper		: obj.aggroper,
+			aggroutput		: aggroutput,
 			columns			: custaggrdef ? custaggrdef : undefined,
 			numcheckfor		: Number(obj.numcheckfor),
 			severity		: severity,
@@ -1045,7 +1046,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			console.log(`Exception caught while waiting for Alert Definition Add response : ${e}\n${e.stack}\n`);
 		}	
 
-	}, [doneCB, custaggrdef, filterstr, aggrfilterstr, severity, actions, mutearr, startsAt, endsAt]);
+	}, [doneCB, custaggrdef, filterstr, aggrfilterstr, aggroutput, severity, actions, mutearr, startsAt, endsAt]);
 
 	const onNewSubsystem = useCallback((newsub) => {
 		setSubsys(newsub);
@@ -1058,7 +1059,12 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 		setaggrfilterstr();
 		setcustaggrdef();	
 
-	}, [objref]);	
+		const newaggrout = objref.current.subsysobj.aggroutput ? objref.current.subsysobj.aggroutput[0].value : 'default';
+
+		setaggroutput(newaggrout);
+		form.setFieldsValue({ aggrOutput : newaggrout });
+
+	}, [objref, form]);	
 
 	const onCategoryChange = useCallback((e) => { 
 		const 		val = e.target.value;
@@ -1089,12 +1095,17 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			setcanagg(false);
 			setaggrfilterstr();
 			setcustaggrdef();	
+			setaggroutput('default');
 		}	
 		else {
 			setcanagg(true);
+			const newaggrout = objref.current.subsysobj.aggroutput ? objref.current.subsysobj.aggroutput[0].value : 'default';
+
+			setaggroutput(newaggrout);
+			form.setFieldsValue({ aggrOutput : newaggrout });
 		}	
 
-	}, [objref]);	
+	}, [objref, form]);	
 
 	const onfiltercb = useCallback((newfilter) => {
 		setfilterstr(newfilter);
@@ -1121,6 +1132,12 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 		setaggrfilterstr(value);
 	}, []);
 
+	const onAggrOutputChg = useCallback(({ target: { value } }) => {
+		setaggroutput(value);
+		setcustaggrdef();	
+	}, []);
+
+
 	const onTestTimeChange = useCallback((dateObjs) => {
 		if (safetypeof(dateObjs) !== 'array') {
 			return;
@@ -1139,6 +1156,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 				aggrType		: canaggr ? form.getFieldValue('aggroper') : undefined,
 				filter 			: filterstr, 
 				aggrfilter		: aggrfilterstr, 
+				aggroutput		: aggroutput,
 				maxrecs			: 10000,
 				customColumns		: custaggrdef,
 				customTableColumns	: custaggrdef ? objref.current.customtablecols : undefined,
@@ -1148,7 +1166,7 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			}
 		);
 
-	}, [objref, canaggr, form, filterstr, aggrfilterstr, custaggrdef, addTabCB, remTabCB, isActiveTabCB]);	
+	}, [objref, canaggr, form, filterstr, aggrfilterstr, aggroutput, custaggrdef, addTabCB, remTabCB, isActiveTabCB]);	
 
 	const onstartsatCB = useCallback((date, dateString) => {
 		if (!date || !dateString) {
@@ -1175,12 +1193,14 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 		return <Alert type="error" showIcon message="Invalid or No Action data found on server. Please add Valid Actions first..." description=<Empty /> />;
 	}	
 
-	let 			SubsysFilterCB, SubsysAggrFilterCB, outputfields;
+	let 			SubsysFilterCB, SubsysAggrFilterCB, outputfields, aggroutvalues;
 	
 	if (objref.current.subsysobj) {
 		SubsysFilterCB = objref.current.subsysobj.filtercb;	
 		
 		if (canaggr) {
+			aggroutvalues = objref.current.subsysobj.aggroutput;
+
 			if (objref.current.customcols && custaggrdef) {
 				SubsysAggrFilterCB = SubsysMultiFilters;
 				outputfields = objref.current.customcols;
@@ -1194,6 +1214,10 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			outputfields = objref.current.subsysobj.fields;
 		}	
 	}
+
+	if (!aggroutvalues) {
+		aggroutvalues = [ { label : 'Default', value : 'default' }];
+	}	
 
 	const onSeverityChange = (e) => {
 		const value		= e.target.value;
@@ -1285,8 +1309,17 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			</Form.Item>
 			}
 
-			{SubsysAggrFilterCB && canaggr && 
-			<Form.Item label="Optional Custom Aggregation Fields" >
+			{canaggr &&  
+			<Form.Item name="aggrOutput" label="Aggregation Column List" onChange={onAggrOutputChg} initialValue={aggroutvalues[0].value}>
+				<Radio.Group>
+				{aggroutvalues.map(item =><Radio.Button key={item.value} value={item.value}>{item.label}</Radio.Button>)}
+				</Radio.Group>
+			</Form.Item>
+			}
+			
+
+			{SubsysAggrFilterCB && canaggr &&  aggroutput === 'custom' &&
+			<Form.Item label="Custom Aggregation Fields" >
 				{!custaggrdef && 
 					<CustomAggrColModal subsysFields={getFieldsExcludingHost(objref.current.subsysobj.fields)} 
 							aggrsubsysFields={objref.current.subsysobj.aggrfields} doneCB={onCustomAggr} 

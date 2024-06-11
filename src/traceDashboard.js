@@ -87,6 +87,11 @@ export const aggrtracereqfields = [
 	{ field : 'respgt1sec',		desc : '# Req with Response greater than 1 sec',		type : 'number',	subsys : 'tracereq',	valid : null, },
 	{ field : 'svcname',		desc : 'Service Name',						type : 'string',	subsys : 'tracereq',	valid : null, },
 	{ field : 'sport',		desc : 'Service Listen Port',					type : 'number',	subsys : 'tracereq',	valid : null, },
+	{ field : 'app',		desc : 'Client Application String',				type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'user',		desc : 'Login Username String',					type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'db',			desc : 'Database Name',						type : 'string',	subsys : 'tracereq',	valid : null, },
+	{ field : 'cip',		desc : 'Client IP Address',					type : 'string',	subsys : 'tracereq',	valid : null, },
+
 	{ field : 'proto',		desc : 'Network Protocol',					type : 'enum',		subsys : 'tracereq',	valid : null, 		
 																esrc : createEnumArray(protocolEnum) },
 	{ field : 'time',		desc : 'Timestamp of Record',					type : 'timestamptz',	subsys : 'tracereq',	valid : null, },
@@ -370,7 +375,7 @@ function getTracereqColumns(useextFields, useHostFields)
 	return colarr;
 }
 
-function getAggrTracereqColumns(useHostFields)
+function getAggrTracereqColumns({useAppname, useUsername, useDBName, useCliIP, useHostFields})
 {
 	const colarr = [
 		{
@@ -400,6 +405,59 @@ function getAggrTracereqColumns(useHostFields)
 			fixed : 	'left',
 			responsive : 	['lg'],
 		},	
+	];
+
+	if (useAppname) {
+		colarr.push(
+		{
+			title :		'Application Name',
+			key :		'app',
+			dataIndex :	'app',
+			gytype :	'string',
+			width : 	150,
+			render :	(val) => strTruncateTo(val, 40),
+		},
+		);	
+	}	
+
+	if (useUsername) {
+		colarr.push(
+		{
+			title :		'Login Username',
+			key :		'user',
+			dataIndex :	'user',
+			gytype :	'string',
+			width : 	140,
+		},
+		);
+	}	
+
+	if (useDBName) {
+		colarr.push(
+		{
+			title :		'DB Name',
+			key :		'db',
+			dataIndex :	'db',
+			gytype :	'string',
+			width : 	140,
+		},
+		);
+	}
+
+	if (useCliIP) {
+		colarr.push(
+		{
+			title :		'Client IP',
+			key :		'cip',
+			dataIndex :	'cip',
+			gytype : 	'string',
+			width :		140,
+			responsive : 	['lg'],
+		},	
+		);
+	}
+
+	colarr.push(
 		{
 			title :		'Total Requests',
 			key :		'nreq',
@@ -554,7 +612,7 @@ function getAggrTracereqColumns(useHostFields)
 			width : 	120,
 			responsive : 	['lg'],
 		},
-	];
+	);
 
 	if (useHostFields) colarr.push(
 		{
@@ -1535,7 +1593,7 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 	);
 }
 
-export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, titlestr, tableOnRow, 
+export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, titlestr, tableOnRow, 
 					addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, customTableColumns, sortColumns, sortDir, 
 					recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
@@ -1561,7 +1619,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				}
 			}
 		}
-	
+
 		const conf = 
 		{
 			url 	: isext ? NodeApis.exttracereq : NodeApis.tracereq,
@@ -1578,6 +1636,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 					aggroper	: aggrType,
 					filter		: filter,
 					aggrfilter	: useAggr ? aggrfilter : undefined,
+					aggroutput	: aggrOutput,
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
 					sortcolumns	: sortColumns,
 					sortdir		: sortColumns ? sortDir : undefined,
@@ -1604,7 +1663,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			return;
 		}	
 
-	}, [parid, doFetch, endtime, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, doFetch, endtime, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1702,7 +1761,13 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				columns = getTracereqColumns(isext, !parid);
 			}	
 			else {
-				columns = getAggrTracereqColumns(!parid);
+				columns = getAggrTracereqColumns({ 
+						useAppname : !aggrOutput || aggrOutput === 'app' || aggrOutput === 'all',
+						useUsername : !aggrOutput || aggrOutput === 'user' || aggrOutput === 'all',
+						useDBName : !aggrOutput || aggrOutput === 'db' || aggrOutput === 'all',
+						useCliIP : !aggrOutput || aggrOutput === 'cip' || aggrOutput === 'all', 
+						useHostFields : !parid,
+					});
 			}	
 
 			if (!isrange) {
@@ -1747,7 +1812,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 	);
 }
 
-export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, 
+export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput,
 					tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title, titlestr,
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
@@ -1784,7 +1849,7 @@ export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxr
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
-						maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter}
+						maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter} aggrOutput={aggrOutput}
 						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
 						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
@@ -1800,7 +1865,7 @@ export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxr
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
-					maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter}
+					maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter} aggrOutput={aggrOutput}
 					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
 					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
@@ -2851,7 +2916,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
 
 
-	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
+	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter, aggrOutput) => {
 		if (!date || !dateString) {
 			return;
 		}
@@ -2884,7 +2949,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		// Now close the search modal
 		Modal.destroyAll();
 
-		tracereqTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType,
+		tracereqTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, aggrOutput,
 					filter : fstr, aggrfilter, maxrecs, isext : true, titlestr : `${useAggr ? 'Aggregated' : ''} Trace Requests for service ${svcname}`, 
 					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
