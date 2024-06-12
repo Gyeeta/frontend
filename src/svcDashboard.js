@@ -23,6 +23,8 @@ import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
 import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
 import			{SvcClusterGroups} from './svcClusterGroups.js';
 import			{procInfoTab, procTableTab} from './procDashboard.js';
+import 			{TraceMonitor} from './traceDashboard.js';
+import 			{CPUMemPage} from './cpuMemPage.js';
 
 const 			{Title} = Typography;
 const 			{Search} = Input;
@@ -2107,6 +2109,25 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
 
+	const getTraceMonitor = () => {
+		const		tabKey = `Trace_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service Trace Requests around Record Time</i></span>, 'Service Trace Requests', 
+					() => { return <TraceMonitor svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+	};
+
+	const getCpuMemTimeState = () => {
+		const		tabKey = `CpuMemState_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Get CPU Memory State around record time</i></span>, 'Host CPU Memory State as per time',
+				() => { return <CPUMemPage parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+	};
+
+
 	const getRelSvcID = async () => {
 		const conf = 
 		{
@@ -2223,13 +2244,19 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 					showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />
 		</Col>			
 		<Col span={8}> {getNetFlows()} </Col>
-
 		</Row>
 
 		<Row justify="space-between">
 		
 		<Col span={8}> <Button type='dashed' onClick={getProcInfo} >Get '{rec.name}' Process Information</Button> </Col>
 		<Col span={8}> <Button type='dashed' onClick={getProcState} >Get '{rec.name}' Process States</Button> </Col>
+
+		</Row>
+
+		<Row justify="space-between">
+		
+		<Col span={8}> {getTraceMonitor()} </Col>
+		<Col span={8}> {getCpuMemTimeState()} </Col>
 
 		</Row>
 

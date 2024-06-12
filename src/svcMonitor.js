@@ -20,6 +20,7 @@ import {NetDashboard} from './netDashboard.js';
 import {HostInfoDesc} from './hostViewPage.js';
 import {svcTableTab, SvcStateMultiQuickFilter, SvcModalCard, hostAggrCol, hostRangeCol} from './svcDashboard.js';
 import {cpumemTableTab} from './cpuMemPage.js';
+import {TraceMonitor} from './traceDashboard.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
 import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
@@ -1237,45 +1238,65 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 
 	}, [objref, svcid, parid, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile]);
 
+	const getTraceMonitor = useCallback((cref) => {
+		const			tstart = moment(cref.current?.getRescaleTimerange()[0]).format();
+		const			tend = moment(cref.current?.getRescaleTimerange()[1]).format();
+		
+		console.log(`tstart for TraceMonitor is ${tstart} tend is ${tend}`);
+
+		const		tabKey = `Trace_${svcid}_${tstart}_${tend}}`;
+		
+		return CreateTab('Trace Monitor', 
+					() => { return <TraceMonitor svcid={svcid} svcname={objref.current.svcname} parid={parid} autoRefresh={false} starttime={tstart} endtime={tend}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+
+	}, [objref, svcid, parid, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile]);
+
+
 	const qpsRescaleComps = useMemo(() => {
 		return (
 			<>
 			<Space style={{ marginLeft: 10 }}>
 			<Button onClick={(e) => getNetFlows(qpsRef)}> Get Network Flows </Button>
+			<Button onClick={(e) => getTraceMonitor(qpsRef)}> Request API Tracing </Button>
 			</Space>
 			</>
 		);
-	}, [qpsRef, getNetFlows]);	
+	}, [qpsRef, getNetFlows, getTraceMonitor]);	
 
 	const respRescaleComps = useMemo(() => {
 		return (
 			<>
 			<Space style={{ marginLeft: 10 }}>
 			<Button onClick={(e) => getNetFlows(respRef)}> Get Network Flows </Button>
+			<Button onClick={(e) => getTraceMonitor(respRef)}> Request API Tracing </Button>
 			</Space>
 			</>
 		);
-	}, [ respRef, getNetFlows ]);	
+	}, [ respRef, getNetFlows, getTraceMonitor ]);	
 
 	const connRescaleComps = useMemo(() => {
 		return (
 			<>
 			<Space style={{ marginLeft: 10 }}>
 			<Button onClick={(e) => getNetFlows(connRef)}> Get Network Flows </Button>
+			<Button onClick={(e) => getTraceMonitor(connRef)}> Request API Tracing </Button>
 			</Space>
 			</>
 		);
-	}, [connRef, getNetFlows]);	
+	}, [connRef, getNetFlows, getTraceMonitor]);	
 
 	const netRescaleComps = useMemo(() => {
 		return (
 			<>
 			<Space style={{ marginLeft: 10 }}>
 			<Button onClick={(e) => getNetFlows(netRef)}> Get Network Flows </Button>
+			<Button onClick={(e) => getTraceMonitor(netRef)}> Request API Tracing </Button>
 			</Space>
 			</>
 		);
-	}, [netRef, getNetFlows]);	
+	}, [netRef, getNetFlows, getTraceMonitor]);	
 
 	const cpuiodelayRescaleComps = useMemo(() => {
 		return (
