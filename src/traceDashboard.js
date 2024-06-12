@@ -1,7 +1,7 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
 import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Empty, 
-			Space, Popover, Popconfirm} from 'antd';
+			Space, Popover, Popconfirm, Row, Col} from 'antd';
 import 			{ CheckSquareTwoTone, CloseOutlined } from '@ant-design/icons';
 
 import 			moment from 'moment';
@@ -13,7 +13,7 @@ import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecStrFormat, bytesStrFormat,
 			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab, getMinEndtime,
 			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
-import 			{MultiFilters, SearchTimeFilter, createEnumArray, getSubsysHandlers, hostfields, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, createEnumArray, hostfields, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
@@ -21,6 +21,7 @@ import			{SvcInfoDesc} from './svcDashboard.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import			{procInfoTab} from './procDashboard.js';
 import			{ProcMonitor} from './procMonitor.js';
+import			{CPUMemPage} from './cpuMemPage.js';
 
 const 			{ErrorBoundary} = Alert;
 const 			{Title} = Typography;
@@ -123,7 +124,7 @@ export const aggrtracestatusfields = [
 	{ field : 'inrecs',		desc : '# Records in Aggregation',	type : 'number',	subsys : 'tracestatus',	valid : null, },
 ];
 
-const tracehistoryfields = [
+export const tracehistoryfields = [
 	{ field : 'name',		desc : 'Service Name',			type : 'string',	subsys : 'tracehistory',	valid : null, },
 	{ field : 'port',		desc : 'Listener Port',			type : 'number',	subsys : 'tracehistory',	valid : null, },
 	{ field : 'state',		desc : 'Trace Status',			type : 'enum',		subsys : 'tracehistory',	valid : null, 		esrc : createEnumArray(traceStatusEnum) },
@@ -714,7 +715,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 
 	const getSvcInfo = () => {
 		Modal.info({
-			title : <span><strong>Service {rec.name} Info</strong></span>,
+			title : <span><strong>Service {rec.svcname} Info</strong></span>,
 			content : <SvcInfoDesc svcid={rec.svcid} parid={parid ?? rec.parid} starttime={rec.time} isTabletOrMobile={isTabletOrMobile}
 					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
 			width : '90%',	
@@ -756,20 +757,21 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 	};
 
-	const getSvcMonitor = () => {
-		const		tabKey = `SvcMon_${Date.now()}`;
+	const getCpuMemTimeState = () => {
+		const		tabKey = `CpuMemState_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Service State Monitor</i></span>, 'Service Realtime Monitor', 
-					() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={true}
-							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
-							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+		return CreateLinkTab(<span><i>Get CPU Memory State around record time</i></span>, 'Host CPU Memory State as per time',
+				() => { return <CPUMemPage parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 	};
+
 
 	const getSvcNetFlows = () => {
 		const		tabKey = `NetFlow_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Service Network Flows around Record Time</i></span>, 'Service Network Flows', 
-					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -825,7 +827,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 	const getSvcProcInfo = () => {
 		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 300 * 60 * 24,
 				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
-				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.name}` }) : null)
+				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.svcname}` }) : null)
 			.catch((e) => {
 			});	
 	};	
@@ -854,6 +856,8 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 
 	return (
 		<>
+		<ErrorBoundary>
+		
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 30, border: '1px groove #d9d9d9', maxHeight : 200 }} >
 		<h2 style={{ textAlign: 'center' }}>Request API</h2>
 		<p>
@@ -865,6 +869,44 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2}
 				ignoreKeyArr={[ 'req', 'rowid', 'uniqid', 'nprep', 'tprep' ]} xfrmDataCB={viewTraceFields} keyNames={keyNames} />
 		</div>
+
+		<div style={{ marginTop: 36, marginBottom: 16 }}>
+
+		<Space direction="vertical">
+
+		<Row justify="space-between">
+
+		<Col span={rec.parid ? 8 : 24}> <Button type='dashed' onClick={getSvcInfo} >Get Service '{rec.svcname}' Information</Button> </Col>
+		<Col span={8}> {getCpuMemTimeState()} </Col>
+
+		</Row>
+
+
+		<Row justify="space-between">
+
+		<Col span={8}> {getSvcTimeState()} </Col>
+		<Col span={8}> {getCliTimeState()} </Col>
+
+		</Row>
+
+		<Row justify="space-between">
+
+		<Col span={8}> {getSvcNetFlows()} </Col>
+		{rec.cprocid && <Col span={8}> {getCliNetFlows()} </Col>}
+
+		</Row>
+
+		<Row justify="space-between">
+		
+		<Col span={8}> <Button type='dashed' onClick={getSvcProcInfo} >Get Service '{rec.svcname}' Process Information</Button> </Col>
+		{(rec.parid || parid) && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host '{rec.host}' Information</Button> </Col>}
+
+		</Row>
+
+		</Space>
+		</div>
+
+		</ErrorBoundary>
 		</>
 	);	
 }
@@ -880,6 +922,104 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 
 	const			tstart = moment(rec.time, moment.ISO_8601).subtract(1, 'minute').format();
 	const 			tend = getMinEndtime(rec.time, aggrMin ?? 1, endtime);
+	const			dursec = moment(tend, moment.ISO_8601).unix() - moment(tstart, moment.ISO_8601).unix();
+
+	const getSvcInfo = () => {
+		Modal.info({
+			title : <span><strong>Service {rec.svcname} Info</strong></span>,
+			content : <SvcInfoDesc svcid={rec.svcid} parid={parid ?? rec.parid} starttime={rec.time} isTabletOrMobile={isTabletOrMobile}
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+		});
+	};	
+
+	const getHostInfo = () => {
+		Modal.info({
+			title : <span><strong>Host of service {rec.name} Info</strong></span>,
+			content : <HostInfoDesc parid={parid ?? rec.parid}  addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+		});
+	};	
+
+	const getSvcTimeState = () => {
+		const		tabKey = `SvcState_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service State around Record Time</i></span>, 'Service State as per time',
+				() => { return <SvcMonitor svcid={rec.svcid} parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+							aggregatesec={dursec > 3600 ? 60 : undefined}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+	};
+
+	const getCpuMemTimeState = () => {
+		const		tabKey = `CpuMemState_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Get CPU Memory State around record time</i></span>, 'Host CPU Memory State as per time',
+				() => { return <CPUMemPage parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
+							aggregatesec={dursec > 3600 ? 60 : undefined}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+	};
+
+
+	const getSvcNetFlows = () => {
+		const		tabKey = `NetFlow_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Service Network Flows around Record Time</i></span>, 'Service Network Flows', 
+					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
+	};
+
+	const getRelSvcID = async () => {
+		const conf = 
+		{
+			url 	: NodeApis.svcinfo,
+			method	: 'post',
+			data : {
+				starttime	:	tstart,
+				endtime		:	tend,
+				parid		:	parid ?? rec.parid,
+				options : {
+					maxrecs 	: 100,
+					aggregate	: true,
+					aggrsec		: 30 * 60 * 24,
+					filter		: `svcid = '${rec.svcid}'`,
+				},	
+			},
+		};	
+		
+		try {
+			let 		res = await axios(conf);
+
+			validateApi(res.data);
+
+			if (safetypeof(res.data) === 'array') { 
+				if (safetypeof(res.data[0]?.svcinfo) === 'array') {
+					return  res.data[0].svcinfo[0]?.relsvcid;
+				}	
+			}
+			return null;
+		}	
+		catch(e) {
+			return null;
+		}	
+	};	
+
+	const getSvcProcInfo = () => {
+		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 300 * 60 * 24,
+				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
+				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.svcname}` }) : null)
+			.catch((e) => {
+			});	
+	};	
+
 
 	const viewTraceFields = (key, value, rec) => {
 		if (key === 'avgrespus' || key === 'maxrespus' || key === 'p99respus') {
@@ -903,9 +1043,43 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 
 	return (
 		<>
+		<ErrorBoundary>
+
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
 		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2} xfrmDataCB={viewTraceFields} keyNames={keyNames} />
 		</div>
+		
+		<div style={{ marginTop: 36, marginBottom: 16 }}>
+
+		<Space direction="vertical">
+
+		<Row justify="space-between">
+
+		<Col span={rec.parid ? 8 : 24}> <Button type='dashed' onClick={getSvcInfo} >Get Service '{rec.svcname}' Information</Button> </Col>
+		{(rec.parid || parid) && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host '{rec.host}' Information</Button> </Col>}
+
+		</Row>
+
+
+		<Row justify="space-between">
+
+		<Col span={8}> {getSvcTimeState()} </Col>
+		<Col span={8}> {getCpuMemTimeState()} </Col>
+
+		</Row>
+
+		<Row justify="space-between">
+
+		<Col span={8}> {getSvcNetFlows()} </Col>
+		<Col span={8}> <Button type='dashed' onClick={getSvcProcInfo} >Get Service '{rec.svcname}' Process Information</Button> </Col>
+
+		</Row>
+
+		</Space>
+		</div>
+
+		
+		</ErrorBoundary>
 		</>
 	);	
 }
@@ -1561,7 +1735,7 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 			closetab = 10000;
 		}	
 		else {
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, titlestr;
 
 			rowKey = ((record) => record.time + record.svcid);
 			columns = tracehistoryCol;
