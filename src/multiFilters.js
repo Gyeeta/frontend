@@ -1637,7 +1637,7 @@ export function SearchTimeFilter({callback, title = 'Search', timecompcb, filter
 		<Space>
 		{isfilter && timeobj && filterstr.length === 0 && filtercompcb && typeof filtercompcb === 'function' && (
 			<>
-			<span>{timeobj.useAggr ? "Optional Pre-Aggregation Filters to reduce Record Set" : "Optional Filters to reduce Reord Set"}</span>
+			<span>{!rangefiltermandatory && "Optional "}{timeobj.useAggr ? "Pre-Aggregation Filters to reduce Record Set" : "Filters to reduce Record Set"}</span>
 			{filtercompcb(onfiltercb)}
 			</>
 			)

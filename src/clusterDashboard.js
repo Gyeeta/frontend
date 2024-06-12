@@ -2006,11 +2006,13 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
 	const timecbnotime = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
 	}, []);
 
 	const filtercb = useCallback((onfiltercb) => {

@@ -876,7 +876,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 
 		<Row justify="space-between">
 
-		<Col span={rec.parid ? 8 : 24}> <Button type='dashed' onClick={getSvcInfo} >Get Service '{rec.svcname}' Information</Button> </Col>
+		<Col span={8}> <Button type='dashed' onClick={getSvcInfo} >Get Service '{rec.svcname}' Information</Button> </Col>
 		<Col span={8}> {getCpuMemTimeState()} </Col>
 
 		</Row>
@@ -899,7 +899,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		<Row justify="space-between">
 		
 		<Col span={8}> <Button type='dashed' onClick={getSvcProcInfo} >Get Service '{rec.svcname}' Process Information</Button> </Col>
-		{(rec.parid || parid) && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host '{rec.host}' Information</Button> </Col>}
+		{(rec.parid || parid) && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host Information</Button> </Col>}
 
 		</Row>
 
@@ -3140,7 +3140,8 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		Modal.destroyAll();
 
 		tracereqTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, aggrOutput,
-					filter : fstr, aggrfilter, maxrecs, isext : true, titlestr : `${useAggr ? 'Aggregated' : ''} Trace Requests for service ${svcname}`, 
+					filter : fstr, aggrfilter, maxrecs, isext : true, 
+					titlestr : !aggrOutput ? `${useAggr ? 'Aggregated' : ''} Trace Requests for service ${svcname}` : undefined, 
 					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 
 	}, [svcid, svcname, addTabCB, remTabCB, isActiveTabCB]);	
@@ -3157,7 +3158,8 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [objref]);	
 
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
 	const filtercb = useCallback((onfiltercb) => {

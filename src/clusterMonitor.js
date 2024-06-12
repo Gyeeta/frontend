@@ -1428,7 +1428,8 @@ export function ClusterMonitor({cluster, isRealTime, starttime, endtime, aggrega
 
 
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' 
+					initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
 	const filtercb = useCallback((onfiltercb) => {

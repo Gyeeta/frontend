@@ -1470,7 +1470,8 @@ export function AlertDashboard({autoRefresh, refreshSec, starttime, endtime, fil
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);
 
 	const timecbnotime = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time Range' showTime={false} showRange={true} minAggrRangeMin={0} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time Range'
+				initStart={true} showTime={false} showRange={true} minAggrRangeMin={0} disableFuture={true} />;
 	}, []);
 
 	const filtercb = useCallback((onfiltercb) => {

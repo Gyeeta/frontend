@@ -482,7 +482,7 @@ export const hostRangeTimeColumns = (aggrType, isglob = true) => {
 		dataIndex :	'time',
 		gytype :	'string',
 		render : 	!isglob ? ((text) => <Button type="link">{getLocalTime(text)}</Button>) : undefined,
-		width :		140,
+		width :		160,
 		fixed : 	'left',
 	},
 	...hostRangeNoSummColumns(aggrType, isglob),
@@ -3378,11 +3378,13 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 	// Currently not used
 	// eslint-disable-next-line
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
 	}, []);
 
 	const timesearchcb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
 	}, []);
 
 	// Currently not used

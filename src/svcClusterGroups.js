@@ -1350,7 +1350,8 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 
 	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' showTime={true} showRange={true} minAggrRangeMin={0} disableFuture={true} />;
+		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
+				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} disableFuture={true} />;
 	}, []);
 
 	const meshfiltercb = useCallback((onfiltercb) => {

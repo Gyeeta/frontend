@@ -302,22 +302,26 @@ export function TimeRangeButton({onChange, linktext, buttontype, title = "Select
 	);
 }	
 
-export function TimeRangeAggrModalWrap({...props})
+export function TimeRangeAggrModal({initStart, ...props})
 {
 	const			ref = useRef(null);
 	
 	useEffect(() => {
+		if (!initStart) {
+			return;
+		}
+
 		const timer = setTimeout(() => { if (ref?.current?.setClick) ref.current.setClick(); }, 100);
 
 		return () => { 
 			if (timer) clearTimeout(timer);
 		};
-	}, [ref]);
+	}, [ref, initStart]);
 
-	return <TimeRangeAggrModal {...props} ref={ref} />;
+	return <TimeRangeAggrModalComp {...props} ref={ref} />;
 }	
 
-export const TimeRangeAggrModal = React.forwardRef(({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, buttonType = "default",  ...props}, ref) =>
+export const TimeRangeAggrModalComp = React.forwardRef(({onChange, showTime = true, showRange = true, minAggrRangeMin, maxAggrRangeMin, defaultaggrtype = "avg", alwaysShowAggrType, title = "Historical Data", showPresetTimes = true, disableFuture = true, buttonType = "default",  ...props}, ref) =>
 {
 	const		objref = useRef(null);
 	const		[isTimeRange, setShowTimeRange]	= useState(showRange || !showTime ? 'range' : 'time');
@@ -386,14 +390,7 @@ export const TimeRangeAggrModal = React.forwardRef(({onChange, showTime = true, 
 				maxagr = maxAggrRangeMin;
 			}	
 			setMaxAggr(maxagr);
-
-			if (rangesec/60 >= minAggrRangeMin * 2 && rangesec/60 > 180) {
-				// Enable Aggregation by default
-				setUseAggr(true);
-			}	
-			else {
-				setUseAggr(false);
-			}	
+			setUseAggr(false);
 
 			if (maxagr < objref.current.aggrMin) {
 				objref.current.aggrMin = maxagr;
