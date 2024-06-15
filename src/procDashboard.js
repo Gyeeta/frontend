@@ -1501,6 +1501,50 @@ export function ProcinfoFilter({filterCB, linktext, useHostFields})
 	return <Button onClick={multifilters} >{linktext ?? "Process Info Filters"}</Button>;	
 }
 
+export async function getProcUpstreamSvcids({procid, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
+{
+	try {
+		if (!procid || !parid) {
+			return [];
+		}
+
+		let				conf, res;
+		
+		conf = {
+			url 		: NodeApis.clientconn, 
+			method 		: 'post', 
+			data 		: { 
+				starttime	: starttime,
+				endtime		: endtime,
+				timeoutsec 	: 100,
+				parid		: parid,
+				options		: {
+					aggregate	: starttime && endtime ? true : undefined,
+					aggrsec 	: 30000000,
+					filter		: `{ cprocid = '${procid}' }`,
+					onlyremote	: false,
+					columns 	: ["parid", "cprocid", "svcid", "sparid"],
+					maxrecs		: 200,
+				},	
+			}, 
+			timeout 	: 100 * 1000,
+		};
+
+		res = await axios(conf);
+
+		validateApi(res.data);
+
+		if (safetypeof(res.data) === 'array' && (res.data.length === 1) && safetypeof(res.data[0].clientconn) === 'array' && res.data[0].clientconn.length) { 
+			return res.data[0].clientconn;
+		}
+
+		return [];
+	}
+	catch(e) {
+		console.log(`Exception caught while waiting for Upstream svc info fetch response : ${e}\n${e.stack}\n`);
+		return [];
+	}	
+}
 
 function parseProcSvcInfo(apidata)
 {
@@ -2035,7 +2079,7 @@ function ExtProcDesc({rec})
 
 
 export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -2065,6 +2109,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				timeoutsec 	: useAggr ? 500 : 100,
 				options : {
 					maxrecs 	: maxrecs,
@@ -2100,7 +2145,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2173,12 +2218,12 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				}	
 			}
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Process State";
+				newtitlestr = "Process State";
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (!isrange) {
@@ -2186,14 +2231,14 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				rowKey = "procid";
 
 				if (parid) {
-					titlestr = `Process State for Host ${hostname ?? ''}`;
+					newtitlestr = `Process State for Host ${hostname ?? ''}`;
 				}	
 				else {
 					if (!name) {
-						titlestr = 'Global Process State';
+						newtitlestr = 'Global Process State';
 					}
 					else {
-						titlestr = `${name} Processs State`;
+						newtitlestr = `${name} Processs State`;
 					}	
 				}	
 
@@ -2203,12 +2248,12 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 				rowKey = ((record) => record.rowid ?? record.procid + record.time);
 
 				if (parid) {
-					titlestr = `${useAggr ? 'Aggregated ' : ''} Process State for Host ${hostname ?? ''}`;
+					newtitlestr = `${useAggr ? 'Aggregated ' : ''} Process State for Host ${hostname ?? ''}`;
 					columns = !useAggr ? hostAggrRangeCol : aggrHostAggrCol(aggrType);
 				}
 				else {
 					columns = !useAggr ? globAggrRangeCol : globAggrGlobAggrCol(aggrType);
-					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Process State`;
+					newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Process State`;
 				}	
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
@@ -2222,7 +2267,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
@@ -2257,7 +2302,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 }	
 
 export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2283,35 +2328,30 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 	}
 
 	const                           Comp = wrapComp ?? ProcStateSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `ProcState_${Date.now()}`;
-
-		CreateTab(title ?? "Process State", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
+						madfilterarr={madfilterarr} titlestr={titlestr}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcStateSearch} /> 
 					</>	
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `ProcState_${Date.now()}`;
+
+		CreateTab(title ?? "Process State", tabKey, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Process State",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcStateSearch} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2323,7 +2363,7 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 }	
 
 export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2337,6 +2377,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				options : {
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
@@ -2369,7 +2410,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2438,19 +2479,19 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 
 			}	
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Process Info";
+				newtitlestr = "Process Info";
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getProcinfoColumns(true, false);
 				rowKey = "time";
 
-				titlestr = 'Processs Info';
+				newtitlestr = 'Processs Info';
 
 				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
@@ -2458,19 +2499,19 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 				rowKey = ((record) => record.rowid ?? (record.time + record.parid ? record.parid : ''));
 				columns = getProcinfoColumns(true, true);
 
-				titlestr = `${useAggr ? 'Aggregated ' : ''} Process Info `;
+				newtitlestr = `${useAggr ? 'Aggregated ' : ''} Process Info `;
 			
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (name) {
-				titlestr += ` for ${name}`;
+				newtitlestr += ` for ${name}`;
 			}	
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.procinfo} rowKey={rowKey} scroll={getTableScroll()} />
@@ -2504,7 +2545,7 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 }
 
 export function procInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2530,35 +2571,29 @@ export function procInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTy
 	}
 
 	const                           Comp = wrapComp ?? ProcinfoSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `Procinfo_${Date.now()}`;
-
-		CreateTab(title ?? "Process Info", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcinfoSearch} /> 
+						madfilterarr={madfilterarr} titlestr={titlestr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcinfoSearch} /> 
 					</>
-					);
-				}, tabKey, addTabCB);
+				);
+			};
+
+	if (!modal) {
+		tabKey = `Procinfo_${Date.now()}`;
+
+		CreateTab(title ?? "Process Info", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Process Info",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcinfoSearch} />
-				</>	
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

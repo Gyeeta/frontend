@@ -141,7 +141,7 @@ export function ActionMultiQuickFilter({filterCB})
 	return (<Button onClick={multifilters} >Action Filters</Button>);	
 }	
 
-export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
+export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -203,7 +203,7 @@ export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>List of Alert Actions</Title>
+				<Title level={4}>{titlestr ?? 'List of Alert Actions'}</Title>
 				<GyTable columns={columns} dataSource={data.actions} rowKey="actionid" onRow={tableOnRow} />
 				
 				</div>
@@ -236,32 +236,29 @@ export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, 
 }	
 
 
-export function actionsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
+export function actionsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
-	if (!modal) {
-		const			tabKey = `Action_${Date.now()}`;
+	let			tabKey;
 
-		CreateTab(title ?? "Actions", 
-			() => { return (
+	const getComp = () => { return (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<ActionsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					tabKey={tabKey} title={title} /> 
 				</>
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `Action_${Date.now()}`;
+
+		CreateTab(title ?? "Actions", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Alert Actions",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<ActionsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

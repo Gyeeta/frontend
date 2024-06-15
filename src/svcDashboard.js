@@ -11,20 +11,20 @@ import 			{format} from "d3-format";
 import 			{FixedPrioQueue} from './components/fixedPrioQueue.js';
 import 			{safetypeof, validateApi, fixedArrayAddItems, kbStrFormat, usecStrFormat, useFetchApi, CreateLinkTab, CreateTab, ComponentLife, 
 			mergeMultiMadhava, ButtonModal, capitalFirstLetter, stateEnum, ButtonJSONDescribe, LoadingAlert, JSONDescription, strTruncateTo,
-			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime, isStateIssue} from './components/util.js';
+			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime, isStateIssue, splitInArray} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
-import 			{HostInfoDesc} from './hostViewPage.js';
+import 			{HostInfoDesc, HostStateSearch} from './hostViewPage.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import 			{SvcMonitor, SvcIssueSource} from './svcMonitor.js';
-import 			{NetDashboard} from './netDashboard.js';
+import 			{NetDashboard, ActiveConnSearch} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
 import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
 import			{SvcClusterGroups} from './svcClusterGroups.js';
 import			{procInfoTab, procTableTab} from './procDashboard.js';
 import 			{TraceMonitor} from './traceDashboard.js';
-import 			{CPUMemPage} from './cpuMemPage.js';
+import 			{CPUMemPage, CpuMemSearch} from './cpuMemPage.js';
 
 const 			{Title} = Typography;
 const 			{Search} = Input;
@@ -1852,6 +1852,76 @@ export function getSvcInfoApiConf(svcid, parid, starttime)
 	};	
 }	
 
+export async function getSvcUpstreamSvcids({svcid, parid, starttime, endtime})
+{
+	try {
+		if (!svcid || !parid) {
+			return [];
+		}
+
+		let				conf, res, svcprocmap;
+		conf = {
+			url 	: NodeApis.svcprocmap,
+			method	: 'post',
+			data 	: {
+				starttime	: starttime,
+				endtime		: endtime,
+				pointintime	: true,
+				timeoutsec 	: 30,
+				parid		: parid,
+				filter		: `{ svcidarr substr '${svcid}' }`,
+			},
+			timeout	: 30000,
+		};
+
+		res = await axios(conf);
+		
+		validateApi(res.data);
+
+		if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && safetypeof(res.data[0].svcprocmap) === 'array') {
+			svcprocmap = res.data[0].svcprocmap[0];
+		}	
+
+		if (!svcprocmap || !svcprocmap.svcidarr || !svcprocmap.procidarr) {
+			return [];
+		}
+		
+		conf = {
+			url 		: NodeApis.clientconn, 
+			method 		: 'post', 
+			data 		: { 
+				starttime	: starttime,
+				endtime		: endtime,
+				timeoutsec 	: 100,
+				parid		: parid,
+				options		: {
+					aggregate	: starttime && endtime ? true : undefined,
+					aggrsec 	: 30000000,
+					filter		: `{ cprocid in ${splitInArray(svcprocmap.procidarr)} }`,
+					onlyremote	: false,
+					columns 	: ["cprocid", "svcid", "sparid", "smadid"],
+					maxrecs		: 200,
+				},	
+			}, 
+			timeout 	: 100 * 1000,
+		};
+
+		res = await axios(conf);
+
+		validateApi(res.data);
+
+		if (safetypeof(res.data) === 'array' && (res.data.length === 1) && safetypeof(res.data[0].clientconn) === 'array' && res.data[0].clientconn.length) { 
+			return res.data[0].clientconn;
+		}
+
+		return [];
+	}
+	catch(e) {
+		console.log(`Exception caught while waiting for Upstream svc info fetch response : ${e}\n${e.stack}\n`);
+		return [];
+	}	
+}
+
 // Specify svcInfoObj if data already available 
 export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile, svcInfoObj})
 {
@@ -2121,7 +2191,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 	const getCpuMemTimeState = () => {
 		const		tabKey = `CpuMemState_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Get CPU Memory State around record time</i></span>, 'Host CPU Memory State as per time',
+		return CreateLinkTab(<span><i>Get CPU Memory State around record time</i></span>, 'Host CPU Memory',
 				() => { return <CPUMemPage parid={parid ?? rec.parid} isRealTime={false} starttime={tstart} endtime={tend} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
@@ -2191,6 +2261,16 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 			});	
 	};	
 
+	const getSvcAnalysis = () => {
+		const		tabKey = `SvcAnalysis_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Analyze Service Performance Factors</i></span>, 'Service Performance',
+				() => { return <SvcAnalyzePerf svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+		
+	};	
+
 	const viewSvcFields = (key, value, rec) => {
 		if (key === 'state') {
 			return StateBadge(value, value);
@@ -2248,17 +2328,24 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 
 		<Row justify="space-between">
 		
-		<Col span={8}> <Button type='dashed' onClick={getProcInfo} >Get '{rec.name}' Process Information</Button> </Col>
-		<Col span={8}> <Button type='dashed' onClick={getProcState} >Get '{rec.name}' Process States</Button> </Col>
+		<Col span={8}> {getTraceMonitor()} </Col>
+		<Col span={8}> {getCpuMemTimeState()} </Col>
 
 		</Row>
 
 		<Row justify="space-between">
 		
-		<Col span={8}> {getTraceMonitor()} </Col>
-		<Col span={8}> {getCpuMemTimeState()} </Col>
+		<Col span={8}> {getSvcAnalysis()} </Col>
 
 		</Row>
+
+		<Row justify="space-between">
+		
+		<Col span={8}> <Button type='dashed' onClick={getProcInfo} >Get '{rec.name}' Process Information</Button> </Col>
+		<Col span={8}> <Button type='dashed' onClick={getProcState} >Get '{rec.name}' Process States</Button> </Col>
+
+		</Row>
+
 
 		</Space>
 		</div>
@@ -2353,7 +2440,7 @@ export function svcStateOnRow({parid, useAggr, aggrMin, endtime, addTabCB, remTa
 }	
 
 export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, isext, 
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -2384,6 +2471,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				timeoutsec 	: useAggr ? 500 : 100,
 				options : {
 					maxrecs 	: maxrecs,
@@ -2418,7 +2506,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2471,26 +2559,26 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				}	
 			}
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Service State";
+				newtitlestr = "Service State";
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}	
 			else if (!isrange) {
 				rowKey = "svcid";
 
 				if (parid) {
-					titlestr = `Services State for Host ${hostname ?? ''}`;
+					newtitlestr = `Services State for Host ${hostname ?? ''}`;
 				}	
 				else {
 					if (!name) {
-						titlestr = 'Global Service State';
+						newtitlestr = 'Global Service State';
 					}
 					else {
-						titlestr = `${name} Services State`;
+						newtitlestr = `${name} Services State`;
 					}	
 				}	
 
@@ -2500,10 +2588,10 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 				rowKey = ((record) => record.rowid ?? record.svcid + record.time);
 
 				if (parid) {
-					titlestr = `${useAggr ? 'Aggregated ' : ''} Services State for Host ${hostname ?? ''}`;
+					newtitlestr = `${useAggr ? 'Aggregated ' : ''} Services State for Host ${hostname ?? ''}`;
 				}
 				else {
-					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services State`;
+					newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services State`;
 				}	
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
@@ -2517,7 +2605,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data[field]} 
@@ -2553,7 +2641,7 @@ export function SvcStateSearch({parid, hostname, starttime, endtime, useAggr, ag
 }	
 
 export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2579,35 +2667,30 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 	}
 
 	const				Comp = wrapComp ?? SvcStateSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `SvcState_${Date.now()}`;
-
-		CreateTab(title ?? "Service State", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
+						madfilterarr={madfilterarr} titlestr={titlestr}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcStateSearch} /> 
 					</>
 					);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `SvcState_${Date.now()}`;
+
+		CreateTab(title ?? "Service State", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service State",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					isext={isext} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcStateSearch} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2618,8 +2701,165 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 	}	
 }
 
+export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
+{
+	const [upsvcarr, setupsvcarr]		= useState(null);
+
+	useEffect(() => {
+		const afunc = async () => {
+			try {
+				const uarr = await getSvcUpstreamSvcids({ svcid, parid, starttime, endtime });
+
+				setupsvcarr(uarr);
+			}
+			catch(e) {
+				console.log(`Exception caught while waiting for Upstream svc info fetch response : ${e}\n${e.stack}\n`);
+				setupsvcarr([]);
+			}	
+		};
+
+		afunc();
+
+	}, [svcid, parid, starttime, endtime]);	
+
+	if (!svcid) {
+		throw new Error(`No service ID specified for Analyzing Performace`);
+	}	
+
+	if (!parid) {
+		throw new Error(`No Partha ID specified for Analyzing Performace`);
+	}	
+
+	if (upsvcarr === null) {
+		return <LoadingAlert />;
+	}	
+
+	let			mstart, mend, tstart, tend;
+
+	if (!starttime) {
+		mstart = moment().subtract(15, 'seconds');
+	}	
+	else {
+		mstart = moment(starttime, moment.ISO_8601).subtract(15, 'seconds');
+	}	
+
+	if (!endtime) {
+		mend = moment(mstart).add(1, 'minute');
+	}	
+	else {
+		mend = moment(endtime, moment.ISO_8601).add(15, 'seconds');
+	}	
+
+	tstart = mstart.format();
+	tend = mend.format();
+	
+	let			svcstate = null, hoststate = null, cpustate = null, upactiveconn = null, upsvcstate = null, upcpustate = null;
+
+	svcstate = (
+		<SvcStateSearch parid={parid} name={svcname} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} 
+				filter={`{ svcid = '${svcid}' }`} titlestr={`Service State for service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} isext={true} />
+	);
+
+	hoststate = (
+		<HostStateSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Host State of service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+	);
+
+	cpustate = (
+		<CpuMemSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Host CPU Memory of service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+	);
+
+	if (Array.isArray(upsvcarr) && upsvcarr.length > 0) {
+		const			cprocset = new Set();
+		const			sparset = new Set();
+		const			smadset = new Set();
+		
+		for (let cliconn of upsvcarr) {
+			cprocset.add(cliconn.cprocid);
+			sparset.add(cliconn.sparid);
+			smadset.add(cliconn.smadid);
+		}
+
+		const			madfilterarr = [];
+
+		for (let madid of smadset) {
+			madfilterarr.push(madid);
+		}	
+
+		let			upactfil = ' ( { cprocid in ', upstatfil = ' ( ', upcpufil = ' ( ', i = 0;
+
+		for (let cprocid of cprocset) {
+			upactfil += `'${cprocid}'`;
+
+			i++;
+
+			if (i === cprocset.size || i === 63) {
+				break;
+			}	
+
+			upactfil += ',';
+		}
+
+		upactfil += ' } and  ';
+
+		for (let i = 0; i < upsvcarr.length; ++i) {
+			let 			cliconn = upsvcarr[i];
+
+			upstatfil += `( { parid = '${cliconn.sparid}' } and { svcid = '${cliconn.svcid}' } )`;
+			upcpufil += `{ parid = '${cliconn.sparid}' }` 
+
+			if (i + 1 < upsvcarr.length) {
+				upstatfil += ' or ';
+				upcpufil += ' or ';
+			}	
+		}
+
+		upstatfil += ' ) ';
+		upcpufil += ' ) ';
+
+		upactfil += upstatfil;
+		upactfil += ' ) ';
+
+		upactiveconn = (
+			<ActiveConnSearch madfilterarr={madfilterarr} starttime={tstart} endtime={tend} isext={true} useAggr={true} aggrType="sum" aggrMin={300000} 
+				filter={upactfil} titlestr={`Upstream Connections from service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+		);
+
+		upsvcstate = (
+			<SvcStateSearch madfilterarr={madfilterarr} starttime={tstart} endtime={tend} isext={true} useAggr={true} aggrType="sum" aggrMin={300000} 
+				filter={upstatfil} titlestr={`State of Upstream Services from service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+		);
+
+		upcpustate = (
+			<CpuMemSearch madfilterarr={madfilterarr} starttime={tstart} endtime={tend} isext={true} useAggr={true} aggrType="sum" aggrMin={300000} 
+				filter={upcpufil} titlestr={`CPU Memory State of Upstream Services Hosts from service ${svcname}`}
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+		);
+	}	
+
+	return (
+		<>
+		<ErrorBoundary>
+		
+		{svcstate}
+		{hoststate}
+		{cpustate}
+		{upactiveconn}
+		{upsvcstate}
+		{upcpustate}
+
+		</ErrorBoundary>
+		</>
+	);
+}
+
+
 export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2633,6 +2873,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				options : {
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
@@ -2665,7 +2906,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2733,19 +2974,19 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 
 			}	
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Service Info";
+				newtitlestr = "Service Info";
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getSvcinfoColumns(true, false);
 				rowKey = "time";
 
-				titlestr = 'Services Info';
+				newtitlestr = 'Services Info';
 
 				timestr = <span style={{ fontSize : 14 }} ><strong> at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </strong></span>;
 			}
@@ -2753,19 +2994,19 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 				rowKey = ((record) => record.rowid ?? (record.time + record.parid ? record.parid : ''));
 				columns = getSvcinfoColumns(true, true);
 
-				titlestr = `${useAggr ? 'Aggregated ' : ''} Service Info `;
+				newtitlestr = `${useAggr ? 'Aggregated ' : ''} Service Info `;
 			
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			if (name) {
-				titlestr += ` for ${name}`;
+				newtitlestr += ` for ${name}`;
 			}	
 
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svcinfo} rowKey={rowKey} scroll={getTableScroll()} />
@@ -2799,7 +3040,7 @@ export function SvcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggr
 }
 
 export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null })
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null })
 {
 	if (starttime || endtime) {
 
@@ -2825,35 +3066,29 @@ export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTyp
 	}
 
 	const                           Comp = wrapComp ?? SvcinfoSearch;
+	let				tabKey;
+
+	const getComp = () => { return (
+				<>
+				{typeof extraComp === 'function' ? extraComp() : extraComp}
+				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
+					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
+					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+					madfilterarr={madfilterarr} titlestr={titlestr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcinfoSearch} /> 
+				</>	
+				);	
+			};
 
 	if (!modal) {
-		const			tabKey = `Svcinfo_${Date.now()}`;
+		tabKey = `Svcinfo_${Date.now()}`;
 
-		CreateTab(title ?? "Service Info", 
-			() => { return (
-					<>
-					{typeof extraComp === 'function' ? extraComp() : extraComp}
-					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcinfoSearch} /> 
-					</>	
-					);	
-				}, tabKey, addTabCB);
+		CreateTab(title ?? "Service Info", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service Info",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<SvcinfoSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcinfoSearch} />
-				</>	
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2865,7 +3100,7 @@ export function svcInfoTab({parid, starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2879,6 +3114,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				options : {
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
@@ -2911,7 +3147,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2977,19 +3213,19 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 				};
 			}	
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Service Summary";
+				newtitlestr = "Service Summary";
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 			}
 			else if (parid) {
 				columns = getSvcsummColumns(true, false);
 				rowKey = "time";
 
-				titlestr = `Services Summary for Host ${hostname}`;
+				newtitlestr = `Services Summary for Host ${hostname}`;
 
 				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 			}
@@ -2997,7 +3233,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 				rowKey = ((record) => record.time + record.parid ? record.parid : '');
 				columns = getSvcsummColumns(true, true);
 
-				titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Summary`;
+				newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Services Summary`;
 			
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
@@ -3005,7 +3241,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.svcsumm} rowKey={rowKey} scroll={getTableScroll()} />
@@ -3039,7 +3275,7 @@ export function SvcSummSearch({parid, hostname, starttime, endtime, useAggr, agg
 }
 
 export function svcSummTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -3065,35 +3301,29 @@ export function svcSummTab({parid, hostname, starttime, endtime, useAggr, aggrMi
 	}
 
 	const                           Comp = wrapComp ?? SvcSummSearch;
-	
-	if (!modal) {
-		const			tabKey = `SvcSumm_${Date.now()}`;
+	let				tabKey;
 
-		CreateTab(title ?? "Service Summary", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						hostname={hostname} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcSummSearch} /> 
+						madfilterarr={madfilterarr} titlestr={titlestr} hostname={hostname} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcSummSearch} /> 
 					</>	
 					);
-				}, tabKey, addTabCB);
+			};
+	
+	if (!modal) {
+		tabKey = `SvcSumm_${Date.now()}`;
+
+		CreateTab(title ?? "Service Summary", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Service Summary",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<SvcSummSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					hostname={hostname} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcSummSearch} />
-				</>	
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

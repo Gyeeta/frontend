@@ -154,7 +154,7 @@ function viewInhibit(record)
 	}	
 }
 
-export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
+export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -216,7 +216,7 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>List of Inhibits</Title>
+				<Title level={4}>{titlestr ?? 'List of Inhibits'}</Title>
 				<GyTable columns={columns} dataSource={data.inhibits} rowKey="inhid" onRow={tableOnRow} />
 				
 				</div>
@@ -249,32 +249,29 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
+export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
-	if (!modal) {
-		const			tabKey = `Inhibit_${Date.now()}`;
+	let			tabKey;
 
-		CreateTab(title ?? "Inhibits", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} title={title} /> 
+						tabKey={tabKey} titlestr={titlestr} /> 
 					</>	
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		const			tabKey = `Inhibit_${Date.now()}`;
+
+		CreateTab(title ?? "Inhibits", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Inhibits",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

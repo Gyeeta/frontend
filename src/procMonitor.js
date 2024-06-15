@@ -1088,7 +1088,7 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 				}
 				else {
 					if (objref.current.prevdatasec > 0) {
-						notification.warning({message : "Process Info Data Format", description : "No Data or Invalid Data for Process Info fetch..."});
+						// notification.warning({message : "Process Info Data Format", description : "No Data or Invalid Data for Process Info fetch..."});
 					}	
 				}	
 			}

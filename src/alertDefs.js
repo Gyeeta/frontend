@@ -319,32 +319,30 @@ export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function alertdefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
+export function alertdefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
-	if (!modal) {
-		const			tabKey = `Alertdef_${Date.now()}`;
+	let			tabKey;
 
-		CreateTab(title ?? "Alertdef", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<AlertdefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} title={title} /> 
+						tabKey={tabKey} titlestr={titlestr} /> 
 					</>
 				);		
-				}, tabKey, addTabCB);
+			};
+
+
+	if (!modal) {
+		const			tabKey = `Alertdef_${Date.now()}`;
+
+		CreateTab(title ?? "Alertdef", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Alert Definitions",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<AlertdefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						title={title} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

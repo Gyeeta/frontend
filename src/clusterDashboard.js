@@ -665,7 +665,7 @@ export function ClusterStateAggrFilter({filterCB, linktext})
 	return <Button onClick={multifilters} >{linktext ?? "Optional Post Aggregation Filters"}</Button>;	
 }	
 
-export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, title, tabKey,
+export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, titlestr, tabKey,
 						customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -802,28 +802,26 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 			}
 
 
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Cluster State";
+				newtitlestr = "Cluster State";
 				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
 			}
 			else if (!isrange || (useAggr && !aggrMin)) {
 				columns = !aggrMin ? clusterColumns : clusterAggrColumns(aggrType);
 				rowKey = "cluster";
 
-				titlestr = 'Cluster State';
-				if (!title) title = 'Cluster State';
+				newtitlestr = 'Cluster State';
 				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format()} </span>;
 			}
 			else {
 				rowKey = ((record) => record.cluster + record.time);
 
 				columns = !useAggr ? clusterTimeColumns : clusterAggrTimeColumns(aggrType);
-				titlestr = `${useAggr ? 'Aggregated ' : ''} Cluster State`;
-				if (!title) title = 'Cluster State';
+				newtitlestr = `${useAggr ? 'Aggregated ' : ''} Cluster State`;
 				
 				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
 			}	
@@ -831,7 +829,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.clusterstate} rowKey={rowKey} scroll={getTableScroll()} />
@@ -866,7 +864,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 
 
 export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-						customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+						titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -892,35 +890,29 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 	}
 
 	const                           Comp = wrapComp ?? ClusterStateSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `ClusterState_${Date.now()}`;
-
-		CreateTab(title ?? "Cluster State", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
+						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns} titlestr={titlestr}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} /> 
 					</>
 				);	
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `ClusterState_${Date.now()}`;
+
+		CreateTab(title ?? "Cluster State", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Cluster State",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

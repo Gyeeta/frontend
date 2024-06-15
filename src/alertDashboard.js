@@ -914,7 +914,7 @@ export function AlertSummary({normdata, endtime, modalCount, addTabCB, remTabCB,
 	);
 }
 
-export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, title, tabKey,
+export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, titlestr, tabKey,
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
@@ -1014,7 +1014,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 				}	
 			}
 
-			let		columns, titlestr, timestr;
+			let		columns, newtitlestr, timestr;
 
 			if (starttime && endtime) {
 				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
@@ -1025,18 +1025,16 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
-				titlestr = "Alerts Seen";
+				newtitlestr = "Alerts Seen";
 			}	
 			else if (!useAggr) {
 				columns = getAlertColumns();
 
-				titlestr = 'Alerts Seen';
-				if (!title) title = 'Alerts';
+				newtitlestr = 'Alerts Seen';
 			}
 			else {
 				columns = getAlertAggrColumns();
-				titlestr = "Aggregated Alert Statistics"
-				if (!title) title = 'Aggr Alerts';
+				newtitlestr = "Aggregated Alert Statistics"
 			}	
 
 			let			expandedRowRender;
@@ -1048,7 +1046,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} expandable={!useAggr ? { expandedRowRender } : undefined} expandRowByClick={!useAggr ? true : undefined} 
@@ -1085,7 +1083,7 @@ export function AlertsSearch({starttime, endtime, useAggr, aggrMin, aggrType, fi
 
 
 export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1111,35 +1109,29 @@ export function alertsTableTab({starttime, endtime, useAggr, aggrMin, aggrType, 
 	}
 
 	const                           Comp = wrapComp ?? AlertsSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `Alerts_${Date.now()}`;
-
-		CreateTab(title ?? !useAggr ? "Alerts" : "Aggr Alerts", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns}
+						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns} titlestr={titlestr}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={AlertsSearch} /> 
 					</>
 				);	
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `Alerts_${Date.now()}`;
+
+		CreateTab(title ?? !useAggr ? "Alerts" : "Aggr Alerts", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? !useAggr ? "Alerts" : "Aggr Alerts",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					title={title} customColumns={customColumns} customTableColumns={customTableColumns}
-					sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={AlertsSearch} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

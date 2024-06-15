@@ -1721,6 +1721,11 @@ export function getFieldsExcludingHost(fieldarr)
 }	
 
 const presetChangeTimeRange = [
+	{ desc : 'Latest 1 min', 	timeoffsetsec : '100060' },	
+	{ desc : 'Latest 5 mins', 	timeoffsetsec : '100300' },	
+	{ desc : 'Latest 15 mins',	timeoffsetsec : '100900' },	
+	{ desc : 'Latest 30 mins',	timeoffsetsec : '101800' },	
+	{ desc : 'Latest 1 hour',	timeoffsetsec : '103600' },	
 	{ desc : 'Previous 1 min', 	timeoffsetsec : '-60' },	
 	{ desc : 'Previous 5 mins', 	timeoffsetsec : '-300' },	
 	{ desc : 'Previous 15 mins',	timeoffsetsec : '-900' },	
@@ -1730,10 +1735,6 @@ const presetChangeTimeRange = [
 	{ desc : 'Next 5 mins', 	timeoffsetsec : '300' },	
 	{ desc : 'Next 15 mins',	timeoffsetsec : '900' },	
 	{ desc : 'Next 30 mins',	timeoffsetsec : '1800' },	
-	{ desc : 'Last 1 min', 		timeoffsetsec : '100060' },	
-	{ desc : 'Last 5 mins', 	timeoffsetsec : '100300' },	
-	{ desc : 'Last 15 mins',	timeoffsetsec : '100900' },	
-	{ desc : 'Last 30 mins',	timeoffsetsec : '101800' },	
 ];
 
 

@@ -1201,7 +1201,7 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 				}
 				else {
 					if (objref.current.prevdatasec > 0) {
-						notification.warning({message : "Service Info Data Format", description : "No Data or Invalid Data for Service Info fetch..."});
+						// notification.warning({message : "Service Info Data Format", description : "No Data or Invalid Data for Service Info fetch..."});
 					}	
 				}	
 			}

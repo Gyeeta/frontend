@@ -228,15 +228,16 @@ export const presetPointTime = [
 ];
 
 export const presetTimeRange = [
-	{ desc : 'Last 1 min', 		timeoffsetsec : '60' },	
-	{ desc : 'Last 5 mins', 	timeoffsetsec : '300' },	
-	{ desc : 'Last 15 mins',	timeoffsetsec : '900' },	
-	{ desc : 'Last 30 mins',	timeoffsetsec : '1800' },	
-	{ desc : 'Last 1 hour', 	timeoffsetsec : '3600' },	
-	{ desc : 'Last 3 hours', 	timeoffsetsec : '10800' },	
-	{ desc : 'Last 6 hours', 	timeoffsetsec : '21600' },	
-	{ desc : 'Last 12 hours', 	timeoffsetsec : '43200' },	
-	{ desc : 'Last 24 hours', 	timeoffsetsec : '86400' },	
+	{ desc : 'Latest 1 min', 	timeoffsetsec : '60' },	
+	{ desc : 'Latest 5 mins', 	timeoffsetsec : '300' },	
+	{ desc : 'Latest 15 mins',	timeoffsetsec : '900' },	
+	{ desc : 'Latest 30 mins',	timeoffsetsec : '1800' },	
+	{ desc : 'Latest 1 hour', 	timeoffsetsec : '3600' },	
+	{ desc : 'Latest 3 hours', 	timeoffsetsec : '10800' },	
+	{ desc : 'Latest 6 hours', 	timeoffsetsec : '21600' },	
+	{ desc : 'Latest 12 hours', 	timeoffsetsec : '43200' },	
+	{ desc : 'Latest 24 hours', 	timeoffsetsec : '86400' },	
+	{ desc : 'Latest 3 days', 	timeoffsetsec : '259200' },	
 ];
 
 export function PresetTimesOrRanges({secOffsetCB, isrange = true, placeholder, presetArray})

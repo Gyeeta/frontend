@@ -255,7 +255,6 @@ const hostRangeColumns = (aggrType) => {
 		key :		'host',
 		dataIndex :	'host',
 		gytype : 	'string',
-		render : 	text => <Button type="link">{text}</Button>,
 		fixed : 	'left',
 		width :		150,
 	},	
@@ -272,7 +271,7 @@ const hostRangeColumns = (aggrType) => {
 		key :		'detailissues',
 		dataIndex :	'detailissues',
 		gytype :	'number',
-		render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.detailrecs}</span>,
+		render :	(num, rec) => <Button type="link"><span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.detailrecs}</span></Button>,
 		width : 	100,
 	},	
 	{
@@ -388,7 +387,7 @@ const hostRangeNoSummColumns = (aggrType, isglob = true) => {
 		key :		'issue',
 		dataIndex :	'issue',
 		gytype :	'number',
-		render :	(num, rec) => <span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.inrecs}</span>,
+		render :	(num, rec) => <Button type="link"><span style={{ color : num > 0 ? 'red' : undefined }} >{num} of {rec.inrecs}</span></Button>,
 		width : 	120,
 	},	
 	{
@@ -481,7 +480,7 @@ export const hostRangeTimeColumns = (aggrType, isglob = true) => {
 		key :		'time',
 		dataIndex :	'time',
 		gytype :	'string',
-		render : 	!isglob ? ((text) => <Button type="link">{getLocalTime(text)}</Button>) : undefined,
+		render : 	!isglob ? ((text) => getLocalTime(text)) : undefined,
 		width :		160,
 		fixed : 	'left',
 	},
@@ -1108,7 +1107,7 @@ export function HostInfoDesc({parid, addTabCB, remTabCB, isActiveTabCB, hostInfo
 }	
 
 export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -1123,6 +1122,7 @@ export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, na
 				qrytime		: Date.now(),
 				timeoutsec 	: 100,
 				timeoffsetsec	: useAggr ? 60 : undefined,
+				madfilterarr	: madfilterarr,
 				options		: {
 					aggregate	: useAggr,
 					aggroper	: aggrType,
@@ -1165,7 +1165,7 @@ export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, na
 			notification.error({message : "Data Fetch Error", description : `Exception during Host Info Data fetch : ${emsg}`});
 		}
 
-	}, [doFetch, filter, maxrecs, aggrType, aggrfilter, parid, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [doFetch, filter, maxrecs, aggrType, aggrfilter, parid, madfilterarr, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
 
 	if (isloading === false && isapierror === false) { 
 
@@ -1219,28 +1219,28 @@ export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, na
 					}					
 				}
 
-				let			columns, rowKey, titlestr;
+				let			columns, rowKey, newtitlestr;
 
 				if (customColumns && customTableColumns) {
 					columns = customTableColumns;
 					rowKey = "rowid";
-					titlestr = "Host Info";
+					newtitlestr = "Host Info";
 				}
 				else {
 					columns = hostInfoColumns;
 					rowKey = "parid"; 
 
-					titlestr = !filter && !name ? 'Global Hosts System Info' : !name ? 'Hosts System Info' : `${name} Hosts System Info`;
+					newtitlestr = !filter && !name ? 'Global Hosts System Info' : !name ? 'Hosts System Info' : `${name} Hosts System Info`;
 
 					if (useAggr) {
-						titlestr = 'Aggregated ' + titlestr;
+						newtitlestr = 'Aggregated ' + newtitlestr;
 					}	
 				}
 
 				hinfo = (
 					<>
 					<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-					<Title level={4}>{titlestr}</Title>
+					<Title level={4}>{titlestr ?? newtitlestr}</Title>
 					<GyTable columns={columns} onRow={tableOnRow} dataSource={data.hostinfo} rowKey={rowKey} scroll={getTableScroll()}  />
 					</div>
 					</>
@@ -2658,7 +2658,7 @@ export function HostInfoFilters({filterCB, linktext})
 }
 
 export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, tableOnRow, aggrfilter, maxrecs, name, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
@@ -2677,6 +2677,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 				timeoutsec 	: 100,
 				starttime 	: starttime,
 				endtime 	: endtime,
+				madfilterarr	: madfilterarr,
 				options		: {
 					aggregate	: isrange && useAggr,
 					aggroper	: aggrType,
@@ -2721,7 +2722,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 			notification.error({message : "Data Fetch Error", description : `Exception during Host State Data fetch : ${emsg}`});
 		}
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2797,25 +2798,25 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 					}	
 				}	
 
-				let			columns, rowKey, titlestr, timestr;
+				let			columns, rowKey, newtitlestr, timestr;
 
 				if (customColumns && customTableColumns) {
 					columns = customTableColumns;
 					rowKey = "rowid";
-					titlestr = "Host State";
+					newtitlestr = "Host State";
 					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 				}	
 				else if (!isrange) {
 					columns = hostColumns(!parid);
 					rowKey = !parid ? 'parid' : 'time';
 
-					titlestr = name ? `${name} Host State` : !filter && !parid ? 'Global Host State' : 'Host State';
+					newtitlestr = name ? `${name} Host State` : !filter && !parid ? 'Global Host State' : 'Host State';
 					timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 				}
 				else {
 					rowKey = ((record) => record.time + record.parid);
 
-					titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : ''} Host State`;
+					newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : ''} Host State`;
 					columns = !useAggr ? hostTimeColumns(!parid) : (aggrMin ? hostRangeTimeColumns(aggrType, !parid) : hostRangeNoSummColumns(aggrType, !parid));
 					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
@@ -2823,7 +2824,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 				hinfo = (
 					<>
 					<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-					<Title level={4}>{titlestr}</Title>
+					<Title level={4}>{titlestr ?? newtitlestr}</Title>
 					{timestr}
 					<div style={{ marginBottom: 30 }} />
 					<GyTable columns={columns} onRow={tableOnRow} dataSource={data.hoststate} rowKey={rowKey} scroll={getTableScroll()} />
@@ -2861,8 +2862,9 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 
 }
 
-export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host States',
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, 
+					modal, title = 'Host States',
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2888,35 +2890,29 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 	}
 
 	const                           Comp = wrapComp ?? HostStateSearch;
-
-	if (!modal) {
-		const			tabKey = `HostState_${Date.now()}`;
-
-		CreateTab(title ?? "Host State", 
-			() => { return (
+	let				tabKey;
+	
+	const getComp = () => { return (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					 recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} /> 
+					madfilterarr={madfilterarr} titlestr={titlestr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} /> 
 				</>
-				);
-				}, tabKey, addTabCB);
+				) 
+			};
+
+	if (!modal) {
+		tabKey = `HostState_${Date.now()}`;
+
+		CreateTab(title ?? "Host State", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Host State",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<HostStateSearch parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} />
-				</>
-				),	
+			content : getComp(),	
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2928,34 +2924,31 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 }
 
 export function hostinfoTableTab({parid, useAggr, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host Info',
-					customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
-	if (!modal) {
-		const			tabKey = `HostInfo_${Date.now()}`;
+	let				tabKey;
 
-		CreateTab(title ?? "Host Info", 
-			() => { return (
+	const getComp = () => { return (
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
+					tabKey={tabKey} customColumns={customColumns} 
+					madfilterarr={madfilterarr} titlestr={titlestr} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
 				</>
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `HostInfo_${Date.now()}`;
+
+		CreateTab(title ?? "Host Info", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Host Info",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

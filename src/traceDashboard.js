@@ -156,6 +156,18 @@ export const traceAggrOutputArr = [
 				{ label : 'Custom Columns', value : 'custom' } 
 ];
 
+const traceAggrRespBuckets = {
+	resplt300us 	: '{ respus < 300 }',
+	resplt1ms	: '{ respus >= 300 } and { respus < 1000 }',
+	resplt10ms	: '{ respus >= 1000 } and { respus < 10000 }',
+	resplt30ms	: '{ respus >= 10000 } and { respus < 30000 }',
+	resplt100ms	: '{ respus >= 30000 } and { respus < 100000 }',
+	resplt300ms	: '{ respus >= 100000 } and { respus < 300000 }',
+	resplt1sec	: '{ respus >= 300000 } and { respus < 1000000 }',
+	respgt1sec	: '{ respus >= 1000000 }',
+};
+
+
 function getTraceStateColor(state)
 {
 	let		color;
@@ -1020,19 +1032,79 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 			});	
 	};	
 
+	const getTraceRecs = (newfilter) => {
+		let			fstr = '( ', nfilt = 0;
+
+		if (newfilter) {
+			fstr += ` ${newfilter} `;
+			nfilt++;
+		}	
+		
+		if (rec.svcid !== undefined) {
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }{ svcid = '${rec.svcid}' } `;
+			nfilt++;
+		}	
+
+		if (rec.app !== undefined) {
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }{ app = '${rec.app}' } `;
+			nfilt++;
+		}	
+
+		if (rec.user !== undefined) {
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }{ user = '${rec.user}' } `;
+			nfilt++;
+		}	
+
+		if (rec.db !== undefined) {
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }{ db = '${rec.db}' } `;
+			nfilt++;
+		}	
+
+		if (rec.cip !== undefined) {
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }{ cip = '${rec.cip}' } `;
+			nfilt++;
+		}	
+
+		if (nfilt > 0) {
+			fstr += ' )';
+		}	
+		else {
+			fstr = undefined;
+		}	
+
+		tracereqTableTab({starttime : rec.time, endtime : tend, 
+					filter : fstr, maxrecs : rec.inrecs, isext : true, 
+					titlestr : `Trace Requests for service ${rec.svcname}`, 
+					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
+
+	};
 
 	const viewTraceFields = (key, value, rec) => {
-		if (key === 'avgrespus' || key === 'maxrespus' || key === 'p99respus') {
+		if (key === 'nreq' || key === 'inrecs') {
+			return <Button type='link' onClick={() => getTraceRecs()} ><span>{format(',')(value)}</span></Button>;
+		}	
+		else if (key === 'nerr' && value !== 0) {
+			return <Button type='link' onClick={() => getTraceRecs(' { err != 0 } ')} ><span style={{ color : 'red'}} >{format(',')(value)}</span></Button>;
+		}	
+		else if (key === 'maxrespus') {
+			return <Button type='link' onClick={() => getTraceRecs(` { respus = ${rec.maxrespus} } `)} ><span>{usecStrFormat(value)}</span></Button>;
+		}	
+		if (key === 'avgrespus' || key === 'p99respus') {
 			value = usecStrFormat(value);
 		}	
-		else if (key === 'sumnetin' || key === 'sumnetout' || key === 'maxnetin' || key === 'maxnetout') {
+		else if (key === 'maxnetin' || key === 'maxnetout') {
+			return <Button type='link' onClick={() => getTraceRecs(` { ${key.slice(3)} = ${rec[key]} } `)} ><span>{bytesStrFormat(value)}</span></Button>;
+		}	
+		else if (key === 'sumnetin' || key === 'sumnetout') {
 			value = bytesStrFormat(value);
 		}	
 		else if (key.startsWith('resplt') || key.startsWith('respgt')) {
-			value = `${format(",")(value)} (${(value * 100/rec.inrecs).toFixed(2)} %)`;
+			if (value > 0) {
+				return <Button type='link' onClick={() => getTraceRecs(traceAggrRespBuckets[key])} ><span>{`${format(",")(value)} (${(value * 100/rec.inrecs).toFixed(2)} %)`}</span></Button>;
+			}
 		}	
-		else if (key === 'nerr' && value !== 0) {
-			return <span style={{ color : 'red'}} >{format(',')(value)}</span>;
+		else if (key === 'nconns') {
+			value = format(',')(value);
 		}	
 		else if (typeof value === 'object' || typeof value === 'boolean') {
 			value = JSON.stringify(value);
@@ -1045,7 +1117,7 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 		<>
 		<ErrorBoundary>
 
-		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 400 }} >
+		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 800 }} >
 		<JSONDescription jsondata={rec} titlestr={titlestr ?? 'Record'} fieldCols={fieldCols} column={2} xfrmDataCB={viewTraceFields} keyNames={keyNames} />
 		</div>
 		
@@ -1498,7 +1570,7 @@ function getHostInfo(parid, modalCount, addTabCB, remTabCB, isActiveTabCB)
 }	
 
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, monAutoRefresh})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, monAutoRefresh})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -1511,6 +1583,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			data : {
 				starttime,
 				endtime,
+				madfilterarr,
 				options : {
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
@@ -1543,7 +1616,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1567,18 +1640,18 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			closetab = 30000;
 		}
 		else {
-			let		columns, rowKey, titlestr, timestr;
+			let		columns, rowKey, newtitlestr, timestr;
 
 			if (customColumns && customTableColumns) {
 				columns = customTableColumns;
 				rowKey = "rowid";
-				titlestr = "Trace Status";
+				newtitlestr = "Trace Status";
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.svcid ? record.svcid : ''));
 				columns = getTracestatusColumns({ starttime, endtime, addTabCB, remTabCB, isActiveTabCB, monAutoRefresh });
 
-				titlestr = `${useAggr ? 'Aggregated ' : ''} Trace Status `;
+				newtitlestr = `${useAggr ? 'Aggregated ' : ''} Trace Status `;
 			}	
 
 			timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
@@ -1586,7 +1659,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>{titlestr}</Title>
+				<Title level={4}>{titlestr ?? newtitlestr}</Title>
 				{timestr}
 				<div style={{ marginBottom: 30 }} />
 				<GyTable columns={columns} onRow={tableOnRow} dataSource={data.tracestatus} rowKey={rowKey} scroll={getTableScroll()} />
@@ -1620,7 +1693,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, monAutoRefresh, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, monAutoRefresh, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1646,35 +1719,30 @@ export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrT
 	}
 
 	const                           Comp = wrapComp ?? TracestatusSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `Tracestatus_${Date.now()}`;
-
-		CreateTab(title ?? "Trace Status", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
+						madfilterarr={madfilterarr} titlestr={titlestr}
 						recoffset={recoffset} dataRowsCb={dataRowsCb} monAutoRefresh={monAutoRefresh} origComp={TracestatusSearch} /> 
 					</>	
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `Tracestatus_${Date.now()}`;
+
+		CreateTab(title ?? "Trace Status", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Trace Status",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} monAutoRefresh={monAutoRefresh} origComp={TracestatusSearch} />
-				</>	
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -1779,7 +1847,7 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 
 export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, titlestr, tableOnRow, 
 					addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, customTableColumns, sortColumns, sortDir, 
-					recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
+					madfilterarr, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
@@ -1812,6 +1880,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				timeoutsec 		: useAggr ? 500 : 200,
 				options : {
 					maxrecs 	: maxrecs,
@@ -1847,7 +1916,8 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			return;
 		}	
 
-	}, [parid, doFetch, endtime, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, doFetch, endtime, filter, maxrecs, madfilterarr,
+			useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2003,7 +2073,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 }
 
 export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput,
-					tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, modal, title, titlestr,
+					tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, madfilterarr,
 					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
@@ -2030,37 +2100,30 @@ export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxr
 	}
 
 	const                           Comp = wrapComp ?? TracereqSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `Tracereq_${Date.now()}`;
-
-		CreateTab(title ?? "Trace Request", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
 						maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter} aggrOutput={aggrOutput}
 						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
+						madfilterarr={madfilterarr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
 					</>	
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `Tracereq_${Date.now()}`;
+
+		CreateTab(title ?? "Trace Request", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Trace Request",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp parid={parid} starttime={starttime} endtime={endtime} isext={isext} filter={filter} titlestr={titlestr}
-					maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter} aggrOutput={aggrOutput}
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
-				</>	
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
@@ -2435,7 +2498,7 @@ export function viewTracedef(record, modal = true)
 	}	
 }
 
-export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
+export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -2499,7 +2562,7 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			hinfo = (
 				<>
 				<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-				<Title level={4}>List of Trace Definitions</Title>
+				<Title level={4}>{titlestr ?? 'List of Trace Definitions'}</Title>
 				<GyTable columns={columns} dataSource={data.tracedef} rowKey="defid" onRow={tableOnRow} />
 				
 				</div>
@@ -2532,32 +2595,29 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, extraComp = null})
+export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
-	if (!modal) {
-		const			tabKey = `Tracedef_${Date.now()}`;
+	let			tabKey;
 
-		CreateTab(title ?? "Tracedef", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<TracedefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} title={title} /> 
+						tabKey={tabKey} titlestr={titlestr} /> 
 					</>
 				);		
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		tabKey = `Tracedef_${Date.now()}`;
+
+		CreateTab(title ?? "Tracedef", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "Trace Definitions",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<TracedefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						title={title} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,

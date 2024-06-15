@@ -1788,7 +1788,7 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 }
 
 export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
@@ -1804,6 +1804,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 				starttime,
 				endtime,
 				parid,
+				madfilterarr,
 				options : {
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
@@ -1835,7 +1836,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 			console.log(`Exception caught while waiting for CPU Memory Table fetch response : ${e}\n${e.stack}\n`);
 			return;
 		}	
-	}, [parid, aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1906,13 +1907,13 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					}	
 				};
 
-				let		columns, rowKey, titlestr, timestr;
+				let		columns, rowKey, newtitlestr, timestr;
 
 
 				if (customColumns && customTableColumns) {
 					columns = customTableColumns;
 					rowKey = "rowid";
-					titlestr = "CPU Memory State";
+					newtitlestr = "CPU Memory State";
 					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format()} to {moment(endtime, moment.ISO_8601).format()}</strong></span>;
 				}
 				else if (!isrange) {
@@ -1920,14 +1921,14 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					rowKey = parid ? "time" : ((record) => record.parid + record.time);
 
 					if (parid) {
-						titlestr = `CPU Memory State for Host ${hostname ?? ''}`;
+						newtitlestr = `CPU Memory State for Host ${hostname ?? ''}`;
 					}	
 					else {
 						if (!name) {
-							titlestr = 'Global CPU Memory State';
+							newtitlestr = 'Global CPU Memory State';
 						}
 						else {
-							titlestr = `${name} CPU Memory State`;
+							newtitlestr = `${name} CPU Memory State`;
 						}	
 					}	
 
@@ -1937,12 +1938,12 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					rowKey = parid ? "time" : ((record) => record.parid + record.time);
 
 					if (parid) {
-						titlestr = `${useAggr ? 'Aggregated ' : ''} CPU Memory State for Host ${hostname ?? ''}`;
+						newtitlestr = `${useAggr ? 'Aggregated ' : ''} CPU Memory State for Host ${hostname ?? ''}`;
 						columns = !useAggr ? hostCpuColumns : hostAggrCpuColumns(aggrType);
 					}
 					else {
 						columns = !useAggr ? globCpuColumns : globAggrCpuColumns(aggrType);
-						titlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} CPU Memory State`;
+						newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} CPU Memory State`;
 					}	
 					timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 				}	
@@ -1950,7 +1951,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 				hinfo = (
 					<>
 					<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
-					<Title level={4}>{titlestr}</Title>
+					<Title level={4}>{titlestr ?? newtitlestr}</Title>
 					{timestr}
 					<div style={{ marginBottom: 30 }} />
 					<GyTable columns={columns} onRow={tableOnRow} dataSource={data.cpumem} rowKey={rowKey} scroll={getTableScroll()} />
@@ -1989,7 +1990,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 }
 
 export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2015,35 +2016,29 @@ export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, ag
 	}
 
 	const                           Comp = wrapComp ?? CpuMemSearch;
+	let				tabKey;
 
-	if (!modal) {
-		const			tabKey = `CpuMem_${Date.now()}`;
-
-		CreateTab(title ?? "CPU Memory", 
-			() => { return (
+	const getComp = () => { return (
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} 
-						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} /> 
+						tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} madfilterarr={madfilterarr}
+						titlestr={titlestr} sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} /> 
 					</>	
 				);
-				}, tabKey, addTabCB);
+			};
+
+	if (!modal) {
+		const			tabKey = `CpuMem_${Date.now()}`;
+
+		CreateTab(title ?? "CPU Memory", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({
 			title : title ?? "CPU Memory",
 
-			content : (
-				<>
-				{typeof extraComp === 'function' ? extraComp() : extraComp}
-				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
-					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} />
-				</>
-				),
+			content : getComp(),
 			width : '90%',	
 			closable : true,
 			destroyOnClose : true,
