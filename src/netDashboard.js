@@ -97,7 +97,7 @@ export const extclientconnfields = [
 	{ field : 'p95iodel',	desc : 'Client p95 Block IO Delay msec',	type : 'number',	subsys : 'extclientconn',	valid : null, },
 ];
 
-function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = ''})
+export function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = ''})
 {
 	const 			colarr = [];
 
@@ -163,7 +163,7 @@ function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = '
 		dataIndex :	'rttms',
 		gytype :	'number',
 		width : 	120,
-		render :	(num) => msecStrFormat(num),
+		render :	(num) => msecStrFormat(num > 0 ? num.toFixed(3) : num),
 		responsive : 	['lg'],
 	},
 	{
@@ -172,7 +172,7 @@ function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = '
 		dataIndex :	'sdelms',
 		gytype :	'number',
 		width : 	120,
-		render :	(num) => msecStrFormat(num),
+		render :	(num) => msecStrFormat(num > 0 ? num.toFixed(3) : num),
 		responsive : 	['lg'],
 	},
 	{
@@ -181,7 +181,7 @@ function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = '
 		dataIndex :	'cdelms',
 		gytype :	'number',
 		width : 	120,
-		render :	(num) => msecStrFormat(num),
+		render :	(num) => msecStrFormat(num > 0 ? num.toFixed(3) : num),
 		responsive : 	['lg'],
 	},
 	{

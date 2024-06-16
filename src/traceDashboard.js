@@ -17,7 +17,7 @@ import 			{MultiFilters, SearchTimeFilter, createEnumArray, hostfields, SearchWr
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
-import			{SvcInfoDesc} from './svcDashboard.js';
+import			{SvcInfoDesc, SvcAnalysis} from './svcDashboard.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import			{procInfoTab} from './procDashboard.js';
 import			{ProcMonitor} from './procMonitor.js';
@@ -147,13 +147,13 @@ export const tracedeffields = [
 ];
 
 export const traceAggrOutputArr = [ 
-				{ label : 'Service Level Aggregation', value : 'svc' } ,
-				{ label : 'Application Name', value : 'app' },
-				{ label : 'Username', value : 'user' },
-				{ label : 'DB Name', value : 'db' },
-				{ label : 'Client IP', value : 'cip' },
-				{ label : 'All Columns Aggregation', value : 'all' },
-				{ label : 'Custom Columns', value : 'custom' } 
+	{ label : 'Service Level Aggregation', 	value : 'svc' } ,
+	{ label : 'Application Name', 		value : 'app' },
+	{ label : 'Username', 			value : 'user' },
+	{ label : 'DB Name', 			value : 'db' },
+	{ label : 'Client IP', 			value : 'cip' },
+	{ label : 'All Columns Aggregation', 	value : 'all' },
+	{ label : 'Custom Columns', 		value : 'custom' } 
 ];
 
 const traceAggrRespBuckets = {
@@ -801,6 +801,17 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
 
+	const getSvcAnalysis = () => {
+		const		tabKey = `SvcAnalysis_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Analyze Service Performance</i></span>, 'Service Performance',
+				() => { return <SvcAnalysis svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+		
+	};	
+
+
 	const getRelSvcID = async () => {
 		const conf = 
 		{
@@ -889,7 +900,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		<Row justify="space-between">
 
 		<Col span={8}> <Button type='dashed' onClick={getSvcInfo} >Get Service '{rec.svcname}' Information</Button> </Col>
-		<Col span={8}> {getCpuMemTimeState()} </Col>
+		<Col span={8}> {getSvcAnalysis()} </Col>
 
 		</Row>
 
@@ -909,8 +920,15 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		</Row>
 
 		<Row justify="space-between">
-		
+
+		<Col span={8}> {getCpuMemTimeState()} </Col>
 		<Col span={8}> <Button type='dashed' onClick={getSvcProcInfo} >Get Service '{rec.svcname}' Process Information</Button> </Col>
+
+		</Row>
+
+
+		<Row justify="space-between">
+		
 		{(rec.parid || parid) && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host Information</Button> </Col>}
 
 		</Row>
@@ -989,6 +1007,17 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
 
+	const getSvcAnalysis = () => {
+		const		tabKey = `SvcAnalysis_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Analyze Service Performance</i></span>, 'Service Performance',
+				() => { return <SvcAnalysis svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+		
+	};	
+
+
 	const getRelSvcID = async () => {
 		const conf = 
 		{
@@ -1026,7 +1055,7 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 
 	const getSvcProcInfo = () => {
 		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procInfoTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 300 * 60 * 24,
-				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
+				aggrType : 'sum', filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000,
 				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes for Service ${rec.svcname}` }) : null)
 			.catch((e) => {
 			});	
@@ -1136,16 +1165,23 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 		<Row justify="space-between">
 
 		<Col span={8}> {getSvcTimeState()} </Col>
-		<Col span={8}> {getCpuMemTimeState()} </Col>
+		<Col span={8}> {getSvcAnalysis()} </Col>
 
 		</Row>
 
 		<Row justify="space-between">
 
 		<Col span={8}> {getSvcNetFlows()} </Col>
+		<Col span={8}> {getCpuMemTimeState()} </Col>
+
+		</Row>
+
+		<Row justify="space-between">
+
 		<Col span={8}> <Button type='dashed' onClick={getSvcProcInfo} >Get Service '{rec.svcname}' Process Information</Button> </Col>
 
 		</Row>
+
 
 		</Space>
 		</div>

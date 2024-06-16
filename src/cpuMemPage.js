@@ -440,7 +440,7 @@ const globCpuColumns = [
 ];
 
 const hostAggrCpuColumns = (aggrType) => {
-	aggrType = capitalFirstLetter(aggrType) ?? 'Avg';
+	aggrType = capitalFirstLetter(aggrType) ?? 'Sum';
 	const nosumaggr = (aggrType === 'Sum' ? 'Avg' : aggrType);
 
 	return [
@@ -475,7 +475,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'cpu_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		'Max CPU %',
@@ -483,7 +483,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'max_cpu_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} User CPU %`,
@@ -491,7 +491,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'usercpu_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} System CPU %`,
@@ -499,7 +499,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'syscpu_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} IO Wait %`,
@@ -507,7 +507,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'iowait_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} All Cores CPU %`,
@@ -515,7 +515,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'cumul_cpu_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} Context Switches/sec`,
@@ -547,7 +547,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'rss_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} Resident Memory MB`,
@@ -563,7 +563,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'commit_pct',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => format(",")(num > 0 ? num.toFixed(3) : num),
 	},	
 	{
 		title :		`${nosumaggr} Committed Memory MB`,
@@ -1809,7 +1809,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 					maxrecs 	: maxrecs,
 					aggregate	: useAggr,
 					aggrsec		: aggrMin ? aggrMin * 60 : 300,
-					aggroper	: aggrType ?? 'avg',
+					aggroper	: aggrType ?? 'sum',
 					filter,
 					aggrfilter	: useAggr ? aggrfilter : undefined,
 					columns		: customColumns && customTableColumns ? customColumns : undefined,
@@ -2856,7 +2856,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
 						filter 		:	`{ state in 'Bad','Severe' }`,
 						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
-						aggrType	:	'avg',
+						aggrType	:	'sum',
 						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
 						isext 		: 	true,
 						name 		: 	`Host ${objref.current?.summary.hostname}`,
@@ -2877,7 +2877,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
 						filter 		:	'{ cpu > 1 }',
 						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
-						aggrType	:	'avg',
+						aggrType	:	'sum',
 						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
 						isext 		: 	true,
 						name 		: 	`Host ${objref.current?.summary.hostname}`,
@@ -3013,7 +3013,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
 						filter 		:	`{ state in 'Bad','Severe' }`,
 						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
-						aggrType	:	'avg',
+						aggrType	:	'sum',
 						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
 						isext 		: 	true,
 						name 		: 	`Host ${objref.current?.summary.hostname}`,
@@ -3097,7 +3097,7 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 						endtime 	:	moment(tref.current.getRescaleTimerange()[1]).format(),
 						filter 		:	`{ rss > 10 }`,
 						useAggr		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0] > 60000),
-						aggrType	:	'avg',
+						aggrType	:	'sum',
 						aggrMin		:	(+tref.current.getRescaleTimerange()[1] - +tref.current.getRescaleTimerange()[0])/60000 + 1,
 						isext 		: 	true,
 						name 		: 	`Host ${objref.current?.summary.hostname}`,

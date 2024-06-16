@@ -474,6 +474,7 @@ export const aggrHostAggrCol = (aggrType) => {
 		dataIndex :	'cpu',
 		gytype :	'number',
 		width : 	120,
+		render :	(num) => num.toFixed(3),
 	},
 	{
 		title :		`${ignsum} Memory RSS MB`,
@@ -838,6 +839,7 @@ const extprocColumns = [
 		dataIndex :	'tstart',
 		gytype : 	'string',
 		width :		160,
+		render :	(val) => getLocalTime(val),
 	},	
 	{
 		title :		'Region Name',
@@ -1788,7 +1790,7 @@ export function ProcInfoDesc({procid, parid, starttime, endtime, addTabCB, remTa
 			<Descriptions.Item label={<em>Cluster Name</em>}>{data.hostinfo ? data.hostinfo.cluster : proc.cluster ? proc.cluster : 'Unknown'}</Descriptions.Item>
 			<Descriptions.Item label={<em>Process Gyeeta ID</em>}><span style={{ fontSize: 12 }}>{procid}</span></Descriptions.Item>
 			<Descriptions.Item label={<em>Process cmdline </em>} span={3}>{proc.cmdline}</Descriptions.Item>
-			<Descriptions.Item label={<em>Process Start Time</em>}>{proc.tstart}</Descriptions.Item>
+			<Descriptions.Item label={<em>Process Start Time</em>}>{getLocalTime(proc.tstart)}</Descriptions.Item>
 			<Descriptions.Item label={<em>Region Name</em>}>{proc.region}</Descriptions.Item>
 			<Descriptions.Item label={<em>Zone Name</em>}>{proc.zone}</Descriptions.Item>
 			{proc.tag.length && <Descriptions.Item label={<em>Process Tags </em>}>{proc.tag}</Descriptions.Item>}
@@ -2063,7 +2065,7 @@ function ExtProcDesc({rec})
 		{rec.cputhr !== undefined && <Descriptions.Item label={<em>CPU Throttled Process</em>}>{rec.cputhr ? "Yes" : "No"}</Descriptions.Item>}
 		{rec.cputhr && <Descriptions.Item label={<em>cgroup CPU Limited to</em>}>{rec.cgcpulimpct} %</Descriptions.Item>}
 		{rec.memlim !== undefined && <Descriptions.Item label={<em>Memory Limited Process</em>}>{rec.memlim ? "Yes" : "No"}</Descriptions.Item>}
-		{rec.tstart && <Descriptions.Item label={<em>Process Start Time</em>}>{rec.tstart}</Descriptions.Item>}
+		{rec.tstart && <Descriptions.Item label={<em>Process Start Time</em>}>{getLocalTime(rec.tstart)}</Descriptions.Item>}
 		{rec.relsvcid && <Descriptions.Item label={<em>Process is a Service</em>}>{rec.relsvcid !== NullID ? "Yes" : "No"}</Descriptions.Item>}
 		{rec.p95cpupct !== undefined && <Descriptions.Item label={<em>p95 CPU Utilization</em>}>{rec.p95cpupct} %</Descriptions.Item>}
 		{rec.p95cpudel !== undefined && <Descriptions.Item label={<em>p95 CPU Delay</em>}>{format(",")(rec.p95cpudel)} msec</Descriptions.Item>}
@@ -2345,7 +2347,7 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 	if (!modal) {
 		tabKey = `ProcState_${Date.now()}`;
 
-		CreateTab(title ?? "Process State", tabKey, tabKey, addTabCB);
+		CreateTab(title ?? "Process State", getComp, tabKey, addTabCB);
 	}
 	else {
 		Modal.info({

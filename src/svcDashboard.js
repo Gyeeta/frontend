@@ -11,13 +11,13 @@ import 			{format} from "d3-format";
 import 			{FixedPrioQueue} from './components/fixedPrioQueue.js';
 import 			{safetypeof, validateApi, fixedArrayAddItems, kbStrFormat, usecStrFormat, useFetchApi, CreateLinkTab, CreateTab, ComponentLife, 
 			mergeMultiMadhava, ButtonModal, capitalFirstLetter, stateEnum, ButtonJSONDescribe, LoadingAlert, JSONDescription, strTruncateTo,
-			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime, isStateIssue, splitInArray} from './components/util.js';
+			getStateColor, getMinEndtime, msecStrFormat, timeDiffString, getLocalTime, isStateIssue, splitInArray, NullID} from './components/util.js';
 import 			{StateBadge} from './components/stateBadge.js';
 import 			{HostInfoDesc, HostStateSearch} from './hostViewPage.js';
 import 			{GyTable, getTableScroll, getFixedColumns} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import 			{SvcMonitor, SvcIssueSource} from './svcMonitor.js';
-import 			{NetDashboard, ActiveConnSearch} from './netDashboard.js';
+import 			{NetDashboard, ActiveConnSearch, getActiveConnColumns} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
 import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
@@ -1988,6 +1988,15 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
 
+	const getSvcAnalysis = (name) => {
+		const		tabKey = `SvcAnalysis_${Date.now()}`;
+		
+		return CreateLinkTab(<span><i>Analyze Service Performance</i></span>, 'Service Performance',
+				() => { return <SvcAnalysis svcid={svcid} svcname={name} parid={parid} starttime={starttime} endtime={endtime} 
+							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
+							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
+		
+	};	
 
 
 	if (isloading === false && isapierror === false) { 
@@ -2002,10 +2011,10 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 
 			<Descriptions.Item label={<em>Host Name</em>}>{data.hostinfo ? data.hostinfo.host : svc.host ? svc.host : 'Unknown'}</Descriptions.Item>
 			<Descriptions.Item label={<em>Cluster Name</em>}>{data.hostinfo ? data.hostinfo.cluster : svc.cluster ? svc.cluster : 'Unknown'}</Descriptions.Item>
-			<Descriptions.Item label={<em>Service Gyeeta ID</em>}>{svcid}</Descriptions.Item>
-			<Descriptions.Item label={<em>Service Start Time</em>}>{svc.tstart}</Descriptions.Item>
 			<Descriptions.Item label={<em>Listener IP</em>}>{svc.ip}</Descriptions.Item>
 			<Descriptions.Item label={<em>Listener Port</em>}>{svc.port}</Descriptions.Item>
+			<Descriptions.Item label={<em>Service Gyeeta ID</em>}>{svcid}</Descriptions.Item>
+			<Descriptions.Item label={<em>Service Start Time</em>}>{getLocalTime(svc.tstart)}</Descriptions.Item>
 			<Descriptions.Item label={<em>Process Command Line</em>}>{svc.cmdline}</Descriptions.Item>
 			<Descriptions.Item label={<em>Region Name</em>}>{svc.region}</Descriptions.Item>
 			<Descriptions.Item label={<em>Zone Name</em>}>{svc.zone}</Descriptions.Item>
@@ -2030,13 +2039,6 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 
 			<Row justify="space-between">
 
-			<Col span={parid ? 8 : 24}> <Button type='dashed' onClick={getSiblingSvc} >Get Sibling Services</Button></Col>
-			{parid && <Col span={8}> <Button type='dashed' onClick={() => getHostInfo(svc.name)} >Service Host Information</Button> </Col>}
-
-			</Row>
-
-			<Row justify="space-between">
-
 			<Col span={8}> {getSvcTimeState()} </Col>
 			<Col span={8}> {getSvcMonitor()} </Col>
 
@@ -2046,10 +2048,101 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 			<Row justify="space-between">
 
 			<Col span={8}> {getNetFlows(svc.name)} </Col>
+			<Col span={8}> {getSvcAnalysis(svc.name)} </Col>
 
 			</Row>
 
+			<Row justify="space-between">
+
+			<Col span={parid ? 8 : 24}> <Button type='dashed' onClick={getSiblingSvc} >Get Sibling Services</Button></Col>
+			{parid && <Col span={8}> <Button type='dashed' onClick={() => getHostInfo(svc.name)} >Service Host Information</Button> </Col>}
+
+			</Row>
+
+
 			</Space>
+			</div>
+
+			</>
+			);
+		}
+		else {
+			hinfo = (<Alert type="warning" showIcon message="Invalid or No Valid data found on server. Service Info may have been deleted." description=<Empty /> />);
+			console.log(`Service Info Data Invalid seen : ${JSON.stringify(data).slice(0, 1024)}`);
+		}
+	}
+	else if (isapierror) {
+		const emsg = `Error while fetching data : ${typeof data === 'string' ? data : ""}`;
+
+		hinfo = <Alert type="error" showIcon message="Error Encountered" description={emsg} />;
+		
+		console.log(`Service Info Data Error seen : ${JSON.stringify(data).slice(0, 256)}`);
+	}	
+	else {
+		hinfo = <LoadingAlert />;
+	}
+
+	return (
+		<>
+		<ErrorBoundary>
+		{hinfo}
+		</ErrorBoundary>
+		</>
+	);
+}
+
+// Specify svcInfoObj if data already available 
+export function SvcInfoMiniDesc({svcid, parid, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile, svcInfoObj, titlestr})
+{
+	const 		[{ data, isloading, isapierror }, ] = useFetchApi(!svcInfoObj ? getSvcInfoApiConf(svcid, parid, starttime) : null, parseSvcInfo, 
+										!svcInfoObj ? [] : [{svcinfo : [svcInfoObj]}], 'Service Info API', !svcInfoObj);
+
+	let		hinfo = null;
+
+	const getHostInfo = (name) => {
+		Modal.info({
+			title : <span><strong>Host Info of service {name}</strong></span>,
+			content : <HostInfoDesc parid={parid}  addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />,
+			width : '90%',	
+			closable : true,
+			destroyOnClose : true,
+			maskClosable : true,
+		});
+	};	
+
+	if (isloading === false && isapierror === false) { 
+
+		if (safetypeof(data) === 'object' && data.svcinfo && data.svcinfo[0].svcid && data.svcinfo[0].svcid === svcid) { 
+			const			svc = data.svcinfo[0];
+
+			hinfo = (
+			<>
+			<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
+			<Descriptions title={titlestr ?? `Service ${svc.name} Info`} bordered={true} column={3} style={{ textAlign: 'center' }}>
+
+			<Descriptions.Item label={<em>Service Name</em>}>{svc.name}</Descriptions.Item>
+			<Descriptions.Item label={<em>Listener Port</em>}>{svc.port}</Descriptions.Item>
+			<Descriptions.Item label={<em>Host Name</em>}>
+				<Button type='dashed' onClick={() => getHostInfo(svc.name)} >
+					{data.hostinfo ? data.hostinfo.host : svc.host ? svc.host : 'Unknown'}
+				</Button></Descriptions.Item>	
+			<Descriptions.Item label={<em>Cluster Name</em>}>{data.hostinfo ? data.hostinfo.cluster : svc.cluster ? svc.cluster : 'Unknown'}</Descriptions.Item>
+			<Descriptions.Item label={<em>Service Start Time</em>}>{getLocalTime(svc.tstart)}</Descriptions.Item>
+			<Descriptions.Item label={<em>Listener IP</em>}>{svc.ip}</Descriptions.Item>
+			<Descriptions.Item label={<em>Region Name</em>}>{svc.region}</Descriptions.Item>
+			<Descriptions.Item label={<em>Zone Name</em>}>{svc.zone}</Descriptions.Item>
+			{svc.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual IP</em>}>{svc.svcip1}</Descriptions.Item>}
+			{svc.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual Port</em>}>{svc.svcport1}</Descriptions.Item>}
+			{svc.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual IP</em>}>{svc.svcip2}</Descriptions.Item>}
+			{svc.svcport2 !== 0 && <Descriptions.Item label={<em>2nd Virtual Port</em>}>{svc.svcport2}</Descriptions.Item>}
+			{svc.svcdns.length > 0 && <Descriptions.Item label={<em>Domain Name</em>}>{svc.svcdns}</Descriptions.Item>}
+			{svc.svctag.length > 0 && <Descriptions.Item label={<em>Service Tag</em>}>{svc.svctag}</Descriptions.Item>}
+			<Descriptions.Item label={<em>Current 5 Day p95 Response</em>}>{format(",")(svc.p95resp5d)} msec</Descriptions.Item>
+			<Descriptions.Item label={<em>Current 5 Day Avg. Response</em>}>{format(",")(svc.avgresp5d)} msec</Descriptions.Item>
+			<Descriptions.Item label={<em>Current p95 QPS</em>}>{format(",")(svc.p95qps)}</Descriptions.Item>
+			<Descriptions.Item label={<em>Current p95 Active Conns</em>}>{format(",")(svc.p95aconn)}</Descriptions.Item>
+
+			</Descriptions>
 			</div>
 
 			</>
@@ -2249,12 +2342,12 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 
 	const getProcState = () => {
 		if (rec.relsvcid) {
-			return procTableTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 30 * 60 * 24,
+			return procTableTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 				filter : `relsvcid = '${rec.relsvcid}'`, maxrecs : 1000, isext : true,
 				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes State for Service ${rec.name}` });
 		}	
 
-		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procTableTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 30 * 60 * 24,
+		getRelSvcID().then((newrelsvcid) => newrelsvcid ? procTableTab({ parid : parid ?? rec.parid, starttime : tstart, endtime : tend, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 				filter : `relsvcid = '${newrelsvcid}'`, maxrecs : 1000, isext : true,
 				addTabCB, remTabCB, isActiveTabCB, modal : true, title : `Processes State for Service ${rec.name}` }) : null)
 			.catch((e) => {
@@ -2264,8 +2357,8 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 	const getSvcAnalysis = () => {
 		const		tabKey = `SvcAnalysis_${Date.now()}`;
 		
-		return CreateLinkTab(<span><i>Analyze Service Performance Factors</i></span>, 'Service Performance',
-				() => { return <SvcAnalyzePerf svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
+		return CreateLinkTab(<span><i>Analyze Service Performance</i></span>, 'Service Performance',
+				() => { return <SvcAnalysis svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 		
@@ -2329,15 +2422,10 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		<Row justify="space-between">
 		
 		<Col span={8}> {getTraceMonitor()} </Col>
-		<Col span={8}> {getCpuMemTimeState()} </Col>
-
-		</Row>
-
-		<Row justify="space-between">
-		
 		<Col span={8}> {getSvcAnalysis()} </Col>
 
 		</Row>
+
 
 		<Row justify="space-between">
 		
@@ -2346,6 +2434,11 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 
 		</Row>
 
+		<Row justify="space-between">
+
+		<Col span={8}> {getCpuMemTimeState()} </Col>
+
+		</Row>
 
 		</Space>
 		</div>
@@ -2370,7 +2463,7 @@ export function ExtSvcDesc({rec})
 		
 		{rec.ip && <Descriptions.Item label={<em>Listener IP Address</em>}>{rec.ip}</Descriptions.Item>}
 		{rec.port && <Descriptions.Item label={<em>Listener Port</em>}>{rec.port}</Descriptions.Item>}
-		{rec.tstart && <Descriptions.Item label={<em>Listener Start Time</em>}>{rec.tstart}</Descriptions.Item>}
+		{rec.tstart && <Descriptions.Item label={<em>Listener Start Time</em>}>{getLocalTime(rec.tstart)}</Descriptions.Item>}
 		{rec.cmdline && <Descriptions.Item label={<em>Process Command Line</em>}>{rec.cmdline}</Descriptions.Item>}
 		{rec.region && <Descriptions.Item label={<em>Region Name</em>}>{rec.region}</Descriptions.Item>}
 		{rec.zone && <Descriptions.Item label={<em>Zone Name</em>}>{rec.zone}</Descriptions.Item>}
@@ -2701,20 +2794,55 @@ export function svcTableTab({parid, hostname, starttime, endtime, useAggr, aggrM
 	}	
 }
 
-export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
+export function SvcAnalysis({svcid, parid, svcname, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
-	const [upsvcarr, setupsvcarr]		= useState(null);
+	const [{svcinfo, upsvcarr}, setupsvcarr]	= useState({ svcinfo : null, upsvcarr : null });
+
+	if (svcname === undefined) {
+		svcname = '';
+	}	
 
 	useEffect(() => {
-		const afunc = async () => {
-			try {
-				const uarr = await getSvcUpstreamSvcids({ svcid, parid, starttime, endtime });
+		if (!svcid || !parid) return;
 
-				setupsvcarr(uarr);
+		const afunc = async () => {
+			let			svcres;
+
+			try {
+				const			conf = { 
+					url 		: NodeApis.svcinfo, 
+					method 		: 'post', 
+					data 		: { 
+						parid 		: parid,
+						starttime	: starttime,
+						timeoutsec 	: 10,
+						filter		: `{ svcinfo.svcid = '${svcid}' }`,
+					}, 
+					timeout 	: 10000,
+				};
+
+				let 			res = await axios(conf);
+
+				validateApi(res.data);
+
+				if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && safetypeof(res.data[0]?.svcinfo) === 'array' && res.data[0].svcinfo.length) {
+					svcres = {...res.data[0].svcinfo[0], ...res.data[0].hostinfo};
+				}
+		
+				let uarr = await getSvcUpstreamSvcids({ svcid, parid, starttime, endtime });
+
+				if (Array.isArray(uarr)) {
+					uarr = uarr.filter((cliconn) => cliconn.svcid !== NullID);
+				}
+				else {
+					uarr = [];
+				}
+
+				setupsvcarr({ svcinfo : svcres, upsvcarr : uarr});
 			}
 			catch(e) {
 				console.log(`Exception caught while waiting for Upstream svc info fetch response : ${e}\n${e.stack}\n`);
-				setupsvcarr([]);
+				setupsvcarr({ svcinfo : svcres, upsvcarr : []});
 			}	
 		};
 
@@ -2737,10 +2865,10 @@ export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTa
 	let			mstart, mend, tstart, tend;
 
 	if (!starttime) {
-		mstart = moment().subtract(15, 'seconds');
+		mstart = moment().subtract(30, 'seconds');
 	}	
 	else {
-		mstart = moment(starttime, moment.ISO_8601).subtract(15, 'seconds');
+		mstart = moment(starttime, moment.ISO_8601).subtract(30, 'seconds');
 	}	
 
 	if (!endtime) {
@@ -2753,7 +2881,12 @@ export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTa
 	tstart = mstart.format();
 	tend = mend.format();
 	
-	let			svcstate = null, hoststate = null, cpustate = null, upactiveconn = null, upsvcstate = null, upcpustate = null;
+	let			svchdr, svcstate, hoststate, cpustate, upactiveconn = null, upsvcstate = null, upcpustate = null, tracenet = null;
+
+	svchdr = (
+		<SvcInfoMiniDesc svcid={svcid} parid={parid} starttime={tstart} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} 
+					svcInfoObj={svcinfo} titlestr={`Performance Analysis of service ${svcname}`} />
+	);
 
 	svcstate = (
 		<SvcStateSearch parid={parid} name={svcname} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} 
@@ -2762,13 +2895,19 @@ export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTa
 	);
 
 	hoststate = (
-		<HostStateSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Host State of service ${svcname}`}
+		<HostStateSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Service ${svcname} Host State`}
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 	);
 
 	cpustate = (
-		<CpuMemSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Host CPU Memory of service ${svcname}`}
+		<CpuMemSearch parid={parid} starttime={tstart} endtime={tend} useAggr={true} aggrType="sum" aggrMin={300000} titlestr={`Service ${svcname} Host CPU Memory State`}
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+	);
+
+	tracenet = (
+		<NetDashboard svcid={svcid} svcname={svcname} parid={parid} autoRefresh={false} starttime={tstart} endtime={tend}
+			addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} iscontainer={true} />
+
 	);
 
 	if (Array.isArray(upsvcarr) && upsvcarr.length > 0) {
@@ -2830,27 +2969,48 @@ export function SvcAnalyzePerf({svcid, parid, svcname, starttime, endtime, addTa
 
 		upsvcstate = (
 			<SvcStateSearch madfilterarr={madfilterarr} starttime={tstart} endtime={tend} isext={true} useAggr={true} aggrType="sum" aggrMin={300000} 
-				filter={upstatfil} titlestr={`State of Upstream Services from service ${svcname}`}
+				filter={upstatfil} titlestr={`State of Upstream Services`}
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 		);
 
 		upcpustate = (
 			<CpuMemSearch madfilterarr={madfilterarr} starttime={tstart} endtime={tend} isext={true} useAggr={true} aggrType="sum" aggrMin={300000} 
-				filter={upcpufil} titlestr={`CPU Memory State of Upstream Services Hosts from service ${svcname}`}
+				filter={upcpufil} titlestr={`CPU Memory State of Upstream Services Hosts`}
 				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 		);
+
+	}	
+	else {
+		const columns = getActiveConnColumns({istime : true, useHostFields : true, isext : true, aggrType : 'Sum'});
+
+		upactiveconn = (
+			<>
+			<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 40 }} >
+			<Title level={4}>No Upstream connections from service {svcname}</Title>
+			<span style={{ fontSize : 14 }} ><strong> for time range {mstart.format("MMM Do YYYY HH:mm:ss Z")} to {mend.format("MMM Do YYYY HH:mm:ss Z")}</strong></span>
+			<div style={{ marginBottom: 30 }} />
+			<GyTable columns={columns} dataSource={[]} scroll={getTableScroll()} />
+			</div>
+			</>
+		);
+
 	}	
 
 	return (
 		<>
 		<ErrorBoundary>
 		
+		<div style={{ marginBottom: 20 }} >
+		{svchdr}
+		</div>
+
 		{svcstate}
 		{hoststate}
 		{cpustate}
 		{upactiveconn}
 		{upsvcstate}
 		{upcpustate}
+		{tracenet}
 
 		</ErrorBoundary>
 		</>

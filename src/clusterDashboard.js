@@ -1667,7 +1667,7 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 						<>
 						<ComponentLife stateCB={modalCount} />
 						<ClusterModalCard rec={record} starttime={objref.current.isrange ? starttime : undefined} endtime={objref.current.isrange ? endtime : undefined} 
-							aggrType={aggrType ?? 'avg'} recintervalsec={objref.current.rangesec}
+							aggrType={aggrType ?? 'sum'} recintervalsec={objref.current.rangesec}
 							isTabletOrMobile={isTabletOrMobile} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 						</>
 						),

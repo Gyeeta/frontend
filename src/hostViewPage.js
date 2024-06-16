@@ -1837,21 +1837,21 @@ export function HostRangeCard({rec, parid, starttime, endtime, addTabCB, remTabC
 
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
@@ -2139,21 +2139,21 @@ export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, 
 
 	const getSvcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			svcTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getProcStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			procTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
 
 	const getCpumemStateTable = (linktext, filter) => {
 		return <Button type='dashed' onClick={() => {
-			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24,
+			cpumemTableTab({parid : paridin, hostname : rec.host, starttime : starttime, endtime : endtime, useAggr : true, aggrMin : 30 * 60 * 24, aggrType : 'sum',
 							maxrecs : 20000, filter, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
 			}} >{linktext}</Button>;
 	};
@@ -2182,11 +2182,11 @@ export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, 
 
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Service Issues</em>}>
-			{rec.nlistissue > 0 ? getSvcStateTable(format(",")(rec.nlistissue), `({ state in 'Bad','Severe' })`) : 0}
+			{rec.nlistissue > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistissue)}</span>, `({ state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Severe Service Issues</em>}>
-			{rec.nlistsevere > 0 ? getSvcStateTable(format(",")(rec.nlistsevere), `({ state = 'Severe' })`) : 0}
+			{rec.nlistsevere > 0 ? getSvcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nlistsevere)}</span>, `({ state = 'Severe' })`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>Aggr Total Services</em>}>
@@ -2197,11 +2197,11 @@ export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, 
 
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Process Issues</em>}>
-			{rec.nprocissue > 0 ? getProcStateTable(format(",")(rec.nprocissue), `({ state in 'Bad','Severe' })`) : 0}
+			{rec.nprocissue > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocissue)}</span>, `({ state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Severe Process Issues</em>}>
-			{rec.nprocsevere > 0 ? getProcStateTable(format(",")(rec.nprocsevere), `({ state = 'Severe' })`) : 0}
+			{rec.nprocsevere > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{format(",")(rec.nprocsevere)}</span>, `({ state = 'Severe' })`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>Aggr Grouped Processes </em>}>
@@ -2211,28 +2211,28 @@ export function HostRangeAggrTimeCard({rec, parid, starttime, endtime, aggrMin, 
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Host CPU Issues</em>}>
-			{rec.cpuissue > 0 ? getCpumemStateTable(format(",")(rec.cpuissue), `({ cpumem.cpu_state in 'Bad','Severe' })`) : 0}
+			{rec.cpuissue > 0 ? getCpumemStateTable(<span style={{ color : 'red' }}>{format(",")(rec.cpuissue)}</span>, `({ cpumem.cpu_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Host Memory Issues</em>}>
-			{rec.memissue > 0 ? getCpumemStateTable(format(",")(rec.memissue), `({ cpumem.mem_state in 'Bad','Severe' })`) : 0}
+			{rec.memissue > 0 ? getCpumemStateTable(<span style={{ color : 'red' }}>{format(",")(rec.memissue)}</span>, `({ cpumem.mem_state in 'Bad','Severe' })`) : 0}
 		</Descriptions.Item>
 
 		{rec.cpudelms >= 0 &&
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr CPU Delays</em>}>
-			{rec.cpudelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
+			{rec.cpudelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.cpudelms)}</span>, `{ cpudel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
 
 		{rec.vmdelms >= 0 &&
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr Memory Delays</em>}>
-			{rec.vmdelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
+			{rec.vmdelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.vmdelms)}</span>, `{ vmdel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
 
 		{rec.iodelms >= 0 &&
 		<Descriptions.Item label={<em>{aggrtypestr} Aggr IO Delays</em>}>
-			{rec.iodelms > 0 ? getProcStateTable(<span>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
+			{rec.iodelms > 0 ? getProcStateTable(<span style={{ color : 'red' }}>{msecStrFormat(rec.iodelms)}</span>, `{ iodel > 0 }`) : 0}
 		</Descriptions.Item>
 		}
 
