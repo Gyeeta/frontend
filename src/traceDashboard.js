@@ -3950,7 +3950,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			{tracestatus && tracestatus.tstart && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart, true, false)}</Descriptions.Item>}
 			{!objref.current.newdef && tracestatus && !tracestatus.tstart && tracestatus.state === 'Inactive' && (
 				<Descriptions.Item label={<em>New Trace Definition</em>} >
-					<Button onClick={onAddCB} >Add Service Specific Defition</Button>
+					<Button onClick={onAddCB} >Add Service Specific Definition</Button>
 				</Descriptions.Item>	
 
 			)}
