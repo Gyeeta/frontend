@@ -25,7 +25,7 @@ import {HostMonitor} from './hostMonitor.js';
 import {SvcMonitor} from './svcMonitor.js';
 import {SvcClusterGroups} from './svcClusterGroups.js';
 import {ProcMonitor} from './procMonitor.js';
-import {tracestatusTableTab, TraceStatusPage} from './traceDashboard.js';
+import {tracestatusTableTab, TraceStatusPage, TracedefDashboard} from './traceDashboard.js';
 import {GyeetaStatusTag, GyeetaStatus} from './aboutStatus.js';
 import {ActionConfig, ActionDashboard} from './alertActions.js';
 import {AlertdefConfig, AlertdefDashboard} from './alertDefs.js';
@@ -441,7 +441,7 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 			
 			try {
 				tracestatusTableTab({
-						starttime 	: moment().subtract(5, 'minutes').format(),
+						starttime 	: moment().subtract(2, 'minutes').format(),
 						endtime 	: moment().format(),
 						autoRefresh	: true,
 						useAggr 	: true,
@@ -508,6 +508,47 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				notification.error({message : "Process Dashboard", description : `Exception during Process Dashboard fetch : ${emsg}`});
 			}	
 			break;
+
+		case tracedefKey :
+			
+			try {
+
+				const		tabKey = tracedefKey + ((filterobj && !isEmptyObj(filterobj, true)) ? `_dashfiltered${Date.now()}` : '');
+
+				const		tracedefdash = () => (
+					<>
+					<ErrorBoundary>
+					<TracedefDashboard filter={filterobj?.filter} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} />
+					</ErrorBoundary>
+					</>
+				);	
+
+				if (filterobj && !isEmptyObj(filterobj, true)) {
+					addTabCB('Filtered Tracedefs', tracedefdash, tabKey);
+				}	
+				else {
+					addTabCB('Trace Definitions', tracedefdash, tabKey);
+				}	
+			}
+			catch(e) {
+				let		emsg;
+
+				console.log(`Exception seen while fetching Trace Definitions Dashboard data : ${e.message}`);
+
+				if (e.response && e.response.data) {
+					emsg = e.response.data;
+				}	
+				else if (e.message) {
+					emsg = e.message;
+				}	
+				else {
+					emsg = 'Exception Caught while fetching Trace Definitions';
+				}	
+
+				notification.error({message : "Trace Definitions", description : `Exception during data fetch : ${emsg}`});
+			}	
+			break;
+
 
 
 		case alertDashKey :

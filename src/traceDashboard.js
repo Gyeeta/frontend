@@ -14,7 +14,7 @@ import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecS
 			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab, getMinEndtime,
 			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
 import 			{MultiFilters, createEnumArray, hostfields, SearchWrapConfig, GenericSearchWrap} from './multiFilters.js';
-import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
+import 			{TimeRangeAggrModal, DateTimeZonePicker, disablePastTimes} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
 import			{SvcInfoDesc, SvcAnalysis} from './svcDashboard.js';
@@ -1494,7 +1494,7 @@ function getTracedefColumns(viewCB, updateCB, deleteCB)
 		key :		'filter',
 		dataIndex :	'filter',
 		gytype : 	'string',
-		width : 	360,
+		width : 	400,
 		render : 	(val) => <code>{strTruncateTo(val, 100)}</code>,
 	},
 	];
@@ -1504,15 +1504,36 @@ function getTracedefColumns(viewCB, updateCB, deleteCB)
 		colarr.push({
 			title :		'Operations',
 			dataIndex :	'delupd',
+			width : 	200,
 			render : 	(_, record) => {
 						return (
 						<>
 						<Space>
 
 						{typeof updateCB === 'function' && (
-						<Popconfirm title="Do you want to change the Trace Definition End Time?" onConfirm={() => updateCB(record)}>
-							<Button type="link">Change End Time</Button>
-						</Popconfirm>	
+						<Button type="link" onClick={() => (
+							Modal.info({
+								title : <span style={{ fontSize : 16 }} ><strong>Change Trace Definition End Time</strong></span>,
+
+								content : (
+										<>
+										<div style={{ marginTop : 30 }} />
+										<DateTimeZonePicker onChange={(date, dateString) => {
+												Modal.destroyAll();
+												updateCB(date, dateString, record);
+											}} cbonreset={false} disabledDate={disablePastTimes} placeholder="New End Time" />
+										</>	
+									),
+								width : '800',	
+								closable : true,
+								destroyOnClose : true,
+								maskClosable : true,
+								okText : 'Cancel',
+								okType : 'default',
+							})
+
+							)}>Change End Time</Button>
+
 						)}
 
 						{typeof deleteCB === 'function' && (
@@ -2520,7 +2541,7 @@ export function viewTracedef(record, modal = true)
 {
 	if (modal) {
 		Modal.info({
-			title : <Title level={4}><em>Trace Definition '{strTruncateTo(record.alertname, 32)}'</em></Title>,
+			title : <Title level={4}><em>Trace Definition '{strTruncateTo(record.name, 64)}'</em></Title>,
 			content : (
 				<JSONDescription jsondata={record} titlestr="Trace Definition" column={1} fieldCols={tracedeffields} />
 				),
@@ -2667,6 +2688,383 @@ export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 	}	
 }
 
+export function TracedefDashboard({filter, addTabCB, remTabCB, isActiveTabCB})
+{
+	const 		objref = useRef(null);
+
+	const		[{data, isloading, isapierror}, setApiData] = useState({data : [], isloading : true, isapierror : false});
+
+	if (objref.current === null) {
+		objref.current = {
+			nextfetchtime		: Date.now(),
+			nerrorretries		: 0,
+			prevdata		: null,
+			isstarted		: false,
+		};	
+	}
+
+	useEffect(() => {
+		console.log(`Tracedef Dashboard initial Effect called...`);
+
+		return () => {
+			console.log(`Tracedef Dashboard destructor called...`);
+		};	
+	}, []);
+
+
+	const deleteCB = useCallback(async (record) => {
+		
+		if (!record || !record.defid) {
+			return;
+		}
+
+		const conf = {
+			url 	: NodeApis.tracedef + `/${record.defid}`,
+			method	: 'delete',
+			validateStatus : function (status) {
+				return (status < 300) || (status === 400) || (status === 410); 
+			},
+		};
+
+		try {
+			const 			res = await axios(conf);
+			const			apidata = res.data;
+			const 			type = safetypeof(apidata);
+
+			if (type === 'array' && (safetypeof(apidata[0]) === 'object')) {
+				if (apidata[0].error !== undefined && apidata[0].errmsg !== undefined) {
+					Modal.error({
+						title : `Trace Definition Deletion Failed`,
+						content : apidata[0].errmsg,
+					});
+
+					return;
+				}	
+				else if (res.status >= 300) {
+					Modal.error({
+						title : `Trace Definition Deletion Failed`,
+						content : `Server Returned : ${JSON.stringify(apidata)}`,
+					});
+
+					return;
+				}	
+				else {
+					Modal.success({
+						title : `Trace Definition Deletion Successful`,
+						content : apidata[0].msg,
+					});
+
+					const			pdata = objref.current.prevdata;
+
+					if (safetypeof(pdata) === 'array' && pdata.length > 0 && safetypeof(pdata[0].tracedef) === 'array') { 
+						objref.current.nextfetchtime = Date.now() + 2000;
+					}
+
+					return;
+				}	
+			}	
+			else if (type === 'object' && apidata.error !== undefined && apidata.errmsg !== undefined) {
+				throw new Error(`Server API Error : ${apidata.errmsg}`);
+			}	
+			else  {
+				throw new Error(`Invalid or Not Handled API Response Data seen`);
+			}
+
+		}
+		catch(e) {
+			Modal.error({
+				title : `Trace Definition Deletion Failed`,
+				content : `Server Returned : ${e.response ? JSON.stringify(e.response.data) : e.message}`,
+			});
+			console.log(`Exception caught while waiting for Trace Definition Deletion response : ${e}\n${e.stack}\n`);
+		}	
+
+	}, [objref]);	
+
+	const updateCB = useCallback(async (date, dateString, record) => {
+		
+		if (!record || !record.defid || !dateString || !date) {
+			return;
+		}
+
+		const conf = {
+			url 	: NodeApis.tracedef + '/update',
+			method	: 'post',
+			data	: {
+				defid		:	record.defid,
+				tend		:	dateString,				
+			},					
+			validateStatus : function (status) {
+				return (status < 300) || (status === 400) || (status === 410); 
+			},
+		};
+
+		try {
+			const 			res = await axios(conf);
+			const			apidata = res.data;
+			const 			type = safetypeof(apidata);
+
+			if (type === 'array' && (safetypeof(apidata[0]) === 'object')) {
+				if (apidata[0].error !== undefined && apidata[0].errmsg !== undefined) {
+					Modal.error({
+						title : `Trace Definition Update Failed`,
+						content : apidata[0].errmsg,
+					});
+
+					return;
+				}	
+				else if (res.status >= 300) {
+					Modal.error({
+						title : `Trace Definition Update Failed`,
+						content : `Server Returned : ${JSON.stringify(apidata)}`,
+					});
+
+					return;
+				}	
+
+				else {
+					Modal.success({
+						title : `Trace Definition Update Successful`,
+						content : apidata[0].msg,
+					});
+
+					const			pdata = objref.current.prevdata;
+
+					if (safetypeof(pdata) === 'array' && pdata.length > 0 && safetypeof(pdata[0].tracedef) === 'array') { 
+						objref.current.nextfetchtime = Date.now() + 2000;
+					}
+
+					return;
+				}	
+			}	
+			else if (type === 'object' && apidata.error !== undefined && apidata.errmsg !== undefined) {
+				throw new Error(`Server API Error : ${apidata.errmsg}`);
+			}	
+			else  {
+				throw new Error(`Invalid or Not Handled API Response Data seen`);
+			}
+
+		}
+		catch(e) {
+			Modal.error({
+				title : `Trace Definition Update Failed`,
+				content : `Server Returned : ${e.response ? JSON.stringify(e.response.data) : e.message}`,
+			});
+			console.log(`Exception caught while waiting for Trace Definition Update response : ${e}\n${e.stack}\n`);
+		}	
+
+	}, [objref]);	
+
+	const onAddCB = useCallback(() => {
+		Modal.info({
+			title : `New Trace Definition`,
+			content : "TODO",
+		});
+
+	}, []);	
+	
+	const getaxiosconf = useCallback((fetchparams = {}, timeoutsec = 30) => {
+
+		return {
+			url 	: NodeApis.tracedef,
+			method	: 'post',
+			data : {
+				qrytime		: Date.now(),
+				timeoutsec 	: timeoutsec,
+				filter		: filter,
+				
+				options		: {
+					...fetchparams,
+				},
+
+			},
+			timeout : timeoutsec * 1000,
+		};
+	}, [filter]);
+
+
+	useEffect(() => {
+		
+		let 		timer1;
+
+		timer1 = setTimeout(async function apiCall() {
+			try {
+				let		conf, currtime = Date.now();
+
+				if (currtime < objref.current.nextfetchtime || (0 === objref.current.nextfetchtime && objref.current.isstarted)) {
+					return;
+				}
+
+				conf = getaxiosconf({ cachebreak : objref.current.isstarted ? Date.now() : undefined });
+
+				console.log(`Fetching Tracedef List for config ${JSON.stringify(conf)}`);
+
+				setApiData({data : [], isloading : true, isapierror : false});
+
+				let 		res = await axios(conf);
+
+				objref.current.nextfetchtime = 0;
+
+				validateApi(res.data);
+
+				if (safetypeof(res.data) === 'array') { 
+					setApiData({data : res.data, isloading : false, isapierror : false});
+				
+					objref.current.nerrorretries = 0
+					objref.current.isstarted = true;
+				}
+				else {
+					setApiData({data : [], isloading : false, isapierror : true});
+					notification.error({message : "Data Fetch Error", description : "Invalid Data format during Data fetch... Will retry a few times later."});
+
+					if (objref.current.nerrorretries++ < 5) {
+						objref.current.nextfetchtime = Date.now() + 30000;
+					}	
+					else {
+						objref.current.nextfetchtime = Date.now() + 5 * 60000;
+					}	
+				}	
+
+			}
+			catch(e) {
+				setApiData({data : [], isloading : false, isapierror : true});
+				notification.error({message : "Data Fetch Exception Error", 
+						description : `Exception occured while waiting for new data : ${e.response ? JSON.stringify(e.response.data) : e.message}`});
+
+				console.log(`Exception caught while waiting for fetch response : ${e}\n${e.stack}\n`);
+
+				if (objref.current.nerrorretries++ < 5) {
+					objref.current.nextfetchtime = Date.now() + 30000;
+				}
+				else {
+					objref.current.nextfetchtime = Date.now() + 5 * 60000;
+				}	
+			}	
+			finally {
+				timer1 = setTimeout(apiCall, 1000);
+			}
+		}, 0);
+
+		return () => { 
+			console.log(`Destructor called for Trace definition interval effect...`);
+			if (timer1) clearTimeout(timer1);
+		};
+		
+	}, [objref, getaxiosconf]);	
+	
+
+	const optionDiv = () => {
+		return (
+			<>
+			<div style={{ marginBottom: 30, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', border : '1px groove #7a7aa0', padding : 10 }} >
+
+			<Button onClick={onAddCB}>Add New Trace Definition</Button>
+
+			<Button onClick={() => {objref.current.nextfetchtime = Date.now()}}>Refresh Trace Definition List</Button>
+
+			</div>
+			</>
+		);
+	};
+
+
+	let			hdrtag = null, bodycont = null, filtertag = null;
+
+	if (filter) {
+		filtertag = <Tag color='cyan'>Filters Set</Tag>;
+	}	
+
+	const getContent = (normdata, alertdata) => {
+
+		if (!(safetypeof(normdata) === 'array' && normdata.length > 0 && safetypeof(normdata[0]) === 'object' && safetypeof(normdata[0].tracedef) === 'array')) { 
+			return (
+				<>
+				{alertdata}
+				</>
+			);
+		}
+
+		const			columns = getTracedefColumns(viewTracedef, updateCB, deleteCB);
+
+		return (
+			<>
+			{alertdata}
+
+			{optionDiv()}
+
+			<div style={{ textAlign: 'center', marginTop: 40, marginBottom: 30 }} >
+			<Title level={4}>List of Trace Definitions</Title>
+			<GyTable columns={columns} dataSource={normdata[0].tracedef} rowKey="defid" scroll={getTableScroll()} />
+			</div>
+
+			</>
+		);
+	};	
+
+	if (isloading === false && isapierror === false && data !== objref.current.prevdata) { 
+
+		if (safetypeof(data) === 'array' && data.length > 0 && safetypeof(data[0].tracedef) === 'array') { 
+			bodycont = getContent(data, <Alert style={{ visibility: "hidden" }} type="info" showIcon message="Data Valid" />);
+
+			objref.current.prevdata = data;
+		}
+		else {
+			hdrtag = (<Tag color='red'>Data Error</Tag>);
+
+			let			emsg;
+
+			if (objref.current.nerrorretries++ < 5) {
+				objref.current.nextfetchtime = Date.now() + 30000;
+
+				emsg = "Invalid or no data seen. Will retry after a few seconds...";
+			}
+			else {
+				objref.current.nextfetchtime = Date.now() + 5 * 60000;
+
+				emsg = "Invalid or no data seen. Too many retry errors...";
+			}	
+
+			bodycont = getContent(objref.current.prevdata, <Alert type="error" showIcon message={emsg} />);
+
+			console.log(`Tracedef Dashboard Data Error seen : ${JSON.stringify(data).slice(0, 1024)}`);
+		}
+	}	
+	else {
+
+		if (isapierror) {
+			const emsg = `Error while fetching data : ${typeof data === 'string' ? data : ""} : Will retry after a few seconds...`;
+
+			hdrtag = <Tag color='red'>Data Error</Tag>;
+
+			bodycont = getContent(objref.current.prevdata, <Alert type="error" showIcon message="Error Encountered" description={emsg} />);
+			
+			console.log(`Tracedef Dashboard Error seen : ${JSON.stringify(data).slice(0, 256)}`);
+
+			objref.current.nextfetchtime = Date.now() + 30000;
+		}
+		else if (isloading) {
+			hdrtag = <Tag color='blue'>Loading Data</Tag>;
+
+			bodycont = getContent(objref.current.prevdata, <Alert type="info" showIcon message="Loading Data..." />);
+		}
+		else {
+			bodycont = getContent(objref.current.prevdata, <Alert style={{ visibility: "hidden" }} type="info" showIcon message="Data Valid" />);
+		}	
+	}
+
+	
+	return (
+		<>
+		<Title level={4}><em>Request Trace Definitions{ filter ? ' with input filters' : ''}</em></Title>
+		{hdrtag} {filtertag}
+
+		<ErrorBoundary>
+		{bodycont}
+		</ErrorBoundary>
+
+		</>
+	);
+}
 
 export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
 {
@@ -3071,18 +3469,18 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 
 				if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && (safetypeof(res.data[0].tracestatus) === 'array')) { 
 					const				stat = res.data[0].tracestatus[0];
+					const				oldstat = objref.current.tracestatus;
 
 					if (safetypeof(stat) !== 'object') {
 						objref.current.tracestatus = { state : 'Inactive' };
 					}	
 					else {
-						const			oldstat = objref.current.tracestatus;
 
 						objref.current.tracestatus = stat;
+					}	
 
-						if (!oldstat) {
-							setForceUpdate(val => !val);
-						}	
+					if (!oldstat) {
+						setForceUpdate(val => !val);
 					}	
 				}
 				else {
@@ -3298,9 +3696,9 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 				</Button>
 			</Descriptions.Item>}
 			{svcinfo && <Descriptions.Item label={<em>Cluster</em>}>{svcinfo.cluster}</Descriptions.Item>}
-			{tracestatus && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart)}</Descriptions.Item>}
+			{tracestatus && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart, true, false)}</Descriptions.Item>}
 			{tracestatus && <Descriptions.Item label={<em>TLS Encrypted?</em>}>
-				{(tracestatus.istls === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : 'No')}
+				{(tracestatus.istls === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : tracestatus.istls !== undefined ? 'No' : '')}
 				</Descriptions.Item>}
 		</Descriptions>
 		</div>

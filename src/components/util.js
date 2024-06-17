@@ -230,10 +230,13 @@ export function timeoffsetString(diffsec, printago = true)
 /*
  * Difference from current time in sec/min/hours/days/months/years ago/later format
  */
-export function timeDiffString(timestr, printago = true)
+export function timeDiffString(timestr, printago = true, printinvalid = true)
 {
 	if (typeof timestr !== 'string') {
-		return 'Invalid';
+		if (printinvalid) {
+			return 'Invalid';
+		}
+		return '';
 	}
 
 	return timeoffsetString(moment(timestr, moment.ISO_8601).unix() - (Date.now()/1000 | 0), printago);
