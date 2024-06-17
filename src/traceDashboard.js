@@ -13,7 +13,7 @@ import 			{NodeApis} from './components/common.js';
 import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecStrFormat, bytesStrFormat,
 			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab, getMinEndtime,
 			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
-import 			{MultiFilters, SearchTimeFilter, createEnumArray, hostfields, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, createEnumArray, hostfields, SearchWrapConfig, GenericSearchWrap} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
@@ -722,8 +722,9 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		throw new Error(`No Data record specified for Trace Request Modal`);
 	}
 
-	const			tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
-	const 			tend = moment(rec.time, moment.ISO_8601).add(rec.respus/60000000 + 1, 'minute').format();
+	const			mactstart = moment(rec.time, moment.ISO_8601), mactend = moment(mactstart).add(rec.respus/1000 + 1000, 'ms');
+	const			tstart = moment(mactstart).subtract(2, 'minute').format();
+	const 			tend = moment(mactend).add(30, 'seconds').format();
 
 	const getSvcInfo = () => {
 		Modal.info({
@@ -781,9 +782,10 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 
 	const getSvcNetFlows = () => {
 		const		tabKey = `NetFlow_${Date.now()}`;
+		const		nstart = moment(mactstart).subtract(15, 'seconds').format();
 		
 		return CreateLinkTab(<span><i>Service Network Flows around Record Time</i></span>, 'Service Network Flows', 
-					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+					() => { return <NetDashboard svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} autoRefresh={false} starttime={nstart} endtime={tend}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -793,10 +795,11 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		if (!rec.cprocid) return;
 
 		const		tabKey = `NetFlow_${Date.now()}`;
+		const		nstart = moment(mactstart).subtract(15, 'seconds').format();
 		
 		return CreateLinkTab(<span><i>Client Network Flows around Record Time</i></span>, 'Client Network Flows', 
 					() => { return <NetDashboard procid={rec.cprocid} procname={rec.cname} parid={rec.cparid} isprocsvc={rec.csvc} 
-							autoRefresh={false} starttime={tstart} endtime={tend}
+							autoRefresh={false} starttime={nstart} endtime={tend}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -805,7 +808,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 		const		tabKey = `SvcAnalysis_${Date.now()}`;
 		
 		return CreateLinkTab(<span><i>Analyze Service Performance</i></span>, 'Service Performance',
-				() => { return <SvcAnalysis svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} starttime={rec.time} endtime={tend} 
+				() => { return <SvcAnalysis svcid={rec.svcid} svcname={rec.svcname} parid={parid ?? rec.parid} starttime={rec.time} endtime={mactend.format()} 
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey} 
 							isTabletOrMobile={isTabletOrMobile} />}, tabKey, addTabCB);
 		
@@ -1192,7 +1195,7 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 	);	
 }
 
-function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, monAutoRefresh })
+function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime, addTabCB, remTabCB, isActiveTabCB, autoRefresh })
 {
 	const			tarr = [];
 
@@ -1350,7 +1353,7 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 					{ record.svcid && (
 						<Button onClick={() => traceMonitorTab({ 
 							svcid : record.svcid, svcname : record.name, parid : record.parid, 
-							autoRefresh : !!monAutoRefresh, starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
+							autoRefresh, starttime, endtime, maxrecs : 10000, addTabCB, remTabCB, isActiveTabCB, 
 							})} size='small' type='primary' shape='round' >View Trace Monitor</Button>
 					)}
 					</>
@@ -1606,7 +1609,7 @@ function getHostInfo(parid, modalCount, addTabCB, remTabCB, isActiveTabCB)
 }	
 
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, monAutoRefresh})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, autoRefresh})
 {
 	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
@@ -1685,7 +1688,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			}
 			else {
 				rowKey = ((record) => record.rowid ?? (record.time + record.svcid ? record.svcid : ''));
-				columns = getTracestatusColumns({ starttime, endtime, addTabCB, remTabCB, isActiveTabCB, monAutoRefresh });
+				columns = getTracestatusColumns({ starttime, endtime, addTabCB, remTabCB, isActiveTabCB, autoRefresh });
 
 				newtitlestr = `${useAggr ? 'Aggregated ' : ''} Trace Status `;
 			}	
@@ -1729,7 +1732,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, monAutoRefresh, extraComp = null})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, autoRefresh, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1764,7 +1767,7 @@ export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrT
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
 						madfilterarr={madfilterarr} titlestr={titlestr}
-						recoffset={recoffset} dataRowsCb={dataRowsCb} monAutoRefresh={monAutoRefresh} origComp={TracestatusSearch} /> 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} autoRefresh={autoRefresh} origComp={TracestatusSearch} /> 
 					</>	
 				);
 			};
@@ -2667,10 +2670,11 @@ export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 
 export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiveTabCB})
 {
-	const [{tstart, tend}, setTimes]	= useState({ 
-							tstart : starttime ? moment(starttime, moment.ISO_8601) : moment().subtract(10, 'seconds'),  
-							tend : endtime ? moment(endtime, moment.ISO_8601) : moment(),  
-						});
+	const [{tstart, tend, keynum}, setTimes]	= useState({ 
+								tstart : starttime ? moment(starttime, moment.ISO_8601) : moment().subtract(10, 'seconds'),  
+								tend : endtime ? moment(endtime, moment.ISO_8601) : moment(),  
+								keynum : 1,
+							});
 
 	const onHistorical = useCallback((date, dateString, useAggr, aggrMin, aggrType) => {
 		if (!date || !dateString) {
@@ -2717,7 +2721,8 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 			<div style={{ marginLeft : 20 }}>
 			<Space>
 
-			{!starttime && <Button onClick={() => setTimes({tstart : moment().subtract(5, 'seconds'), tend : moment()})} >Refresh Trace Status</Button>}
+			{!starttime && <Button onClick={() => setTimes({tstart : moment().subtract(5, 'seconds'), tend : moment(), keynum : keynum + 1, })} >
+						Refresh Trace Status</Button>}
 
 			<TimeRangeAggrModal onChange={onHistorical} title='Historical Trace Status Activity'
 					showTime={true} showRange={true} minAggrRangeMin={1} alwaysShowAggrType={true} disableFuture={true} />
@@ -2734,11 +2739,11 @@ export function TraceStatusPage({starttime, endtime, addTabCB, remTabCB, isActiv
 		{optionDiv()}
 		
 		<TracestatusSearch starttime={tstart.format()} endtime={tend.format()}
-				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+				addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} autoRefresh={!starttime} />
 				
 		<div style={{ marginTop: 40, marginBottom: 40 }} />
 
-		<TracehistorySearch addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+		<TracehistorySearch key={keynum} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 		</>		
 	);
 }
@@ -3202,47 +3207,6 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 	}, [parid, svcid, svcname, maxrecs, addTabCB, remTabCB, isActiveTabCB]);	
 
 
-	const onTraceSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter, aggrOutput) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime, fstr;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		if (newfilter) {
-			fstr = `( { svcid = '${svcid}' } and ${newfilter} )`; 
-		}	
-		else {
-			fstr = `{ svcid = '${svcid}' }`;
-		}	
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		tracereqTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, aggrOutput,
-					filter : fstr, aggrfilter, maxrecs, isext : true, 
-					titlestr : !aggrOutput ? `${useAggr ? 'Aggregated' : ''} Trace Requests for service ${svcname}` : undefined, 
-					addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [svcid, svcname, addTabCB, remTabCB, isActiveTabCB]);	
-
-
 	const onFilterCB = useCallback((newfilter) => {
 		objref.current.nextfetchtime = Date.now() + 1000;
 		setFilterStr(newfilter);
@@ -3253,21 +3217,9 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		setFilterStr();
 	}, [objref]);	
 
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <TracereqMultiQuickFilter filterCB={onfiltercb} />;
-	}, []);	
-
-	const aggrfiltercb = useCallback((onfiltercb) => {
-		return <TracereqAggrMultiFilter filterCB={onfiltercb} isext={true} />;
-	}, []);	
-
-
 	const optionDiv = (width) => {
+		const searchtitle = `Search Service ${svcname} Trace Requests`;
+
 		return (
 			<div style={{ margin: 30, width: width, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', 
 						border: '1px groove #7a7aa0', padding : 10 }} >
@@ -3287,13 +3239,14 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 			</Popover>
 			)}
 
-			<ButtonModal buttontext='Search Service Trace Requests' width={1200} okText="Cancel"
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onTraceSearch} title='Search Service Trace Requests' 
-						timecompcb={timecb} filtercompcb={filtercb}  aggrfiltercb={aggrfiltercb} aggrOutputArr={traceAggrOutputArr}
-						ismaxrecs={true} defaultmaxrecs={10000} maxallowedrecs={500000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='trace' inputSubsys='exttracereq' maxrecs={500000} filter={`{ svcid = '${svcid}' }`}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
+
 
 			</Space>
 			</div>

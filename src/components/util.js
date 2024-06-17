@@ -514,7 +514,7 @@ export function sortTimeArray(arr, field = 'time')
  * xfrmDataCB if supplied must handle all value types including array and subobject, boolean.
  * ignoreKeyArr can be an Array of strings or regex
  */
-export function JSONDescription({jsondata, titlestr, column = 2, keyNames, fieldCols, xfrmDataCB, ignoreKeyArr = [ 'rowid' ]})
+export function JSONDescription({jsondata, titlestr, column = 2, keyNames, fieldCols, xfrmDataCB, spanCols = {}, ignoreKeyArr = [ 'rowid' ]})
 {
 	if (!jsondata) {
 		return null;
@@ -590,13 +590,13 @@ export function JSONDescription({jsondata, titlestr, column = 2, keyNames, field
 								for (let i2key in o2) {
 									if (isValidKey(o2, i2key)) {
 										descarr.push(React.createElement(Descriptions.Item, 
-												{ label: `${key}.${ikey}.${getKeyName(i2key)}`, key : `${key}.${ikey}.${i2key}` }, 
+												{ label: `${key}.${ikey}.${getKeyName(i2key)}`, key : `${key}.${ikey}.${i2key}`, span : spanCols[i2key], }, 
 														printData(i2key, o2[i2key])));
 									}
 								}
 							}
 							else {
-								descarr.push(React.createElement(Descriptions.Item, { label: `${key}.${getKeyName(ikey)}`, key : `${key}.${ikey}` }, 
+								descarr.push(React.createElement(Descriptions.Item, { label: `${key}.${getKeyName(ikey)}`, key : `${key}.${ikey}`, span : spanCols[ikey], }, 
 										printData(ikey, jo[ikey])));
 							}
 
@@ -604,7 +604,7 @@ export function JSONDescription({jsondata, titlestr, column = 2, keyNames, field
 					}
 				}
 				else {
-					descarr.push(React.createElement(Descriptions.Item, { label: getKeyName(key), key : key }, printData(key, jsondata[key])));
+					descarr.push(React.createElement(Descriptions.Item, { label: getKeyName(key), key : key, span : spanCols[key] }, printData(key, jsondata[key])));
 				}
 			}
 		}

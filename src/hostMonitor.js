@@ -12,12 +12,12 @@ import { format } from "d3-format";
 import './hostViewPage.css';
 
 import {NodeApis} from './components/common.js';
-import {HostInfoDesc, HostStateMultiQuickFilter, hostTableTab, HostModalCard, HostRangeAggrTimeCard, hostRangeTimeColumns, hostTimeColumns} from './hostViewPage.js';
+import {HostInfoDesc, HostModalCard, HostRangeAggrTimeCard, hostRangeTimeColumns, hostTimeColumns} from './hostViewPage.js';
 import {ColumnInfo, fixedSeriesAddItems, getTimeEvent, getTimeSeries, getScatterObj, GyLineChart} from './components/gyChart.js';
 import {safetypeof, getStateColor, validateApi, CreateRectSvg, fixedArrayAddItems, ButtonModal, CreateTab, arrayFilter,
 	useFetchApi, LoadingAlert} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import {GenericSearchWrap, SearchWrapConfig} from './multiFilters.js';
 import {svcTableTab} from './svcDashboard.js';
 import {procTableTab} from './procDashboard.js';
 import {cpumemTableTab} from './cpuMemPage.js';
@@ -1528,49 +1528,9 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 	}, [parid, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile]);	
 
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let			fstr = newfilter;
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		hostTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [parid, addTabCB, remTabCB, isActiveTabCB, objref]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <HostStateMultiQuickFilter filterCB={onfiltercb} useHostFields={!parid} />;
-	}, [parid]);	
-
 	const optionDiv = () => {
+		const searchtitle = `Search Host '${objref.current.summary.hostname}' State`;
+
 		return (
 			<>
 			<div style={{ marginBottom: 30, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', border : '1px groove #7a7aa0', padding : 10 }} >
@@ -1578,10 +1538,11 @@ export function HostMonitor({parid, isRealTime, starttime, endtime, aggregatesec
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
 			<Space>
 
-			<ButtonModal buttontext={`Search Host '${objref.current.summary.hostname}' State`} width={800} okText="Cancel"
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title='Search Host State' 
-						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='hosts' inputSubsys='hoststate' maxrecs={50000}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 

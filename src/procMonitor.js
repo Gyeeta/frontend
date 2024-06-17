@@ -15,12 +15,12 @@ import {NodeApis} from './components/common.js';
 import {ColumnInfo, fixedSeriesAddItems, getTimeEvent, getTimeSeries, stateColorStyle, stateScatterRadius, getScatterObj, GyLineChart} from './components/gyChart.js';
 import {safetypeof, NullID, getStateColor, msecStrFormat, kbStrFormat, MBStrFormat, validateApi, CreateRectSvg, fixedArrayAddItems, ComponentLife, 
 	CreateTab, ButtonModal, strTruncateTo, arrayFilter} from './components/util.js';
-import {ProcSvcInfo, procTableTab, ProcStateMultiQuickFilter, ProcInfoDesc, AggrProcModalCard, aggrHostAggrCol, hostAggrRangeCol} from './procDashboard.js';
+import {ProcSvcInfo, procTableTab, ProcInfoDesc, AggrProcModalCard, aggrHostAggrCol, hostAggrRangeCol} from './procDashboard.js';
 import {NetDashboard} from './netDashboard.js';
 import {HostInfoDesc} from './hostViewPage.js';
 import {cpumemTableTab} from './cpuMemPage.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import {GenericSearchWrap, SearchWrapConfig} from './multiFilters.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 
 const { ErrorBoundary } = Alert;
@@ -1675,57 +1675,9 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 
 	}, [procid, parid, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile]);	
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let			fstr;
-
-		if (newfilter) {
-			fstr = `( ({ procstate.procid = '${procid}' }) and ${newfilter} )`;
-		}
-		else {
-			fstr = `({ procstate.procid = '${procid}' })`;
-		}	
-
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		procTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [parid, procid, addTabCB, remTabCB, isActiveTabCB, objref]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' 
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <ProcStateMultiQuickFilter filterCB={onfiltercb} useHostFields={!parid} showquickfilter={!!parid} />;
-	}, [parid]);	
-
 	const optionDiv = () => {
+		const searchtitle = `Search Process '${objref.current.procname}' State`;
+
 		return (
 			<>
 			<div style={{ marginBottom: 30, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', border : '1px groove #7a7aa0', padding : 10 }} >
@@ -1733,10 +1685,11 @@ export function ProcMonitor({procid, parid, isRealTime, starttime, endtime, aggr
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
 			<Space>
 
-			<ButtonModal buttontext={`Search Process '${objref.current.procname}' State`} width={800} okText="Cancel"
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title='Search Process State' 
-						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='process' inputSubsys='extprocstate' maxrecs={50000} filter={`({ procid = '${procid}' })`}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 

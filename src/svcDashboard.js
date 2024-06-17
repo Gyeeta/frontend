@@ -20,7 +20,7 @@ import 			{SvcMonitor, SvcIssueSource} from './svcMonitor.js';
 import 			{NetDashboard, ActiveConnSearch, getActiveConnColumns} from './netDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 import			{svcDashKey, svcGroupKey} from './gyeetaTabs.js';
-import 			{MultiFilters, SearchTimeFilter, hostfields, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, hostfields, SearchWrapConfig, GenericSearchWrap} from './multiFilters.js';
 import			{SvcClusterGroups} from './svcClusterGroups.js';
 import			{procInfoTab, procTableTab} from './procDashboard.js';
 import 			{TraceMonitor} from './traceDashboard.js';
@@ -1860,6 +1860,10 @@ export async function getSvcUpstreamSvcids({svcid, parid, starttime, endtime})
 		}
 
 		let				conf, res, svcprocmap;
+		const				mstart = moment(starttime, starttime ? moment.ISO_8601 : undefined),
+						mend = moment(endtime, endtime ? moment.ISO_8601 : undefined);
+		const				mtimediff = mend.unix() - mstart.unix();
+						
 		conf = {
 			url 	: NodeApis.svcprocmap,
 			method	: 'post',
@@ -1895,7 +1899,7 @@ export async function getSvcUpstreamSvcids({svcid, parid, starttime, endtime})
 				timeoutsec 	: 100,
 				parid		: parid,
 				options		: {
-					aggregate	: starttime && endtime ? true : undefined,
+					aggregate	: mtimediff > 15,
 					aggrsec 	: 30000000,
 					filter		: `{ cprocid in ${splitInArray(svcprocmap.procidarr)} }`,
 					onlyremote	: false,
@@ -2009,13 +2013,14 @@ export function SvcInfoDesc({svcid, parid, starttime, endtime, addTabCB, remTabC
 			<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
 			<Descriptions title={`Service ${svc.name} Info`} bordered={true} column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 2, xs: 1 }} style={{ textAlign: 'center' }}>
 
+			<Descriptions.Item label={<em>Service Name</em>}>{svc.name}</Descriptions.Item>
+			<Descriptions.Item label={<em>Listener Port</em>}>{svc.port}</Descriptions.Item>
 			<Descriptions.Item label={<em>Host Name</em>}>{data.hostinfo ? data.hostinfo.host : svc.host ? svc.host : 'Unknown'}</Descriptions.Item>
 			<Descriptions.Item label={<em>Cluster Name</em>}>{data.hostinfo ? data.hostinfo.cluster : svc.cluster ? svc.cluster : 'Unknown'}</Descriptions.Item>
 			<Descriptions.Item label={<em>Listener IP</em>}>{svc.ip}</Descriptions.Item>
-			<Descriptions.Item label={<em>Listener Port</em>}>{svc.port}</Descriptions.Item>
 			<Descriptions.Item label={<em>Service Gyeeta ID</em>}>{svcid}</Descriptions.Item>
 			<Descriptions.Item label={<em>Service Start Time</em>}>{getLocalTime(svc.tstart)}</Descriptions.Item>
-			<Descriptions.Item label={<em>Process Command Line</em>}>{svc.cmdline}</Descriptions.Item>
+			<Descriptions.Item label={<em>Process Command Line</em>} span={3}>{svc.cmdline}</Descriptions.Item>
 			<Descriptions.Item label={<em>Region Name</em>}>{svc.region}</Descriptions.Item>
 			<Descriptions.Item label={<em>Zone Name</em>}>{svc.zone}</Descriptions.Item>
 			{svc.svcport1 !== 0 && <Descriptions.Item label={<em>Virtual IP</em>}>{svc.svcip1}</Descriptions.Item>}
@@ -2185,7 +2190,8 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		aggrMin = 1;
 	}	
 
-	const			tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
+	const			mactstart = moment(rec.time, moment.ISO_8601);
+	const			tstart = moment(mactstart).subtract(2, 'minute').format();
 	const 			tend = getMinEndtime(rec.time, aggrMin ?? 1, endtime);
 
 	const getSvcInfo = () => {
@@ -2274,9 +2280,10 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 
 	const getTraceMonitor = () => {
 		const		tabKey = `Trace_${Date.now()}`;
+		const		nstart = moment(mactstart).subtract(15, 'seconds').format();
 		
 		return CreateLinkTab(<span><i>Service Trace Requests around Record Time</i></span>, 'Service Trace Requests', 
-					() => { return <TraceMonitor svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} autoRefresh={false} starttime={tstart} endtime={tend}
+					() => { return <TraceMonitor svcid={rec.svcid} svcname={rec.name} parid={parid ?? rec.parid} autoRefresh={false} starttime={nstart} endtime={tend}
 							addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
 							isTabletOrMobile={isTabletOrMobile} /> }, tabKey, addTabCB);
 	};
@@ -2386,7 +2393,7 @@ export function SvcModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabCB, 
 		<ErrorBoundary>
 
 		<div style={{ overflowX : 'auto', overflowWrap : 'anywhere', margin: 30, padding: 10, border: '1px groove #d9d9d9', maxHeight : 500 }} >
-		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`}
+		<JSONDescription jsondata={rec} titlestr={`${isaggr ? 'Aggregated' : '' } Service State for '${rec.name}'`} spanCols={{ cmdline : 3, desc : 3 }}
 					column={2} fieldCols={[...svcstatefields, ...aggrsvcstatefields, ...extsvcfields, ...hostfields]} xfrmDataCB={viewSvcFields} />
 
 		</div>
@@ -2464,7 +2471,7 @@ export function ExtSvcDesc({rec})
 		{rec.ip && <Descriptions.Item label={<em>Listener IP Address</em>}>{rec.ip}</Descriptions.Item>}
 		{rec.port && <Descriptions.Item label={<em>Listener Port</em>}>{rec.port}</Descriptions.Item>}
 		{rec.tstart && <Descriptions.Item label={<em>Listener Start Time</em>}>{getLocalTime(rec.tstart)}</Descriptions.Item>}
-		{rec.cmdline && <Descriptions.Item label={<em>Process Command Line</em>}>{rec.cmdline}</Descriptions.Item>}
+		{rec.cmdline && <Descriptions.Item label={<em>Process Command Line</em>} span={3}>{rec.cmdline}</Descriptions.Item>}
 		{rec.region && <Descriptions.Item label={<em>Region Name</em>}>{rec.region}</Descriptions.Item>}
 		{rec.zone && <Descriptions.Item label={<em>Zone Name</em>}>{rec.zone}</Descriptions.Item>}
 		{rec.p95resp5d && <Descriptions.Item label={<em>5 day p95 Response</em>}>{format(",")(rec.p95resp5d)} msec</Descriptions.Item>}
@@ -3960,65 +3967,6 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 
 	}, [parid, filter, name, addTabCB, remTabCB, isActiveTabCB]);	
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		// Check filters
-		let		fstr;
-
-		if (filter) {
-			if (newfilter) {
-				fstr = `( ${filter} and ${newfilter} )`; 
-			}	
-			else {
-				fstr = filter;
-			}	
-		}	
-		else {
-			fstr = newfilter;
-		}	
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		svcTableTab({parid, hostname : parid ? objref.current.hostname : undefined, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, aggrfilter, name, maxrecs, addTabCB, remTabCB, isActiveTabCB, isext : true, wrapComp : SearchWrapConfig, });
-
-	}, [parid, filter, name, addTabCB, remTabCB, isActiveTabCB, objref]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range' 
-					initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <SvcStateMultiQuickFilter filterCB={onfiltercb} useHostFields={!parid} isext={true} />;
-	}, [parid]);	
-
-	const aggrfiltercb = useCallback((onfiltercb) => {
-		return <SvcStateAggrFilter filterCB={onfiltercb} isext={true} />;
-	}, []);	
-
 	const svcinfocb = (filt) => {
 		let			newfil;
 
@@ -4058,12 +4006,13 @@ export function SvcDashboard({parid, autoRefresh, refreshSec, starttime, endtime
 			<div>
 			<Space>
 
-			<ButtonModal buttontext={searchtitle} width={800} okText="Cancel"
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title={searchtitle} 
-						timecompcb={timecb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} 
-						ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='service' inputSubsys='extsvcstate' maxrecs={50000} filter={filter}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
+					
 					
 			<Button onClick={() => (
 				Modal.confirm({

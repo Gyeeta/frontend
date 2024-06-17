@@ -13,7 +13,7 @@ import 			{GyTable, getTableScroll} from './components/gyTable.js';
 import 			{NodeApis} from './components/common.js';
 import			{getSvcStateColumns, svcStateOnRow, ExtSvcDesc, aggrsvcstatefields, extsvcfields} from './svcDashboard.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
-import 			{MultiFilters, SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, GenericSearchWrap, } from './multiFilters.js';
 
 const 			{Title} = Typography;
 const 			{ErrorBoundary} = Alert;
@@ -1299,109 +1299,6 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 	
-	const onMeshSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		// Check filters
-		let		fstr;
-
-		if (filter) {
-			if (newfilter) {
-				fstr = `( ${filter} and ${newfilter} )`; 
-			}	
-			else {
-				fstr = filter;
-			}	
-		}	
-		else {
-			fstr = newfilter;
-		}	
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		svcMeshTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} disableFuture={true} />;
-	}, []);
-
-	const meshfiltercb = useCallback((onfiltercb) => {
-		return <SvcMeshFilter filterCB={onfiltercb} />;
-	}, []);	
-
-	const onVirtIPSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		// Check filters
-		let		fstr;
-
-		if (filter) {
-			if (newfilter) {
-				fstr = `( ${filter} and ${newfilter} )`; 
-			}	
-			else {
-				fstr = filter;
-			}	
-		}	
-		else {
-			fstr = newfilter;
-		}	
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		svcVirtIPTab({starttime : tstarttime, endtime : tendtime, filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
-
-	const virtipfiltercb = useCallback((onfiltercb) => {
-		return <SvcVirtIPFilter filterCB={onfiltercb} />;
-	}, []);	
-
 	
 	const optionDiv = () => {
 		return (
@@ -1411,18 +1308,19 @@ export function SvcClusterGroups({starttime, endtime, filter, addTabCB, remTabCB
 			<div>
 			<Space>
 
-			<ButtonModal buttontext="Search Interconnected Service Groups" width={800} okText="Cancel"
+			<ButtonModal buttontext="Search Interconnected Service Groups" width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onMeshSearch} title="Search Interconnected Service Groups" 
-						timecompcb={timecb} filtercompcb={meshfiltercb}  
-						ismaxrecs={true} defaultmaxrecs={10000} />
+					<GenericSearchWrap title="Search Interconnected Service Groups"
+						inputCategory='service' inputSubsys='svcmeshclust' maxrecs={50000} filter={filter}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
-			<ButtonModal buttontext="Search Virtual IP Service Groups" width={800} okText="Cancel"
+					
+			<ButtonModal buttontext="Search Virtual IP Service Groups" width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onVirtIPSearch} title="Search Virtual IP Service Groups" 
-						timecompcb={timecb} filtercompcb={virtipfiltercb}  
-						ismaxrecs={true} defaultmaxrecs={10000} />
+					<GenericSearchWrap title="Search Virtual IP Service Groups"
+						inputCategory='service' inputSubsys='svcipclust' maxrecs={50000} filter={filter}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 

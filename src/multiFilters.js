@@ -1855,7 +1855,7 @@ export function GenericSearchWrap({...props})
 	return <GenericSearch {...props} key={key} resetCB={resetCB} />;
 }	
 
-export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTabCB, remTabCB, isActiveTabCB, resetCB})
+export function GenericSearch({inputCategory, inputSubsys, maxrecs, parid, madfilterarr, filter, title, addTabCB, remTabCB, isActiveTabCB, resetCB})
 {
 	const [form] 					= Form.useForm();
 	const objref 					= useRef(null);
@@ -1873,7 +1873,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 	
 	if (objref.current === null) {
 		objref.current = {
-			subsysobj		:	getSubsysHandlers(subsys),
+			subsysobj		:	getSubsysHandlers(subsys, !parid),
 			customcols		:	null,
 			customtablecols		:	null,
 			sortdir			:	null,
@@ -1909,7 +1909,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				useAggr			: canaggr ? useAggr : undefined, 
 				aggrMin			: aggrMin, 
 				aggrType		: values.aggrType,
-				filter 			: filterstr, 
+				filter 			: filter && filterstr ? `( ${filter} and ${filterstr} )` : filter ? filter : filterstr, 
 				aggrfilter		: aggrfilterstr, 
 				aggrOutput		: aggroutput,
 				maxrecs			: Number(values.maxrecs), 
@@ -1917,6 +1917,8 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 				customTableColumns	: custaggrdef ? objref.current.customtablecols : undefined,
 				sortColumns		: sortcol ? [sortcol] : undefined,
 				sortDir			: objref.current.sortdir ? [objref.current.sortdir] : undefined,
+				parid,
+				madfilterarr,
 				addTabCB, 
 				remTabCB, 
 				isActiveTabCB,
@@ -1925,7 +1927,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 		);
 
-	}, [objref, timerange, canaggr, useAggr, filterstr, aggrfilterstr, aggroutput, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
+	}, [objref, timerange, canaggr, useAggr, filter, filterstr, parid, madfilterarr, aggrfilterstr, aggroutput, custaggrdef, sortcol, addTabCB, remTabCB, isActiveTabCB]);
 
 	const onTimerangeChange = useCallback((dateObjs) => {
 		if ((safetypeof(dateObjs) !== 'array') || (dateObjs.length !== 2)) {
@@ -1945,7 +1947,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 
 	const onNewSubsystem = useCallback((newsub) => {
 		setSubsys(newsub);
-		objref.current.subsysobj = getSubsysHandlers(newsub);
+		objref.current.subsysobj = getSubsysHandlers(newsub, !parid);
 			
 		// Skip aggregation for non supported subsystems or for Alert category
 		if (!objref.current.subsysobj.aggrfields || !isrange || newsub === 'alerts') {
@@ -1974,7 +1976,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			onTimerangeChange([moment().subtract(5, 'seconds'), moment()]);
 		}	
 
-	}, [objref, isrange, onTimerangeChange, form]);	
+	}, [objref, isrange, onTimerangeChange, form, parid]);	
 
 	const onCategoryChange = useCallback((e) => { 
 		const 		val = e.target.value;
@@ -2120,7 +2122,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 		<>
 		<ErrorBoundary>
 
-		<Title level={4} style={{ textAlign : 'center', marginBottom : 30, }} ><em>{title ?? "Global Search"}</em></Title>
+		<Title level={4} style={{ textAlign : 'center', marginBottom : 30, }} ><em>{title ?? (parid ? "Host Search " : "Global Search")}</em></Title>
 		
 		<Form {...formItemLayout} form={form} name="search" onFinish={onFinish} scrollToFirstError >
 
@@ -2209,7 +2211,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 					</Radio.Group>
 				</Form.Item>	
 
-				<span>(Aggregation Periods within the selected Time range : Single Step implies single aggregate over entire Time range)</span>
+				<span>(Aggregation Periods within time range : Single Step implies single aggregate over entire time)</span>
 
 				</Space>
 			</Form.Item>
@@ -2314,7 +2316,7 @@ export function GenericSearch({inputCategory, inputSubsys, maxrecs, title, addTa
 			}
 
 			{timerange.length > 0 &&
-			<Form.Item label="Max Records to Fetch" name="maxrecs" initialValue={maxrecs ? maxrecs.toString() : "10000"}>
+			<Form.Item label="Max Records to Fetch" name="maxrecs" initialValue={maxrecs && maxrecs < 10000 ? maxrecs.toString() : "10000"}>
 				<InputNumber min={1} max={maxrecs ?? 100000} />
 			</Form.Item>
 			}	

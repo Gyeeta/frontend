@@ -17,13 +17,13 @@ import {NodeApis} from './components/common.js';
 import {ColumnInfo, fixedSeriesAddItems, getTimeEvent, getTimeSeries, stateColorStyle, stateScatterRadius, getScatterObj, GyLineChart} from './components/gyChart.js';
 import {safetypeof, getStateColor, MBStrFormat, validateApi, CreateRectSvg, CreateCircleSvg, fixedArrayAddItems, ComponentLife,
 	capitalFirstLetter, CreateLinkTab, CreateTab, mergeMultiMadhava, ButtonModal, stateEnum, useFetchApi, LoadingAlert,
-	JSONDescription, getMinEndtime, arrayFilter, getLocalTime} from './components/util.js';
+	JSONDescription, getMinEndtime, arrayFilter, strTruncateTo, getLocalTime} from './components/util.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 import {StateBadge} from './components/stateBadge.js';
 import {HostInfoDesc} from './hostViewPage.js';
 import {MultiFilters, hostfields} from './multiFilters.js';
-import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import {GenericSearchWrap, SearchWrapConfig} from './multiFilters.js';
 import {svcTableTab} from './svcDashboard.js';
 import {procTableTab} from './procDashboard.js';
 
@@ -267,6 +267,7 @@ const hostCpuColumns = [
 		dataIndex :	'rss_pct',
 		gytype : 	'number',
 		width : 	100,
+		render :	(num) => <span style={{ color : num > 85 ? 'red' : undefined }}>{num}</span>,
 	},	
 	{
 		title :		'p95 RSS Memory %',
@@ -345,7 +346,7 @@ const hostCpuColumns = [
 		dataIndex :	'reclaim_stalls',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Major Page Faults',
@@ -369,7 +370,7 @@ const hostCpuColumns = [
 		dataIndex :	'oom_kill',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Free Swap MB',
@@ -386,7 +387,7 @@ const hostCpuColumns = [
 		gytype :	'number',
 		width : 	150,
 		responsive : 	['lg'],
-		render :	(num) => CpuIssueSource[num] ? CpuIssueSource[num].name : '',
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{CpuIssueSource[num] ? CpuIssueSource[num].name : ''}</span>,
 	},
 	{
 		title :		'Memory Issue Cause',
@@ -395,7 +396,7 @@ const hostCpuColumns = [
 		gytype :	'number',
 		width : 	150,
 		responsive : 	['lg'],
-		render :	(num) => MemIssueSource[num] ? MemIssueSource[num].name : '',
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{MemIssueSource[num] ? MemIssueSource[num].name : ''}</span>,
 	},
 	{
 		title :		'CPU State Description',
@@ -404,6 +405,7 @@ const hostCpuColumns = [
 		gytype :	'string',
 		responsive : 	['lg'],
 		width : 	250,
+		render :	(val, rec) => <span style={{ color : rec.cpuissue > 0 ? 'red' : undefined }}>{strTruncateTo(val, 100)}</span>,
 	},
 	{
 		title :		'Memory State Description',
@@ -412,6 +414,7 @@ const hostCpuColumns = [
 		gytype :	'string',
 		responsive : 	['lg'],
 		width : 	250,
+		render :	(val, rec) => <span style={{ color : rec.memissue > 0 ? 'red' : undefined }}>{strTruncateTo(val, 100)}</span>,
 	},
 	
 ];
@@ -595,7 +598,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'reclaim_stalls',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		`${aggrType} Major Faults`,
@@ -611,7 +614,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'oom_kill',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		`${nosumaggr} Free Swap MB`,
@@ -635,7 +638,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'incpusat',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Core %',
@@ -643,7 +646,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'incoresat',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by IO Wait %',
@@ -651,7 +654,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'iniowait',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Context Switch',
@@ -659,7 +662,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'incs',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by New Proc/sec',
@@ -667,7 +670,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'infork',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Runnable Proc',
@@ -675,7 +678,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inrproc',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by High RSS Mem',
@@ -683,7 +686,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inrsssat',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Commit Mem',
@@ -691,7 +694,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'incmmsat',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by PageIn/Outs',
@@ -699,7 +702,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inpginout',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by SwapIn/Outs',
@@ -707,7 +710,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inswpinout',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Reclaim Stalls',
@@ -715,7 +718,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inreclaim',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by OOM Kills',
@@ -723,7 +726,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inoom',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 	{
 		title :		'Degrades by Low Swap Free',
@@ -731,7 +734,7 @@ const hostAggrCpuColumns = (aggrType) => {
 		dataIndex :	'inswpspc',
 		gytype : 	'number',
 		width : 	100,
-		render :	(num) => format(",")(num),
+		render :	(num) => <span style={{ color : num > 0 ? 'red' : undefined }}>{format(",")(num)}</span>,
 	},	
 
 	];
@@ -1730,27 +1733,21 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 		<Row justify="space-between">
 
 		{rec.parid && <Col span={8}> <Button type='dashed' onClick={getHostInfo} >Get Host '{rec.host}' Information</Button> </Col>}
-
-		</Row>
-
-		<Row justify="space-between">
-
-		<Col span={8}> {getProcStateTable('Get Processes with Issues', `{ state in 'Bad','Severe' }`)} </Col>
 		<Col span={8}> {getSvcStateTable('Get Services with Issues', `{ state in 'Bad','Severe' }`)} </Col>
 
 		</Row>
 
 		<Row justify="space-between">
 
-		<Col span={24}> 
-		<Space>
+		<Col span={8}> {getProcStateTable('Get Processes with Issues', `{ state in 'Bad','Severe' }`)} </Col>
+		<Col span={8}>{getProcStateTable('Get Processes with CPU Delays', `{ cpudel > 0 }`)} </Col>
 
-		{getProcStateTable('Get Processes with CPU Delays', `{ cpudel > 0 }`)}
-		{getProcStateTable('Get Processes with Memory Delays', `{ vmdel > 0 }`)}
-		{getProcStateTable('Get Processes with IO Delays', `{ iodel > 0 }`)}
-		
-		</Space>
-		</Col>
+		</Row>
+
+		<Row justify="space-between">
+
+		<Col span={8}>{getProcStateTable('Get Processes with Memory Delays', `{ vmdel > 0 }`)} </Col>
+		<Col span={8}>{getProcStateTable('Get Processes with IO Delays', `{ iodel > 0 }`)} </Col>
 
 		</Row>
 
@@ -3524,55 +3521,9 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 	}, [parid, addTabCB, remTabCB, isActiveTabCB]);	
 
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let			fstr;
-
-		fstr = newfilter;
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		cpumemTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [parid, addTabCB, remTabCB, isActiveTabCB, objref]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <CpuMemMultiQuickFilter filterCB={onfiltercb} useHostFields={!parid} />;
-	}, [parid]);	
-
-	const aggrfiltercb = useCallback((onfiltercb) => {
-		return <CpuMemAggrFilter filterCB={onfiltercb} />;
-	}, []);	
-
 	const optionDiv = () => {
+		const searchtitle = `Search Host '${objref.current.summary.hostname}' CPU Memory State`;
+
 		return (
 			<>
 			<div style={{ marginBottom: 30, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', border : '1px groove #7a7aa0', padding : 10 }} >
@@ -3580,10 +3531,11 @@ export function CPUMemPage({parid, isRealTime, starttime, endtime, aggregatesec,
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
 			<Space>
 
-			<ButtonModal buttontext={`Search Host '${objref.current.summary.hostname}' CPU Memory State`} isconfirm={true} width={800}
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title='Search CPU Memory State' 
-						timecompcb={timecb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='hosts' inputSubsys='cpumem' maxrecs={50000} 
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 

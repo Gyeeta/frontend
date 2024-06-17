@@ -17,7 +17,7 @@ import 			{HostDashboard, HostInfoDesc, HostInfoSearch, HostStateSearch, hostTab
 import 			{SvcDashboard, svcTableTab} from './svcDashboard.js';
 import 			{ProcDashboard, procTableTab} from './procDashboard.js';
 import			{ClusterMonitor} from './clusterMonitor.js';
-import 			{MultiFilters, SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import 			{MultiFilters, SearchTimeFilter, GenericSearchWrap, SearchWrapConfig} from './multiFilters.js';
 import 			{TimeRangeAggrModal} from './components/dateTimeZone.js';
 
 const 			{ErrorBoundary} = Alert;
@@ -1953,55 +1953,6 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 
 	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let		fstr;
-
-		if (filter) {
-			if (newfilter) {
-				fstr = `( ${filter} and ${newfilter} )`; 
-			}	
-			else {
-				fstr = filter;
-			}	
-		}	
-		else {
-			fstr = newfilter;
-		}	
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		clusterTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
 	const timecbnotime = useCallback((ontimecb) => {
 		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
 				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
@@ -2011,12 +1962,9 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 		return <ClusterStateMultiQuickFilter filterCB={onfiltercb} />;
 	}, []);	
 
-	const aggrfiltercb = useCallback((onfiltercb) => {
-		return <ClusterStateAggrFilter filterCB={onfiltercb} />;
-	}, []);	
-
 	const optionDiv = () => {
 		const		isfilter = (filterStr && filterStr.length > 0);
+		const		searchtitle = 'Search Cluster State';
 
 		return (
 			<>
@@ -2038,10 +1986,11 @@ export function ClusterDashboard({autoRefresh, refreshSec, addTabCB, remTabCB, i
 			)}
 
 
-			<ButtonModal buttontext='Search Cluster State' width={1200} okText="Cancel"
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title='Search Cluster State' 
-						timecompcb={timecb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} 
+						inputCategory='cluster' inputSubsys='clusterstate' maxrecs={50000} filter={filter}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 

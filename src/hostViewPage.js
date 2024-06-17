@@ -10,8 +10,7 @@ import {format} from "d3-format";
 
 import {useFetchApi, ComponentLife, ButtonModal, safetypeof, CreateLinkTab, CreateTab, validateApi, mergeMultiMadhava, msecStrFormat,
 	capitalFirstLetter, fixedArrayAddItems, stateEnum, ButtonJSONDescribe, LoadingAlert, getErrorString, JSONDescription, getLocalTime} from './components/util.js';
-import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter} from './multiFilters.js';
+import {GenericSearchWrap} from './multiFilters.js';
 import {HostMonitor} from './hostMonitor.js';
 import {StateBadge} from './components/stateBadge.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
@@ -20,7 +19,7 @@ import {SvcDashboard, svcTableTab} from './svcDashboard.js';
 import {CPUMemPage, cpumemTableTab} from './cpuMemPage.js';
 import {ProcDashboard, procTableTab} from './procDashboard.js';
 import {NetDashboard} from './netDashboard.js';
-import {MultiFilters, HostMultiFilters, SearchWrapConfig} from './multiFilters.js';
+import {MultiFilters, SearchWrapConfig} from './multiFilters.js';
 
 import './hostViewPage.css';
 
@@ -1305,7 +1304,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	};
 
 	const getHostHistory = () => {
-		const		tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
+		const		tstart = moment(rec.time, moment.ISO_8601).subtract(2, 'minute').format();
 		const		tend = moment(rec.time, moment.ISO_8601).add(3, 'seconds').format();
 		const		tabKey = `HostMonitor_${Date.now()}`;
 		
@@ -1317,7 +1316,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	
 
 	const getCPUMemHistory = () => {
-		const		tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
+		const		tstart = moment(rec.time, moment.ISO_8601).subtract(2, 'minute').format();
 		const		tend = moment(rec.time, moment.ISO_8601).add(3, 'seconds').format();
 		const		tabKey = `CPU_Memory_${Date.now()}`;
 		
@@ -1346,7 +1345,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	};
 	
 	const getNetFlowHistory = () => {
-		const		tstart = moment(rec.time, moment.ISO_8601).subtract(5, 'minute').format();
+		const		tstart = moment(rec.time, moment.ISO_8601).subtract(2, 'minute').format();
 		const		tend = moment(rec.time, moment.ISO_8601).add(15, 'seconds').format();
 		const		tabKey = `NetFlow_${Date.now()}`;
 		
@@ -1404,7 +1403,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	};
 
 	const getSvcStateTable = (linktext, filter) => {
-		const		tstartnew = moment(rec.time, moment.ISO_8601).subtract(5, 'seconds').format();
+		const		tstartnew = moment(rec.time, moment.ISO_8601).subtract(9, 'seconds').format();
 		const		tendnew = moment(rec.time, moment.ISO_8601).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
@@ -1413,7 +1412,7 @@ export function HostModalCard({rec, parid, modalCount, addTabCB, remTabCB, isAct
 	};
 
 	const getProcStateTable = (linktext, filter) => {
-		const		tstartnew = moment(rec.time, moment.ISO_8601).subtract(5, 'seconds').format();
+		const		tstartnew = moment(rec.time, moment.ISO_8601).subtract(9, 'seconds').format();
 		const		tendnew = moment(rec.time, moment.ISO_8601).add(5, 'seconds').format();
 
 		return <Button type='dashed' onClick={() => {
@@ -3325,75 +3324,6 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 
 	}, [filter, name, addTabCB, remTabCB, isActiveTabCB]);	
 
-	const onSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs, aggrfilter) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let		fstr;
-
-		if (filter) {
-			if (newfilter) {
-				fstr = `( ${filter} and ${newfilter} )`; 
-			}	
-			else {
-				fstr = filter;
-			}	
-		}	
-		else {
-			fstr = newfilter;
-		}	
-
-		hostTableTab({starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, filter : fstr, aggrfilter, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-					
-
-	}, [filter, addTabCB, remTabCB, isActiveTabCB]);	
-
-
-	// Currently not used
-	// eslint-disable-next-line
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={0} alwaysShowAggrType={true} disableFuture={true} />;
-	}, []);
-
-	const timesearchcb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	// Currently not used
-	// eslint-disable-next-line
-	const hostfiltercb = useCallback((onfiltercb) => {
-		return <HostMultiFilters filterCB={onfiltercb} />;
-	}, []);	
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <HostStateMultiQuickFilter filterCB={onfiltercb} />;
-	}, []);	
-
-	const aggrfiltercb = useCallback((onfiltercb) => {
-		return <HostStateAggrFilter filterCB={onfiltercb} />;
-	}, []);	
-
 	const hostinfocb = useCallback((filt) => {
 		let			newfil;
 
@@ -3435,6 +3365,13 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		</Popover>
 		)}
 
+		<ButtonModal buttontext='Search Host State' width={'90%'} okText="Cancel"
+			contentCB={() => (
+				<GenericSearchWrap title='Search Host State'
+					inputCategory='hosts' inputSubsys='hoststate' maxrecs={50000} filter={filter}
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+			)} />
+					
 		{!starttime && <Button onClick={() => (
 			Modal.confirm({
 				title : <span style={{ fontSize : 16 }} ><strong>Apply Optional Host Info Filters</strong></span>,
@@ -3465,9 +3402,6 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 			</Space>
 		</div>}
 
-		<ButtonModal buttontext='Get Historical Data' width={800} okText="Cancel"
-			contentCB={() => <SearchTimeFilter callback={onSearch} title='Historical Host States' ismaxrecs={true} defaultmaxrecs={50000}
-							timecompcb={timesearchcb} filtercompcb={filtercb} aggrfiltercb={aggrfiltercb} />} />
 
 		</div>
 
@@ -3475,7 +3409,7 @@ export function HostDashboard({autoRefresh, refreshSec, starttime, endtime, aggr
 		</>
 		);
 
-	}, [autoRefresh, isAutoRefresh, objref, filterStr, onFilterCB, onResetFilters, onSearch, timesearchcb, filtercb, aggrfiltercb, hostinfocb, starttime]);	
+	}, [autoRefresh, isAutoRefresh, objref, filterStr, onFilterCB, onResetFilters, hostinfocb, starttime, filter, addTabCB, remTabCB, isActiveTabCB]);	
 
 	let			hdrtag = null, filtertag = null, bodycont = null, slidercont = null;
 

@@ -18,12 +18,12 @@ import {safetypeof, getStateColor, usecStrFormat, kbStrFormat, MBStrFormat, vali
 import {ProcInfoDesc, procTableTab} from './procDashboard.js';
 import {NetDashboard} from './netDashboard.js';
 import {HostInfoDesc} from './hostViewPage.js';
-import {svcTableTab, SvcStateMultiQuickFilter, SvcModalCard, hostAggrCol, hostRangeCol} from './svcDashboard.js';
+import {SvcModalCard, hostAggrCol, hostRangeCol} from './svcDashboard.js';
 import {cpumemTableTab} from './cpuMemPage.js';
 import {TraceMonitor} from './traceDashboard.js';
 import {GyTable, getTableScroll} from './components/gyTable.js';
 import {TimeRangeAggrModal} from './components/dateTimeZone.js';
-import {SearchTimeFilter, SearchWrapConfig} from './multiFilters.js';
+import {GenericSearchWrap, SearchWrapConfig} from './multiFilters.js';
 
 const { ErrorBoundary } = Alert;
 const { Title } = Typography;
@@ -1870,57 +1870,9 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 
 	}, [svcid, parid, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile]);	
 
-	const onStateSearch = useCallback((date, dateString, useAggr, aggrMin, aggrType, newfilter, maxrecs) => {
-		if (!date || !dateString) {
-			return;
-		}
-
-		let			tstarttime, tendtime;
-
-		if (safetypeof(date) === 'array') {
-			if (date.length !== 2 || safetypeof(dateString) !== 'array' || false === date[0].isValid() || false === date[1].isValid()) {
-				return `Invalid Search Historical Date Range set...`;
-			}	
-
-			tstarttime = dateString[0];
-			tendtime = dateString[1];
-		}
-		else {
-			if ((false === date.isValid()) || (typeof dateString !== 'string')) {
-				return `Invalid Search Historical Date set ${dateString}...`;
-			}	
-
-			tstarttime = dateString;
-		}
-
-		let			fstr;
-
-		if (newfilter) {
-			fstr = `( { svcid = '${svcid}' } and ${newfilter} )`;
-		}
-		else {
-			fstr = `({ svcid = '${svcid}' })`;
-		}	
-
-
-		// Now close the search modal
-		Modal.destroyAll();
-
-		svcTableTab({parid, hostname : objref.current.summary.hostname, starttime : tstarttime, endtime : tendtime, useAggr, aggrMin, aggrType, 
-				filter : fstr, maxrecs, addTabCB, remTabCB, isActiveTabCB, wrapComp : SearchWrapConfig,});
-
-	}, [parid, svcid, addTabCB, remTabCB, isActiveTabCB, objref]);	
-
-	const timecb = useCallback((ontimecb) => {
-		return <TimeRangeAggrModal onChange={ontimecb} title='Select Time or Time Range'
-				initStart={true} showTime={true} showRange={true} minAggrRangeMin={1} disableFuture={true} />;
-	}, []);
-
-	const filtercb = useCallback((onfiltercb) => {
-		return <SvcStateMultiQuickFilter filterCB={onfiltercb} useHostFields={!parid} />;
-	}, [parid]);	
-
 	const optionDiv = () => {
+		const searchtitle = `Search Service '${objref.current.svcname}' State`;
+
 		return (
 			<>
 			<div style={{ marginBottom: 30, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', border : '1px groove #7a7aa0', padding : 10 }} >
@@ -1928,10 +1880,11 @@ export function SvcMonitor({svcid, parid, isRealTime, starttime, endtime, aggreg
 			<div style={{ display: 'flex', flexDirection: 'row' }}>
 			<Space>
 
-			<ButtonModal buttontext={`Search Service '${objref.current.svcname}' State`} okText="Cancel" width={800}
+			<ButtonModal buttontext={searchtitle} width={'90%'} okText="Cancel"
 				contentCB={() => (
-					<SearchTimeFilter callback={onStateSearch} title='Search Service State' 
-						timecompcb={timecb} filtercompcb={filtercb} ismaxrecs={true} defaultmaxrecs={50000} />
+					<GenericSearchWrap title={searchtitle} parid={parid}
+						inputCategory='service' inputSubsys='extsvcstate' maxrecs={50000} filter={`{ svcid = '${svcid}' }`}
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 				)} />
 					
 
