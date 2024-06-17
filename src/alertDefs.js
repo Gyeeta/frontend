@@ -813,7 +813,7 @@ function ActionSelect({actions, columns, doneCB, modal})
 	);
 }	
 
-export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTabCB})
+export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
 	const [form] 					= Form.useForm();
 	const objref 					= useRef(null);
@@ -1182,6 +1182,13 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 
 		setEndsAt(dateString);
 	}, []);
+
+	const onCancel = useCallback(() => {
+		if (!remTabCB) return;
+
+		remTabCB(tabKey, 500);
+
+	}, [remTabCB, tabKey]);
 
 
 	if (allActions === undefined) {
@@ -1557,7 +1564,14 @@ export function AlertdefConfig({titlestr, doneCB, addTabCB, remTabCB, isActiveTa
 			</Form.Item>
 		
 			<Form.Item {...tailFormItemLayout}>
-				<Button type="primary" htmlType="submit">Submit</Button>
+				<>
+				<Space>
+				
+				<Button htmlType="submit">Submit</Button>
+				{remTabCB && tabKey && <Button onClick={onCancel}>Cancel</Button>}
+				
+				</Space>
+				</>
 			</Form.Item>
 		</Form>
 
@@ -1685,7 +1699,8 @@ export function AlertdefDashboard({filter, addTabCB, remTabCB, isActiveTabCB})
 		const		adeftab = () => (
 			<>
 			<ErrorBoundary>
-			<AlertdefConfig addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
+			<AlertdefConfig addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+					doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
 			</ErrorBoundary>
 			</>
 		);	

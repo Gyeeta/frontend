@@ -1750,7 +1750,8 @@ export function GyeetaTabs({startTabKey = svcDashKey})
 				const		adeftab = () => (
 					<>
 					<ErrorBoundary>
-					<AlertdefConfig addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
+					<AlertdefConfig addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+							doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
 					</ErrorBoundary>
 					</>
 				);	

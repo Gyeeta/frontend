@@ -1287,6 +1287,25 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 			render : 	(val) => timeDiffString(val, true /* printago */),
 		},
 		{
+			title :		'Tracedef ID',
+			key :		'defid',
+			dataIndex :	'defid',
+			gytype : 	'string',
+			width : 	180,
+			render : 	(_, record) => {
+						return (
+						<>
+						{ record.defid && (
+							<Button onClick={() => tracedefTableTab({ titlestr : 'Trace Definition',
+									filter : `{ defid = '${record.defid}' }`, modal : true, addTabCB, remTabCB, isActiveTabCB, 
+								})} size='small' shape='round' >View Trace Definition</Button>
+						)}
+						</>
+						);
+					},	
+			
+		},
+		{
 			title :		'Region Name',
 			key :		'region',
 			dataIndex :	'region',
@@ -1321,26 +1340,6 @@ function getTracestatusColumns({istime = true, getTraceDefCB, starttime, endtime
 			fixed : 	'right',
 		},
 	];
-
-	if (typeof getTraceDefCB === 'function') {
-		colarr.push({
-			title :		'Trace Definition',
-			fixed : 	'right',
-			width :		150,
-			dataIndex :	'setdef',
-			render : 	(_, record) => {
-						return (
-						<>
-						{record.defid && (
-							<Button type="link" onClick={() => getTraceDefCB(record.defid)} >Get Trace Definition</Button>
-						)}
-						</>
-						);
-					},	
-		});	
-
-	}
-
 
 	colarr.push({
 		title :		'Monitor Requests',
@@ -1524,7 +1523,7 @@ function getTracedefColumns(viewCB, updateCB, deleteCB)
 											}} cbonreset={false} disabledDate={disablePastTimes} placeholder="New End Time" />
 										</>	
 									),
-								width : '800',	
+								width : 500,	
 								closable : true,
 								destroyOnClose : true,
 								maskClosable : true,
@@ -2704,7 +2703,7 @@ const tailFormItemLayout = {
 };
 
 
-export function TracedefConfig({titlestr, filter, doneCB, addTabCB, remTabCB, isActiveTabCB})
+export function TracedefConfig({titlestr, filter, doneCB, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
 	const [form] 					= Form.useForm();
 	const [filterstr, setfilterstr] 		= useState(filter ?? '');
@@ -2832,6 +2831,13 @@ export function TracedefConfig({titlestr, filter, doneCB, addTabCB, remTabCB, is
 	}, []);
 
 
+	const onCancel = useCallback(() => {
+		if (!remTabCB) return;
+
+		remTabCB(tabKey, 500);
+
+	}, [remTabCB, tabKey]);
+
 	return (
 		<>
 		<ErrorBoundary>
@@ -2887,7 +2893,14 @@ export function TracedefConfig({titlestr, filter, doneCB, addTabCB, remTabCB, is
 			</Form.Item>
 		
 			<Form.Item {...tailFormItemLayout}>
-				<Button type="primary" htmlType="submit">Submit</Button>
+				<>
+				<Space>
+				
+				<Button htmlType="submit">Submit</Button>
+				{remTabCB && tabKey && <Button onClick={onCancel}>Cancel</Button>}
+				
+				</Space>
+				</>
 			</Form.Item>
 		</Form>
 
@@ -3071,7 +3084,8 @@ export function TracedefDashboard({filter, addTabCB, remTabCB, isActiveTabCB})
 			<>
 			<ErrorBoundary>
 			<TracedefConfig titlestr="Add new Request Trace Definition"
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+					doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
 			</ErrorBoundary>
 			</>
 		);	
@@ -3386,7 +3400,7 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 								isPauseRefresh : false, refreshSec : refreshSec, tracestatus : null, svcstart : null, svcaggrsec : 0, 
 								nextfetchtime : Date.now(), svcfilter : `{ svcid = '${svcid}' }`, 
 								laststarttime : starttime, lastendtime : endtime, lastAutoRefresh : autoRefresh, 
-								svcinfo : null,});
+								svcinfo : null, newdef : false,});
 	
 	const				[{tstart, tend, svckey, currmax, offset}, setstate] = useState(
 								{ 
@@ -3832,6 +3846,26 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 		setFilterStr();
 	}, [objref]);	
 
+	const onAddCB = useCallback(() => {
+		const		tabKey = `addtrace_${Date.now()}`;
+
+		const		deftab = () => (
+			<>
+			<ErrorBoundary>
+			<TracedefConfig titlestr="Add new Request Trace Definition"
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tabKey={tabKey}
+					filter={`{ svcid = '${svcid}' }`}
+					doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
+			</ErrorBoundary>
+			</>
+		);	
+
+		addTabCB('New Tracedef', deftab, tabKey);
+
+		objref.current.newdef = true;
+
+	}, [svcid, objref, addTabCB, remTabCB, isActiveTabCB]);	
+
 	const optionDiv = (width) => {
 		const searchtitle = `Search Service ${svcname} Trace Requests`;
 
@@ -3913,7 +3947,13 @@ export function TraceMonitor({svcid, svcname, parid, autoRefresh, refreshSec = 3
 				</Button>
 			</Descriptions.Item>}
 			{svcinfo && <Descriptions.Item label={<em>Cluster</em>}>{svcinfo.cluster}</Descriptions.Item>}
-			{tracestatus && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart, true, false)}</Descriptions.Item>}
+			{tracestatus && tracestatus.tstart && <Descriptions.Item label={<em>Trace Start Time</em>}>{timeDiffString(tracestatus.tstart, true, false)}</Descriptions.Item>}
+			{!objref.current.newdef && tracestatus && !tracestatus.tstart && tracestatus.state === 'Inactive' && (
+				<Descriptions.Item label={<em>New Trace Definition</em>} >
+					<Button onClick={onAddCB} >Add Service Specific Defition</Button>
+				</Descriptions.Item>	
+
+			)}
 			{tracestatus && <Descriptions.Item label={<em>TLS Encrypted?</em>}>
 				{(tracestatus.istls === true ? <CheckSquareTwoTone twoToneColor='green'  style={{ fontSize: 18 }} /> : tracestatus.istls !== undefined ? 'No' : '')}
 				</Descriptions.Item>}
