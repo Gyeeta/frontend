@@ -1,7 +1,7 @@
 
 import 			React, {useState, useRef, useEffect, useCallback, useMemo} from 'react';
 import			{Button, Modal, Input, Descriptions, Typography, Tag, Alert, notification, message, Badge, Empty, 
-			Space, Popover, Popconfirm, Row, Col} from 'antd';
+			Space, Popover, Popconfirm, Row, Col, Form, } from 'antd';
 import 			{ CheckSquareTwoTone, CloseOutlined } from '@ant-design/icons';
 
 import 			moment from 'moment';
@@ -14,10 +14,10 @@ import 			{safetypeof, validateApi, CreateTab, useFetchApi, ComponentLife, usecS
 			strTruncateTo, JSONDescription, timeDiffString, LoadingAlert, CreateLinkTab, getMinEndtime,
 			mergeMultiMadhava, getLocalTime, ButtonModal, NumButton} from './components/util.js';
 import 			{MultiFilters, createEnumArray, hostfields, SearchWrapConfig, GenericSearchWrap} from './multiFilters.js';
-import 			{TimeRangeAggrModal, DateTimeZonePicker, disablePastTimes} from './components/dateTimeZone.js';
+import 			{TimeRangeAggrModal, DateTimeZonePicker, disablePastTimes, TimeRangeButton} from './components/dateTimeZone.js';
 import			{NetDashboard} from './netDashboard.js';
 import			{SvcMonitor} from './svcMonitor.js';
-import			{SvcInfoDesc, SvcAnalysis} from './svcDashboard.js';
+import			{SvcInfoDesc, SvcAnalysis, svcInfoTab, SvcinfoFilter} from './svcDashboard.js';
 import 			{HostInfoDesc} from './hostViewPage.js';
 import			{procInfoTab} from './procDashboard.js';
 import			{ProcMonitor} from './procMonitor.js';
@@ -25,7 +25,7 @@ import			{CPUMemPage} from './cpuMemPage.js';
 
 const 			{ErrorBoundary} = Alert;
 const 			{Title} = Typography;
-const 			{Search} = Input;
+const 			{Search, TextArea} = Input;
 
 export const protocolEnum = [
 	'HTTP1', 'HTTP2', 'Postgres', 'MySQL', 'Mongo', 'Redis', 'Unknown', 
@@ -2654,7 +2654,6 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 	);
 }	
 
-
 export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
 	let			tabKey;
@@ -2688,6 +2687,216 @@ export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 	}	
 }
 
+const formItemLayout = {
+	labelCol: {
+		span: 6,
+	},
+	wrapperCol: {
+		span: 18,
+	},
+};
+
+const tailFormItemLayout = {
+	wrapperCol: {
+		span: 18,
+		offset: 6,
+	},
+};
+
+
+export function TracedefConfig({titlestr, filter, doneCB, addTabCB, remTabCB, isActiveTabCB})
+{
+	const [form] 					= Form.useForm();
+	const [filterstr, setfilterstr] 		= useState(filter ?? '');
+	const [tend, settend] 				= useState();
+
+	const onFinish = useCallback(async (obj) => {
+		// console.log('Received values of form: ', obj);
+		
+		if (!filterstr) {
+			notification.error({message : "Filter Missing", description : "Please specify the Mandatory Filters..."});
+			return;
+		}	
+
+		const def = {
+			name 			: obj.name,
+			filter			: filterstr,
+			tend			: tend ? tend : undefined,
+		};	
+
+		// Now send the tracedef to the server
+
+		const conf = {
+			url 	: NodeApis.tracedef + '/add',
+			method	: 'post',
+			data 	: def,
+			validateStatus : function (status) {
+				return (status < 300) || (status === 400) || (status === 409) || (status === 410); 
+			},
+		};	
+
+		try {
+			const 			res = await axios(conf);
+			const			apidata = res.data;
+			const 			type = safetypeof(apidata);
+
+			if (type === 'array' && (safetypeof(apidata[0]) === 'object')) {
+				if (apidata[0].error !== undefined && apidata[0].errmsg !== undefined) {
+					Modal.error({
+						title : 'Trace Definition add Failed' + (apidata[0].error === 409 ? ' due to conflict with existing Definition Name' : ''),
+						content : apidata[0].errmsg,
+					});
+
+					return;
+				}	
+				else if (res.status >= 300) {
+					Modal.error({
+						title : 'Trace Definition Add Failed',
+						content : `Server Returned : ${JSON.stringify(apidata)}`,
+					});
+
+					return;
+				}	
+
+				else {
+					Modal.success({
+						title : 'Trace Definition Add Success',
+						content : apidata[0].msg,
+					});
+
+					if (typeof doneCB === 'function') {
+						try {
+							doneCB();
+						}
+						catch(e) {
+						}	
+					}	
+
+					return;
+				}	
+			}	
+			else if (type === 'object' && apidata.error !== undefined && apidata.errmsg !== undefined) {
+				throw new Error(`Server API Error : ${apidata.errmsg}`);
+			}	
+			else  {
+				throw new Error(`Invalid or Not Handled API Response Data seen`);
+			}
+
+		}
+		catch(e) {
+			Modal.error({
+				title 	: 'Trace Definition Add Failed',
+				content : `Server Returned : ${e.response ? JSON.stringify(e.response.data) : e.message}`,
+			});
+			console.log(`Exception caught while waiting for Trace Definition Add response : ${e}\n${e.stack}\n`);
+		}	
+
+	}, [doneCB, filterstr, tend]);
+
+	const onfiltercb = useCallback((newfilter) => {
+		setfilterstr(newfilter);
+	}, []);
+
+	const onFilterStrChange = useCallback(({ target: { value } }) => {
+		setfilterstr(value);
+	}, []);
+
+	const onTestTimeChange = useCallback((dateObjs) => {
+		if (safetypeof(dateObjs) !== 'array') {
+			return;
+		}
+
+		svcInfoTab(
+			{
+				starttime 		: dateObjs[0].format(),
+				endtime 		: dateObjs[1].format(),
+				filter 			: filterstr, 
+				useAggr			: true,
+				aggrMin			: 100000,
+				aggrType		: 'sum',
+				maxrecs			: 10000,
+				addTabCB, 
+				remTabCB, 
+				isActiveTabCB,
+			}
+		);
+
+	}, [filterstr, addTabCB, remTabCB, isActiveTabCB]);	
+
+	const ontendCB = useCallback((date, dateString) => {
+		if (!date || !dateString) {
+			settend();
+		}
+
+		settend(dateString);
+	}, []);
+
+
+	return (
+		<>
+		<ErrorBoundary>
+
+		{titlestr && <Title level={4} style={{ textAlign : 'center', marginBottom : 30, }} ><em>{titlestr}</em></Title>}
+		
+		<Form {...formItemLayout} form={form} name="tracedef" onFinish={onFinish} scrollToFirstError >
+
+			<Form.Item name="name" label="Trace Definition Name" 
+					rules={[ { required : true, message: 'Please input the Trace Definition Name', whitespace: true, max : 256 }, ]} >
+				<Input autoComplete="off" style={{ maxWidth : 400 }} />
+			</Form.Item>
+
+			<Form.Item label="Mandatory Service Info Filters" >
+				{!filterstr && <SvcinfoFilter useHostFields={true} filterCB={onfiltercb} linktext="Set Service Filters" quicklinktext="Set Quick Filters" />}
+				{filterstr && (
+					<Button onClick={() => setfilterstr()} >Reset Filters</Button>
+				)}
+				
+			</Form.Item>
+
+			{filterstr &&
+			<Form.Item label="Current Editable Filters" >
+				<TextArea value={filterstr} onChange={onFilterStrChange} autoSize={{ minRows: 1, maxRows: 6 }} style={{ maxWidth : '80%' }} />
+			</Form.Item>
+			}
+
+			{filterstr  &&
+				<Form.Item label="Test Filter on Historical Sevice Data">
+					<Space>
+
+					<TimeRangeButton onChange={onTestTimeChange} linktext="Test Trace Filters" 
+						title={(
+							<>
+							<span style={{ fontSize : 16 }}>Time Range for Trace Filter Test with Historical Data</span>
+							<div style={{ marginBottom : 30 }} />
+							</>)} 
+						disableFuture={true} />
+
+					<span>(Ideally, the Trace Filters should return only a few rows...)</span>
+
+					</Space>
+				</Form.Item>
+			}
+
+			<Form.Item label="Optional Trace Definition Deletion Time" >
+				<>
+				<Space>
+				<DateTimeZonePicker onChange={ontendCB} cbonreset={true} disabledDate={disablePastTimes} placeholder="Deletion Time" />
+				{tend && <span>The Trace Definition will be Deleted at time {tend}</span>}
+				</Space>
+				</>
+			</Form.Item>
+		
+			<Form.Item {...tailFormItemLayout}>
+				<Button type="primary" htmlType="submit">Submit</Button>
+			</Form.Item>
+		</Form>
+
+		</ErrorBoundary>
+		</>
+	);
+}
+
+		
 export function TracedefDashboard({filter, addTabCB, remTabCB, isActiveTabCB})
 {
 	const 		objref = useRef(null);
@@ -2856,12 +3065,20 @@ export function TracedefDashboard({filter, addTabCB, remTabCB, isActiveTabCB})
 	}, [objref]);	
 
 	const onAddCB = useCallback(() => {
-		Modal.info({
-			title : `New Trace Definition`,
-			content : "TODO",
-		});
+		const		tabKey = `addtrace_${Date.now()}`;
 
-	}, []);	
+		const		deftab = () => (
+			<>
+			<ErrorBoundary>
+			<TracedefConfig titlestr="Add new Request Trace Definition"
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} doneCB={() => setTimeout(() => remTabCB(tabKey), 3000)} />
+			</ErrorBoundary>
+			</>
+		);	
+
+		addTabCB('New Tracedef', deftab, tabKey);
+
+	}, [addTabCB, remTabCB, isActiveTabCB]);	
 	
 	const getaxiosconf = useCallback((fetchparams = {}, timeoutsec = 30) => {
 
