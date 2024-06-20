@@ -2297,8 +2297,8 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	if (svcid || !procid) {
 		multiqueryarr.push(
 			{
-				qid 		: 'extactiveconn', 
-				qname 		: 'extactiveConn',
+				qid 		: 'activeconn', 
+				qname 		: 'activeConn',
 				options		: {
 					aggregate	: isaggregated,
 					aggroper	: aggroper,
@@ -2311,8 +2311,8 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		if (clientfilt || !svcid) {
 			multiqueryarr.push(
 				{
-					qid 		: 'extclientconn', 
-					qname 		: 'extclientConn',
+					qid 		: 'clientconn', 
+					qname 		: 'clientConn',
 					options		: {
 						aggregate	: isaggregated,
 						aggroper	: aggroper,
@@ -2327,8 +2327,8 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	else {
 		multiqueryarr.push(
 			{
-				qid 		: 'extclientconn', 
-				qname 		: 'extclientConn',
+				qid 		: 'clientconn', 
+				qname 		: 'clientConn',
 				options		: {
 					aggregate	: isaggregated,
 					aggroper	: aggroper,
@@ -2342,8 +2342,8 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		if (actfilt) {
 			multiqueryarr.push(
 				{
-					qid 		: 'extactiveconn', 
-					qname 		: 'extactiveConn',
+					qid 		: 'activeconn', 
+					qname 		: 'activeConn',
 					options		: {
 						aggregate	: isaggregated,
 						aggroper	: aggroper,
@@ -2355,7 +2355,7 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		}	
 	}	
 
-	console.log(`Fetching next interval extactiveconn/extclientconn data...for config ${JSON.stringify(conf)}`);
+	console.log(`Fetching next interval activeconn/clientconn data...for config ${JSON.stringify(conf)}`);
 
 	res = await axios(conf);
 
@@ -2364,15 +2364,15 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	let			tier0cli, tier0act;
 
 	if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && 
-		(((safetypeof(res.data[0].extclientconn) === 'object') && (safetypeof(res.data[0].extclientconn.extclientconn) === 'array')) || 
-		((safetypeof(res.data[0].extactiveconn) === 'object') && (safetypeof(res.data[0].extactiveconn.extactiveconn) === 'array')))) { 
+		(((safetypeof(res.data[0].clientconn) === 'object') && (safetypeof(res.data[0].clientconn.clientconn) === 'array')) || 
+		((safetypeof(res.data[0].activeconn) === 'object') && (safetypeof(res.data[0].activeconn.activeconn) === 'array')))) { 
 
-		tier0cli 	= res.data[0].extclientconn?.extclientconn;
-		tier0act 	= res.data[0].extactiveconn?.extactiveconn;
+		tier0cli 	= res.data[0].clientconn?.clientconn;
+		tier0act 	= res.data[0].activeconn?.activeconn;
 
-		if (res.data[0].extclientconn?.hostinfo) {
-			objref.current.hostname = res.data[0].extclientconn.hostinfo.host;
-			objref.current.clustername = res.data[0].extclientconn.hostinfo.cluster;
+		if (res.data[0].clientconn?.hostinfo) {
+			objref.current.hostname = res.data[0].clientconn.hostinfo.host;
+			objref.current.clustername = res.data[0].clientconn.hostinfo.cluster;
 
 			hostmap.set(parid, objref.current.hostname);
 		}	
@@ -3317,7 +3317,7 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			clitbl = (
 				<ClientConnSearch parid={objref.current.parid} hostname={objref.current.hostname} starttime={objref.current.starttime} endtime={objref.current.endtime}
 					useAggr={objref.current.isaggregated} aggrType={objref.current.aggroper} dataObj={objref.current.tier0cli} 
-					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titlecli} isext={true} />
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titlecli} />
 
 			);
 		}
@@ -3330,7 +3330,7 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 				acttbl = (
 					<ActiveConnSearch parid={objref.current.parid} hostname={objref.current.hostname} starttime={objref.current.starttime} endtime={objref.current.endtime}
 						useAggr={objref.current.isaggregated} aggrType={objref.current.aggroper} dataObj={objref.current.tier0act} 
-						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titleact} isext={true} />
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titleact} />
 				);
 			}
 		}
