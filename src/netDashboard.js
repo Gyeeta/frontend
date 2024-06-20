@@ -97,7 +97,7 @@ export const extclientconnfields = [
 	{ field : 'p95iodel',	desc : 'Client p95 Block IO Delay msec',	type : 'number',	subsys : 'extclientconn',	valid : null, },
 ];
 
-export function getActiveConnColumns({istime = true, useHostFields, isext, aggrType = ''})
+export function getActiveConnColumns({istime = true, useHostFields, useCliHostFields, isext, aggrType = ''})
 {
 	const 			colarr = [];
 
@@ -150,7 +150,7 @@ export function getActiveConnColumns({istime = true, useHostFields, isext, aggrT
 		render :	(num) => bytesStrFormat(num),
 	},
 	{
-		title :		'# Aggr Connections',
+		title :		aggrType + ' Connections',
 		key :		'nconns',
 		dataIndex :	'nconns',
 		gytype :	'number',
@@ -317,7 +317,28 @@ export function getActiveConnColumns({istime = true, useHostFields, isext, aggrT
 		];
 	}	
 
-	let			hostarr = [];
+	let			hostarr = [], clihostarr = [];
+
+	if (useCliHostFields) {
+		clihostarr.push({
+			title :		'Client Host',
+			key :		'clihost',
+			dataIndex :	'clihost',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		150,
+		});
+
+		clihostarr.push({
+			title :		'Client Cluster',
+			key :		'clicluster',
+			dataIndex :	'clicluster',
+			gytype :	'string',
+			responsive : 	['lg'],
+			width :		150,
+		});
+	}
+
 
 	if (useHostFields) {
 		hostarr.push({
@@ -341,11 +362,11 @@ export function getActiveConnColumns({istime = true, useHostFields, isext, aggrT
 		});
 	}
 
-	return  [...colarr, ...tarr, ...extarr, ...hostarr];
+	return  [...colarr, ...tarr, ...clihostarr, ...extarr, ...hostarr];
 	
 }
 
-function getClientConnColumns({istime = true, useHostFields, isext, aggrType = ''})
+function getClientConnColumns({istime = true, useHostFields, useSerHostFields, isext, aggrType = ''})
 {
 	const 			colarr = [];
 
@@ -398,7 +419,7 @@ function getClientConnColumns({istime = true, useHostFields, isext, aggrType = '
 		render :	(num) => bytesStrFormat(num),
 	},
 	{
-		title :		'# Aggr Connections',
+		title :		`${aggrType} Connections`,
 		key :		'nconns',
 		dataIndex :	'nconns',
 		gytype :	'number',
@@ -506,7 +527,27 @@ function getClientConnColumns({istime = true, useHostFields, isext, aggrType = '
 		];
 	}	
 
-	let			hostarr = [];
+	let			hostarr = [], serhostarr = [];
+
+	if (useSerHostFields) {
+		serhostarr.push({
+			title :		'Service Host',
+			key :		'serhost',
+			dataIndex :	'serhost',
+			gytype : 	'string',
+			responsive : 	['lg'],
+			width :		150,
+		});
+
+		serhostarr.push({
+			title :		'Service Cluster',
+			key :		'sercluster',
+			dataIndex :	'sercluster',
+			gytype :	'string',
+			responsive : 	['lg'],
+			width :		150,
+		});
+	}
 
 	if (useHostFields) {
 		hostarr.push({
@@ -530,7 +571,7 @@ function getClientConnColumns({istime = true, useHostFields, isext, aggrType = '
 		});
 	}
 
-	return [...colarr, ...tarr, ...extarr, ...hostarr];
+	return [...colarr, ...tarr, ...serhostarr, ...extarr,  ...hostarr];
 	
 }
 
@@ -742,8 +783,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			}
 		}
 	
-		const conf = 
-		{
+		const conf = {
 			url 	: isext ? NodeApis.extactiveconn : NodeApis.activeconn,
 			method	: 'post',
 			data : {
@@ -768,16 +808,67 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			timeout 	: useAggr ? 500 * 1000 : 100 * 1000,
 		};	
 
-		const xfrmresp = (apidata) => {
+		const addHostInfo = async (mdata) => {
+			if (mdata && mdata[field]) {
+				const			parset = new Set();
+
+				for (let conn of mdata[field]) {
+					parset.add(conn.cparid);
+				}
+
+				if (parset.size === 0) {
+					return mdata;
+				}	
+
+				const			pararr = [];
+
+				for (let par of parset) {
+					pararr.push(par);
+				}	
+
+				const conf2 = {
+					url 	: NodeApis.nodeparthainfo,
+					method	: 'post',
+					data	: {
+						pararr,
+					},
+					timeout : 10000,
+				};	
+
+				try {
+					let 		res = await axios(conf2);
+				
+					if (safetypeof(res.data) === 'object') {
+						for (let conn of mdata[field]) {
+							const		inf = res.data[conn.cparid];
+
+							if (inf) {
+								conn.clihost = inf.host;
+								conn.clicluster = inf.cluster;
+							}	
+						}
+					}	
+				}
+				catch (error) {
+					
+				}	
+			}	
+		
+			return mdata;
+		};
+
+		const xfrmresp = async (apidata) => {
 
 			validateApi(apidata);
 					
-			return mergeMultiMadhava(apidata, field);
+			const mdata =  mergeMultiMadhava(apidata, field);
+
+			return addHostInfo(mdata);
 		};	
 
 		try {
 			if (safetypeof(dataObj) === 'array') {
-				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				addHostInfo({ [field] : dataObj}).then((mdata) => fetchDispatch({ type : 'fetch_success', payload : mdata })).catch();
 				return;
 			}	
 			doFetch({config : conf, xfrmresp : xfrmresp});
@@ -918,7 +1009,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')} to {moment(endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</span>;
 			}	
 			else if (!isrange) {
-				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext});
+				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext, useCliHostFields : true});
 
 				if (parid) {
 					newtitlestr = `Services Active Connections for Host ${hostname}`;
@@ -935,7 +1026,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format('YYYY-MM-DD HH:mm:ssZ')} </span>;
 			}
 			else {
-				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
+				columns = getActiveConnColumns({istime : true, useHostFields : !parid, isext, useCliHostFields : true, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
 
 				if (parid) {
 					newtitlestr = `${useAggr ? 'Aggregated ' : ''} Services Active Connections for Host ${hostname}`;
@@ -1096,16 +1187,67 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			timeout 	: useAggr ? 500 * 1000 : 100 * 1000,
 		};	
 
+		const addHostInfo = async (mdata) => {
+			if (mdata && mdata[field]) {
+				const			parset = new Set();
+
+				for (let conn of mdata[field]) {
+					parset.add(conn.sparid);
+				}
+
+				if (parset.size === 0) {
+					return mdata;
+				}	
+
+				const			pararr = [];
+
+				for (let par of parset) {
+					pararr.push(par);
+				}	
+
+				const conf2 = {
+					url 	: NodeApis.nodeparthainfo,
+					method	: 'post',
+					data	: {
+						pararr,
+					},
+					timeout : 10000,
+				};	
+
+				try {
+					let 		res = await axios(conf2);
+				
+					if (safetypeof(res.data) === 'object') {
+						for (let conn of mdata[field]) {
+							const		inf = res.data[conn.sparid];
+
+							if (inf) {
+								conn.serhost = inf.host;
+								conn.sercluster = inf.cluster;
+							}	
+						}
+					}	
+				}
+				catch (error) {
+					
+				}	
+			}	
+		
+			return mdata;
+		};
+
 		const xfrmresp = (apidata) => {
 
 			validateApi(apidata);
 					
-			return mergeMultiMadhava(apidata, field);
+			const mdata =  mergeMultiMadhava(apidata, field);
+
+			return addHostInfo(mdata);
 		};	
 
 		try {
 			if (safetypeof(dataObj) === 'array') {
-				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				addHostInfo({ [field] : dataObj}).then((mdata) => fetchDispatch({ type : 'fetch_success', payload : mdata })).catch();
 				return;
 			}	
 			doFetch({config : conf, xfrmresp : xfrmresp});
@@ -1247,7 +1389,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				timestr = <span style={{ fontSize : 14 }} > for time range {moment(starttime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')} to {moment(endtime, moment.ISO_8601).format('YYYY-MM-DD HH:mm:ssZ')}</span>;
 			}
 			else if (!isrange) {
-				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext});
+				columns = getClientConnColumns({istime : true, useHostFields : !parid, useSerHostFields : true, isext});
 
 				if (parid) {
 					newtitlestr = `Client Connections for Host ${hostname}`;
@@ -1264,7 +1406,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 			}
 			else {
-				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
+				columns = getClientConnColumns({istime : true, useHostFields : !parid, useSerHostFields : true, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
 
 				if (parid) {
 					newtitlestr = `${useAggr ? 'Aggregated ' : ''} Client Connections for Host ${hostname}`;
@@ -1745,6 +1887,8 @@ async function netDownstreamProcSvc(procid, procname, isprocsvc, nodemap, edgema
 						},
 						timeout	: 10000,
 					};
+				
+						
 
 					res = await axios(conf);
 					
@@ -3301,15 +3445,15 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 
 
 		if (svcid) {
-			titlecli = `Upstream Client connections from ${objref.current.svcname} Process Group`;
+			titlecli = `Client connections to Upstream Services from ${objref.current.svcname} Process Group`;
 			titleact = `Incoming Client connections to Service ${objref.current.svcname}`;
 		}
 		else if (procid) {
-			titlecli = `Upstream Client connections from Process Group ${objref.current.procname}`;
+			titlecli = `Client connections to Upstream Services from Process Group ${objref.current.procname}`;
 			titleact = `Incoming Client connections to Process Group ${objref.current.procname} services`;
 		}	
 		else {
-			titlecli = `Upstream Client connections from Tier 0 processes`;
+			titlecli = `Client connections to Upstream Services from Tier 0 processes`;
 			titleact = `Incoming Client connections to Tier 0 services`;
 		}	
 

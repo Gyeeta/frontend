@@ -1029,7 +1029,7 @@ export function useFetchApi(initAxiosConfig, initxfrmresp = null, initialdata = 
 				let 		res = await axios(tconfig);
 
 				if (typeof xfrmresp === 'function')  {
-					res.data = xfrmresp(res.data);		
+					res.data = await Promise.resolve(xfrmresp(res.data));		
 				}	
 
 				if (!iscancelled) {
