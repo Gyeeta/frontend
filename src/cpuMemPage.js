@@ -1785,9 +1785,9 @@ export function CpuMemModalCard({rec, parid, aggrMin, endtime, addTabCB, remTabC
 }
 
 export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
 	let			hinfo = null, closetab = 0;
 
@@ -1824,6 +1824,11 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { cpumem : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 
@@ -1833,7 +1838,8 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 			console.log(`Exception caught while waiting for CPU Memory Table fetch response : ${e}\n${e.stack}\n`);
 			return;
 		}	
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, 
+			filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1987,7 +1993,7 @@ export function CpuMemSearch({parid, hostname, starttime, endtime, useAggr, aggr
 }
 
 export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2021,7 +2027,8 @@ export function cpumemTableTab({parid, hostname, starttime, endtime, useAggr, ag
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns} madfilterarr={madfilterarr}
-						titlestr={titlestr} sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} /> 
+						dataObj={dataObj} titlestr={titlestr} sortColumns={sortColumns} sortDir={sortDir} 
+						recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={CpuMemSearch} /> 
 					</>	
 				);
 			};

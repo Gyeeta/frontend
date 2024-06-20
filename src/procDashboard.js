@@ -2081,9 +2081,9 @@ function ExtProcDesc({rec})
 
 
 export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
 	let			hinfo = null, closetab = 0;
 
@@ -2138,6 +2138,11 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -2147,7 +2152,8 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, 
+			useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2304,7 +2310,7 @@ export function ProcStateSearch({parid, hostname, starttime, endtime, useAggr, a
 }	
 
 export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title, 
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2338,7 +2344,7 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname} customColumns={customColumns} customTableColumns={customTableColumns}
-						madfilterarr={madfilterarr} titlestr={titlestr}
+						madfilterarr={madfilterarr} titlestr={titlestr} dataObj={dataObj}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ProcStateSearch} /> 
 					</>	
 				);
@@ -2365,9 +2371,9 @@ export function procTableTab({parid, hostname, starttime, endtime, useAggr, aggr
 }	
 
 export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -2403,6 +2409,11 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { procinfo : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -2412,7 +2423,8 @@ export function ProcinfoSearch({parid, starttime, endtime, useAggr, aggrMin, agg
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, 
+			useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {

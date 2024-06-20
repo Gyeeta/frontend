@@ -683,9 +683,9 @@ function mergeSvcIPTimestamps(data)
 
 
 export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-				titlestr, sortColumns, sortDir, recoffset, dataRowsCb})
+				dataObj, titlestr, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -721,6 +721,11 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { svcmeshclust : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -730,7 +735,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
+	}, [doFetch, fetchDispatch, dataObj, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -803,7 +808,7 @@ export function SvcMeshGroups({starttime, endtime, filter, maxrecs = 10000, tabl
 }
 	
 export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, 
-				titlestr, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+				dataObj, titlestr, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -836,7 +841,7 @@ export function svcMeshTab({starttime, endtime, filter, maxrecs, tableOnRow, add
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp starttime={starttime} endtime={endtime} filter={filter} 
 						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} titlestr={titlestr} 
+						tabKey={tabKey} titlestr={titlestr} dataObj={dataObj} 
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcMeshGroups} /> 
 					</>	
 				);
@@ -1082,9 +1087,9 @@ function VirtualIPSvcStateTable({record, starttime, endtime, addTabCB, remTabCB,
 }	
 
 export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-					titlestr, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, titlestr, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -1120,6 +1125,11 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { svcipclust : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -1129,7 +1139,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
+	}, [doFetch, fetchDispatch, dataObj, filter, maxrecs, starttime, endtime, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1202,7 +1212,7 @@ export function SvcVirtualIPGroups({starttime, endtime, filter, maxrecs = 10000,
 }
 	
 export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, 
-				titlestr, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+				dataObj, titlestr, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1235,7 +1245,8 @@ export function svcVirtIPTab({starttime, endtime, filter, maxrecs, tableOnRow, a
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<Comp starttime={starttime} endtime={endtime} filter={filter} 
 						maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow} titlestr={titlestr}
-						tabKey={tabKey}  sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={SvcVirtualIPGroups} /> 
+						tabKey={tabKey} dataObj={dataObj} sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} 
+						dataRowsCb={dataRowsCb} origComp={SvcVirtualIPGroups} /> 
 					</>	
 				);
 			};

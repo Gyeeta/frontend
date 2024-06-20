@@ -719,9 +719,9 @@ function getSvcInfo(svcidarr, parid, starttime, modalCount, addTabCB, remTabCB, 
 
 
 export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, dataObj})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
 	let			hinfo = null, closetab = 0;
 
@@ -776,6 +776,10 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				return;
+			}	
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -785,7 +789,8 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, 
+			dataObj, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -980,7 +985,7 @@ export function ActiveConnSearch({parid, hostname, starttime, endtime, useAggr, 
 }
 
 export function activeConnTab({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, modal, title,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1015,7 +1020,7 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 					<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						isext={isext} tabKey={tabKey} hostname={hostname}  customColumns={customColumns} customTableColumns={customTableColumns} 
-						madfilterarr={madfilterarr} titlestr={titlestr} 
+						madfilterarr={madfilterarr} titlestr={titlestr} dataObj={dataObj}
 						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ActiveConnSearch} /> 
 					</>
 				);	
@@ -1042,9 +1047,9 @@ export function activeConnTab({parid, hostname, starttime, endtime, useAggr, agg
 }
 
 export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, isext, tabKey, 
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
 	let			hinfo = null, closetab = 0;
 
@@ -1099,6 +1104,10 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				return;
+			}	
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -1108,7 +1117,8 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 			return;
 		}	
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, isext, 
+			customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1251,7 +1261,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 					}	
 				}	
 
-				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format('YYYY-MM-DD HH:mm:ssZ')} </span>;
+				timestr = <span style={{ fontSize : 14 }} > at {starttime ?? moment().format("MMM Do YYYY HH:mm:ss Z")} </span>;
 			}
 			else {
 				columns = getClientConnColumns({istime : true, useHostFields : !parid, isext, aggrType : useAggr && aggrType ? capitalFirstLetter(aggrType) : ''});
@@ -1262,7 +1272,7 @@ export function ClientConnSearch({parid, hostname, starttime, endtime, useAggr, 
 				else {
 					newtitlestr = `${useAggr ? 'Aggregated ' : ''} ${name ? name : 'Global'} Client Connections`;
 				}	
-				timestr = <span style={{ fontSize : 14 }} > for time range {starttime} to {endtime}</span>;
+				timestr = <span style={{ fontSize : 14 }} ><strong> for time range {moment(starttime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")} to {moment(endtime, moment.ISO_8601).format("MMM Do YYYY HH:mm:ss Z")}</strong></span>;
 			}	
 
 			const 			expandedRowRender = (rec) => <ExtClientConnDesc rec={rec} />;
@@ -2207,10 +2217,10 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	let			conf, res, clientfilt, actfilt, svcprocmap, currtime = Date.now();
 
 	if (svcid) {
-		actfilt = `{ activeconn.svcid = '${svcid}' }`;
+		actfilt = `{ svcid = '${svcid}' }`;
 	}	
 	else if (procid) {
-		clientfilt = `{ clientconn.cprocid = '${procid}' }`;
+		clientfilt = `{ cprocid = '${procid}' }`;
 	}	
 
 	if (currtime > objref.current.tlastprocmap + 300000) {
@@ -2287,11 +2297,12 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	if (svcid || !procid) {
 		multiqueryarr.push(
 			{
-				qid 		: 'activeconn', 
-				qname 		: 'activeConn',
+				qid 		: 'extactiveconn', 
+				qname 		: 'extactiveConn',
 				options		: {
 					aggregate	: isaggregated,
 					aggroper	: aggroper,
+					aggrsec		: 10000000,
 					filter		: actfilt,
 				},	
 			}
@@ -2300,11 +2311,12 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		if (clientfilt || !svcid) {
 			multiqueryarr.push(
 				{
-					qid 		: 'clientconn', 
-					qname 		: 'clientConn',
+					qid 		: 'extclientconn', 
+					qname 		: 'extclientConn',
 					options		: {
 						aggregate	: isaggregated,
 						aggroper	: aggroper,
+						aggrsec		: 10000000,
 						filter		: clientfilt,
 						onlyremote	: false,
 					},	
@@ -2315,11 +2327,12 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	else {
 		multiqueryarr.push(
 			{
-				qid 		: 'clientconn', 
-				qname 		: 'clientConn',
+				qid 		: 'extclientconn', 
+				qname 		: 'extclientConn',
 				options		: {
 					aggregate	: isaggregated,
 					aggroper	: aggroper,
+					aggrsec		: 10000000,
 					filter		: clientfilt,
 					onlyremote	: false,
 				},	
@@ -2329,11 +2342,12 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		if (actfilt) {
 			multiqueryarr.push(
 				{
-					qid 		: 'activeconn', 
-					qname 		: 'activeConn',
+					qid 		: 'extactiveconn', 
+					qname 		: 'extactiveConn',
 					options		: {
 						aggregate	: isaggregated,
 						aggroper	: aggroper,
+						aggrsec		: 10000000,
 						filter		: actfilt,
 					},	
 				}
@@ -2341,7 +2355,7 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 		}	
 	}	
 
-	console.log(`Fetching next interval activeconn/clientconn data...for config ${JSON.stringify(conf)}`);
+	console.log(`Fetching next interval extactiveconn/extclientconn data...for config ${JSON.stringify(conf)}`);
 
 	res = await axios(conf);
 
@@ -2350,15 +2364,15 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	let			tier0cli, tier0act;
 
 	if ((safetypeof(res.data) === 'array') && (res.data.length === 1) && 
-		(((safetypeof(res.data[0].clientconn) === 'object') && (safetypeof(res.data[0].clientconn.clientconn) === 'array')) || 
-		((safetypeof(res.data[0].activeconn) === 'object') && (safetypeof(res.data[0].activeconn.activeconn) === 'array')))) { 
+		(((safetypeof(res.data[0].extclientconn) === 'object') && (safetypeof(res.data[0].extclientconn.extclientconn) === 'array')) || 
+		((safetypeof(res.data[0].extactiveconn) === 'object') && (safetypeof(res.data[0].extactiveconn.extactiveconn) === 'array')))) { 
 
-		tier0cli 	= res.data[0].clientconn?.clientconn;
-		tier0act 	= res.data[0].activeconn?.activeconn;
+		tier0cli 	= res.data[0].extclientconn?.extclientconn;
+		tier0act 	= res.data[0].extactiveconn?.extactiveconn;
 
-		if (res.data[0].clientconn?.hostinfo) {
-			objref.current.hostname = res.data[0].clientconn.hostinfo.host;
-			objref.current.clustername = res.data[0].clientconn.hostinfo.cluster;
+		if (res.data[0].extclientconn?.hostinfo) {
+			objref.current.hostname = res.data[0].extclientconn.hostinfo.host;
+			objref.current.clustername = res.data[0].extclientconn.hostinfo.cluster;
 
 			hostmap.set(parid, objref.current.hostname);
 		}	
@@ -2377,6 +2391,9 @@ async function getNetFlows({objref, svcid, svcname, svcsibling, procid, procname
 	if (!tier0act) {
 		tier0act = [];
 	}	
+
+	objref.current.tier0cli = tier0cli;
+	objref.current.tier0act = tier0act;
 	
 	/*
 	 * Now loop through the active conns first and then cliconns so as to create Node Tier 0 entries
@@ -2818,6 +2835,8 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			inactiveWin		: false,
 			isstarted		: false,
 			isprocessing		: false,
+			tier0cli		: null,
+			tier0act		: null,
 			sliderTimer		: null,
 			datahistarr		: [],
 		};	
@@ -3277,12 +3296,52 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 			);
 		}
 
+		let		titleact, titlecli, acttbl = null, clitbl = null;
 		const		height = objref.current.flowHeight, width = objref.current.flowWidth;
+
+
+		if (svcid) {
+			titlecli = `Upstream Client connections from ${objref.current.svcname} Process Group`;
+			titleact = `Incoming Client connections to Service ${objref.current.svcname}`;
+		}
+		else if (procid) {
+			titlecli = `Upstream Client connections from Process Group ${objref.current.procname}`;
+			titleact = `Incoming Client connections to Process Group ${objref.current.procname} services`;
+		}	
+		else {
+			titlecli = `Upstream Client connections from Tier 0 processes`;
+			titleact = `Incoming Client connections to Tier 0 services`;
+		}	
+
+		if (Array.isArray(objref.current.tier0cli)) {
+			clitbl = (
+				<ClientConnSearch parid={objref.current.parid} hostname={objref.current.hostname} starttime={objref.current.starttime} endtime={objref.current.endtime}
+					useAggr={objref.current.isaggregated} aggrType={objref.current.aggroper} dataObj={objref.current.tier0cli} 
+					addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titlecli} isext={true} />
+
+			);
+		}
+
+		if (Array.isArray(objref.current.tier0act)) {
+			if (procid && !isprocsvc) {
+				acttbl = null;
+			}
+			else {
+				acttbl = (
+					<ActiveConnSearch parid={objref.current.parid} hostname={objref.current.hostname} starttime={objref.current.starttime} endtime={objref.current.endtime}
+						useAggr={objref.current.isaggregated} aggrType={objref.current.aggroper} dataObj={objref.current.tier0act} 
+						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}titlestr={titleact} isext={true} />
+				);
+			}
+		}
 
 		return (
 				<>
 				{alertdata}
-			
+
+				{iscontainer && acttbl}
+				{iscontainer && clitbl}
+				
 				<div style={{ padding : 30 }} >
 				<NetSummary objref={objref} summary={normdata.summary} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB}
 						tabKey={tabKey} modalCount={modalCount} isTabletOrMobile={isTabletOrMobile} />
@@ -3298,6 +3357,9 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 				</ReactFlowProvider>
 				</div>
 				</div>
+
+				{!iscontainer && acttbl}
+				{!iscontainer && clitbl}
 
 				</>
 			);

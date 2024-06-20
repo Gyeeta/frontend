@@ -222,9 +222,9 @@ export function viewAlertdef(record, modal = true)
 	}	
 }
 
-export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
+export function AlertdefSearch({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, title, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -255,6 +255,11 @@ export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { alertdef : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -264,7 +269,7 @@ export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs]);
+	}, [doFetch, filter, maxrecs, fetchDispatch, dataObj]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "alertdef";
@@ -319,7 +324,7 @@ export function AlertdefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function alertdefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
+export function alertdefTableTab({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
 	let			tabKey;
 
@@ -327,7 +332,7 @@ export function alertdefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<AlertdefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} titlestr={titlestr} /> 
+						dataObj={dataObj} tabKey={tabKey} titlestr={titlestr} /> 
 					</>
 				);		
 			};

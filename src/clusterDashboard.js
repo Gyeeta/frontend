@@ -666,9 +666,9 @@ export function ClusterStateAggrFilter({filterCB, linktext})
 }	
 
 export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, titlestr, tabKey,
-						customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+						dataObj, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
 	let			hinfo = null, closetab = 0;
 
@@ -718,6 +718,11 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { clusterstate : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -727,7 +732,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -864,7 +869,7 @@ export function ClusterStateSearch({starttime, endtime, useAggr, aggrMin, aggrTy
 
 
 export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, aggrfilter, modal, title,
-						titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+						dataObj, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -898,7 +903,7 @@ export function clusterTableTab({starttime, endtime, useAggr, aggrMin, aggrType,
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} title={title} customColumns={customColumns} customTableColumns={customTableColumns} titlestr={titlestr}
-						sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} /> 
+						dataObj={dataObj} sortColumns={sortColumns} sortDir={sortDir} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={ClusterStateSearch} /> 
 					</>
 				);	
 			};

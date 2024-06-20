@@ -1067,7 +1067,7 @@ export function useFetchApi(initAxiosConfig, initxfrmresp = null, initialdata = 
 	}, [config, xfrmresp, dispatch, printstr]);
 
 	// {data, isloading, isapierror}, setConfig
-	return [state, setConfig];
+	return [state, setConfig, dispatch];
 }
 
 

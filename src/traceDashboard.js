@@ -1629,9 +1629,9 @@ function getHostInfo(parid, modalCount, addTabCB, remTabCB, isActiveTabCB)
 }	
 
 export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey, 
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, autoRefresh})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb, autoRefresh})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -1666,6 +1666,11 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { tracestatus : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -1675,7 +1680,8 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 			return;
 		}	
 
-	}, [aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, 
+			filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -1752,7 +1758,7 @@ export function TracestatusSearch({starttime, endtime, useAggr, aggrMin, aggrTyp
 }
 
 export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, autoRefresh, extraComp = null})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, autoRefresh, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -1786,7 +1792,7 @@ export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrT
 					<Comp starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 						aggrfilter={aggrfilter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						madfilterarr={madfilterarr} titlestr={titlestr}
+						madfilterarr={madfilterarr} titlestr={titlestr} dataObj={dataObj}
 						recoffset={recoffset} dataRowsCb={dataRowsCb} autoRefresh={autoRefresh} origComp={TracestatusSearch} /> 
 					</>	
 				);
@@ -1813,9 +1819,9 @@ export function tracestatusTableTab({starttime, endtime, useAggr, aggrMin, aggrT
 }
 
 
-export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
+export function TracehistorySearch({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -1839,6 +1845,11 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { tracehistory : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -1848,7 +1859,7 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs, ]);
+	}, [doFetch, filter, maxrecs, fetchDispatch, dataObj]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "tracehistory";
@@ -1906,9 +1917,9 @@ export function TracehistorySearch({filter, maxrecs, tableOnRow, addTabCB, remTa
 
 export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, titlestr, tableOnRow, 
 					addTabCB, remTabCB, isActiveTabCB, tabKey, customColumns, customTableColumns, sortColumns, sortDir, 
-					madfilterarr, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
+					dataObj, madfilterarr, recoffset, dataRowsCb, iscontainer, pauseUpdateCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			[isrange, setisrange] = useState(false);
 	const 			objref = useRef({ modalCount : 0, });
 
@@ -1966,6 +1977,11 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { [field] : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch(e) {
@@ -1975,7 +1991,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			return;
 		}	
 
-	}, [parid, doFetch, endtime, filter, maxrecs, madfilterarr,
+	}, [parid, doFetch, fetchDispatch, dataObj, endtime, filter, maxrecs, madfilterarr,
 			useAggr, aggrMin, aggrType, aggrfilter, aggrOutput, starttime, isext, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
@@ -2133,7 +2149,7 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 
 export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxrecs, useAggr, aggrMin, aggrType, aggrfilter, aggrOutput,
 					tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, madfilterarr,
-					customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
+					dataObj, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
 
@@ -2168,7 +2184,7 @@ export function tracereqTableTab({parid, starttime, endtime, isext, filter, maxr
 						maxrecs={maxrecs} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} aggrfilter={aggrfilter} aggrOutput={aggrOutput}
 						addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 						tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-						madfilterarr={madfilterarr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
+						dataObj={dataObj} madfilterarr={madfilterarr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={TracereqSearch} /> 
 					</>	
 				);
 			};
@@ -2557,9 +2573,9 @@ export function viewTracedef(record, modal = true)
 	}	
 }
 
-export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
+export function TracedefSearch({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -2590,6 +2606,11 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { tracedef : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -2599,7 +2620,7 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs]);
+	}, [doFetch, filter, maxrecs, fetchDispatch, dataObj]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "tracedef";
@@ -2653,7 +2674,7 @@ export function TracedefSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 	);
 }	
 
-export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
+export function tracedefTableTab({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
 	let			tabKey;
 
@@ -2661,7 +2682,7 @@ export function tracedefTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<TracedefSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} titlestr={titlestr} /> 
+						dataObj={dataObj} tabKey={tabKey} titlestr={titlestr} /> 
 					</>
 				);		
 			};

@@ -169,9 +169,9 @@ function viewSilence(record)
 	}	
 }
 
-export function SilencesSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
+export function SilencesSearch({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -200,6 +200,11 @@ export function SilencesSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { silences : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -209,7 +214,7 @@ export function SilencesSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs]);
+	}, [doFetch, filter, maxrecs, dataObj, fetchDispatch]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "silences";
@@ -264,7 +269,7 @@ export function SilencesSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function silencesTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
+export function silencesTableTab({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
 	let			tabKey;
 
@@ -272,7 +277,7 @@ export function silencesTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<SilencesSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} titlestr={titlestr} /> 
+						tabKey={tabKey} titlestr={titlestr} dataObj={dataObj} /> 
 					</>
 				);	
 			};

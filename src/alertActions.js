@@ -141,9 +141,9 @@ export function ActionMultiQuickFilter({filterCB})
 	return (<Button onClick={multifilters} >Action Filters</Button>);	
 }	
 
-export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
+export function ActionsSearch({filter, maxrecs, tableOnRow, dataObj, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -172,6 +172,11 @@ export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, 
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { actions : dataObj} });
+				return;
+			}	
+			
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -181,7 +186,7 @@ export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, 
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs]);
+	}, [doFetch, filter, maxrecs, dataObj, fetchDispatch]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "actions";
@@ -236,7 +241,7 @@ export function ActionsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, 
 }	
 
 
-export function actionsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
+export function actionsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, dataObj, extraComp = null})
 {
 	let			tabKey;
 
@@ -244,7 +249,7 @@ export function actionsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB
 				<>
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<ActionsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} title={title} /> 
+					tabKey={tabKey} title={title} dataObj={dataObj} /> 
 				</>
 				);
 			};

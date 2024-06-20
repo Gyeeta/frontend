@@ -154,9 +154,9 @@ function viewInhibit(record)
 	}	
 }
 
-export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
+export function InhibitsSearch({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, titlestr, tabKey})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -185,6 +185,11 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 		};
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { inhibits : dataObj} });
+				return;
+			}	
+
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		}
 		catch(e) {
@@ -194,7 +199,7 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 			return;
 		}	
 
-	}, [doFetch, filter, maxrecs]);
+	}, [doFetch, filter, maxrecs, fetchDispatch, dataObj]);
 
 	if (isloading === false && isapierror === false) { 
 		const			field = "inhibits";
@@ -249,7 +254,7 @@ export function InhibitsSearch({filter, maxrecs, tableOnRow, addTabCB, remTabCB,
 }	
 
 
-export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
+export function inhibitsTableTab({filter, maxrecs, dataObj, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title, titlestr, extraComp = null})
 {
 	let			tabKey;
 
@@ -257,7 +262,7 @@ export function inhibitsTableTab({filter, maxrecs, tableOnRow, addTabCB, remTabC
 					<>
 					{typeof extraComp === 'function' ? extraComp() : extraComp}
 					<InhibitsSearch filter={filter} maxrecs={maxrecs} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-						tabKey={tabKey} titlestr={titlestr} /> 
+						dataObj={dataObj} tabKey={tabKey} titlestr={titlestr} /> 
 					</>	
 				);
 			};

@@ -1106,9 +1106,9 @@ export function HostInfoDesc({parid, addTabCB, remTabCB, isActiveTabCB, hostInfo
 }	
 
 export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, name, maxrecs, tableOnRow, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	let			hinfo = null, closetab = 0;
 
 	useEffect(() => {
@@ -1144,6 +1144,11 @@ export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, na
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { hostinfo : dataObj} });
+				return;
+			}	
+			
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch (error) {
@@ -1164,7 +1169,7 @@ export function HostInfoSearch({parid, useAggr, aggrType, filter, aggrfilter, na
 			notification.error({message : "Data Fetch Error", description : `Exception during Host Info Data fetch : ${emsg}`});
 		}
 
-	}, [doFetch, filter, maxrecs, aggrType, aggrfilter, parid, madfilterarr, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
+	}, [doFetch, fetchDispatch, dataObj, filter, maxrecs, aggrType, aggrfilter, parid, madfilterarr, useAggr, customColumns, customTableColumns, sortColumns, sortDir]);
 
 	if (isloading === false && isapierror === false) { 
 
@@ -2657,9 +2662,9 @@ export function HostInfoFilters({filterCB, linktext})
 }
 
 export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, tableOnRow, aggrfilter, maxrecs, name, addTabCB, remTabCB, isActiveTabCB, tabKey,
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, dataRowsCb})
 {
-	const 			[{ data, isloading, isapierror }, doFetch] = useFetchApi(null);
+	const 			[{ data, isloading, isapierror }, doFetch, fetchDispatch] = useFetchApi(null);
 	const			isrange = (starttime !== undefined && endtime !== undefined) ? true : false;
 	let			hinfo = null, closetab = 0;
 
@@ -2701,6 +2706,11 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 		};	
 
 		try {
+			if (safetypeof(dataObj) === 'array') {
+				fetchDispatch({ type : 'fetch_success', payload : { hoststate : dataObj} });
+				return;
+			}	
+			
 			doFetch({config : conf, xfrmresp : xfrmresp});
 		} 
 		catch (error) {
@@ -2721,7 +2731,8 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 			notification.error({message : "Data Fetch Error", description : `Exception during Host State Data fetch : ${emsg}`});
 		}
 
-	}, [parid, aggrMin, aggrType, doFetch, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
+	}, [parid, aggrMin, aggrType, doFetch, fetchDispatch, dataObj, endtime, madfilterarr, filter, aggrfilter, maxrecs, starttime, 
+				useAggr, customColumns, customTableColumns, sortColumns, sortDir, recoffset]);
 
 	useEffect(() => {
 		if (typeof dataRowsCb === 'function') {
@@ -2862,7 +2873,7 @@ export function HostStateSearch({parid, starttime, endtime, useAggr, aggrMin, ag
 }
 
 export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, 
-					modal, title = 'Host States',
+					modal, title = 'Host States', dataObj,
 					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, recoffset, wrapComp, dataRowsCb, extraComp = null})
 {
 	if (starttime || endtime) {
@@ -2897,7 +2908,7 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 				<Comp parid={parid} starttime={starttime} endtime={endtime} useAggr={useAggr} aggrMin={aggrMin} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
 					tabKey={tabKey} customColumns={customColumns} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} 
-					madfilterarr={madfilterarr} titlestr={titlestr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} /> 
+					dataObj={dataObj} madfilterarr={madfilterarr} titlestr={titlestr} recoffset={recoffset} dataRowsCb={dataRowsCb} origComp={HostStateSearch} /> 
 				</>
 				) 
 			};
@@ -2923,7 +2934,7 @@ export function hostTableTab({parid, starttime, endtime, useAggr, aggrMin, aggrT
 }
 
 export function hostinfoTableTab({parid, useAggr, aggrType, filter, aggrfilter, maxrecs, name, tableOnRow, addTabCB, remTabCB, isActiveTabCB, modal, title = 'Host Info',
-					madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
+					dataObj, madfilterarr, titlestr, customColumns, customTableColumns, sortColumns, sortDir, extraComp = null})
 {
 	let				tabKey;
 
@@ -2932,7 +2943,7 @@ export function hostinfoTableTab({parid, useAggr, aggrType, filter, aggrfilter, 
 				{typeof extraComp === 'function' ? extraComp() : extraComp}
 				<HostInfoSearch parid={parid} useAggr={useAggr} aggrType={aggrType} filter={filter} 
 					aggrfilter={aggrfilter} maxrecs={maxrecs} name={name} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} tableOnRow={tableOnRow}
-					tabKey={tabKey} customColumns={customColumns} 
+					tabKey={tabKey} customColumns={customColumns} dataObj={dataObj}
 					madfilterarr={madfilterarr} titlestr={titlestr} customTableColumns={customTableColumns} sortColumns={sortColumns} sortDir={sortDir} /> 
 				</>
 				);
