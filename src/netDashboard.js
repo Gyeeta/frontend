@@ -3467,7 +3467,7 @@ export function NetDashboard({svcid, svcname, svcsibling, procid, procname, ispr
 		}
 
 		if (Array.isArray(objref.current.tier0act)) {
-			if (procid && !isprocsvc) {
+			if (procid && objref.current.tier0act.length === 0) {
 				acttbl = null;
 			}
 			else {
