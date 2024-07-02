@@ -687,7 +687,7 @@ function traceReqOnRow({parid, endtime, useAggr, aggrMin, addTabCB, remTabCB, is
 	};
 }	
 
-function aggrTraceReqOnRow({parid, endtime, aggrMin, addTabCB, remTabCB, isActiveTabCB, modalCount})
+function aggrTraceReqOnRow({parid, endtime, filter, aggrMin, addTabCB, remTabCB, isActiveTabCB, modalCount})
 {
 	return (record, rowIndex) => {
 		return {
@@ -698,7 +698,7 @@ function aggrTraceReqOnRow({parid, endtime, aggrMin, addTabCB, remTabCB, isActiv
 						<>
 						<ComponentLife stateCB={modalCount} />
 						<AggrTraceReqModalCard rec={record} parid={parid ?? record.parid} endtime={endtime} aggrMin={aggrMin}
-								addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
+								filter={filter} addTabCB={addTabCB} remTabCB={remTabCB} isActiveTabCB={isActiveTabCB} />
 						</>
 						),
 
@@ -944,7 +944,7 @@ function TraceReqModalCard({rec, parid, endtime, titlestr, addTabCB, remTabCB, i
 	);	
 }
 
-function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
+function AggrTraceReqModalCard({rec, parid, endtime, filter, aggrMin, titlestr, addTabCB, remTabCB, isActiveTabCB, isTabletOrMobile})
 {
 	const			fieldCols = [...aggrtracereqfields, ...hostfields];
 	const			keyNames = { avgrespus : 'Avg Response Time', maxrespus : 'Max Response Time', p99respus : 'p99 Response Time', };
@@ -1067,8 +1067,13 @@ function AggrTraceReqModalCard({rec, parid, endtime, aggrMin, titlestr, addTabCB
 	const getTraceRecs = (newfilter) => {
 		let			fstr = '( ', nfilt = 0;
 
+		if (filter) {
+			fstr += ` ${filter} `;
+			nfilt++;
+		}	
+	
 		if (newfilter) {
-			fstr += ` ${newfilter} `;
+			fstr += ` ${nfilt > 0 ? 'and ' : '' }${newfilter} `;
 			nfilt++;
 		}	
 		
@@ -2049,10 +2054,10 @@ export function TracereqSearch({parid, starttime, endtime, isext, filter, maxrec
 			if (typeof tableOnRow !== 'function') {
 				if (!customTableColumns) {
 					if (!useAggr) {
-						tableOnRow = traceReqOnRow({parid, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
+						tableOnRow = traceReqOnRow({parid, endtime, filter, addTabCB, remTabCB, isActiveTabCB, modalCount});
 					}	
 					else {
-						tableOnRow = aggrTraceReqOnRow({parid, aggrMin, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
+						tableOnRow = aggrTraceReqOnRow({parid, filter, aggrMin, endtime, addTabCB, remTabCB, isActiveTabCB, modalCount});
 					}	
 				}
 				else {
