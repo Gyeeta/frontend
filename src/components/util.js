@@ -171,25 +171,20 @@ export function kbStrFormat(kb, decimals = 3)
 }
 
 
-export function bytesStrFormat(bytes, decimals = 3, bytesStr = 'Bytes')
+export function bytesStrFormat(bytes, decimals = 3)
 {
 	if ((bytes === undefined) || (true === isNaN(bytes))) {
 		return "NaN";
 	}	
 
-	if (bytes >= 1024 * 1024 * 1024) {
-		return `${+parseFloat((bytes/(1024 * 1024 * 1024)).toFixed(decimals))} GB`;
-	}	
+	let		u = 0, b = bytes;
 
-	if (bytes >= 1024 * 1024) {
-		return `${+parseFloat((bytes/(1024 * 1024)).toFixed(decimals))} MB`;
-	}	
+	while (b >= 1024 || -b >= 1024) {
+		b /= 1024;
+		u++;
+	}
 
-	if (bytes >= 1024) {
-		return `${+parseFloat((bytes/1024).toFixed(decimals))} KB`;
-	}	
-	
-	return `${bytes} ${bytesStr}`;
+	return (u ? b.toFixed(decimals) + ' ' : b) + ' KMGTPEZY'[u] + 'B';
 }
 
 /*
@@ -806,6 +801,93 @@ export function useDebouncedEffect(callback, delay, deps = [], ignorefirst = fal
 	// eslint-disable-next-line	
 	}, [callback, delay, ignorefirst, ...deps]);
 }
+
+
+export function useInterval(callback, delay) 
+{
+	const savedCallback = useRef();
+
+	useEffect(() => {
+		savedCallback.current = callback;
+	});
+
+	useEffect(() => {
+		function tick() {
+			if (savedCallback.current) {
+				savedCallback.current();
+			}
+		}
+
+		if (delay !== null) {
+			let id = setInterval(tick, delay);
+			return () => clearInterval(id);
+		}
+	}, [delay]);
+}
+
+export function combineChartDimensions(dimensions)
+{
+	const parsedDimensions = {
+		...dimensions,
+		marginTop: dimensions.marginTop || 10,
+		marginRight: dimensions.marginRight || 10,
+		marginBottom: dimensions.marginBottom || 40,
+		marginLeft: dimensions.marginLeft || 75,
+	};
+
+	return {
+		...parsedDimensions,
+		
+		boundedHeight: Math.max(parsedDimensions.height - parsedDimensions.marginTop - parsedDimensions.marginBottom, 0,),
+		boundedWidth: Math.max(parsedDimensions.width - parsedDimensions.marginLeft - parsedDimensions.marginRight, 0,),
+	};
+}
+
+export function useChartDimensions(passedSettings)
+{
+	const ref = useRef();
+	const dimensions = combineChartDimensions(passedSettings);
+
+	const [width, setWidth] = useState(0);
+	const [height, setHeight] = useState(0);
+
+	useEffect(() => {
+		if (dimensions.width && dimensions.height)
+			return [ref, dimensions];
+
+		const element = ref.current;
+		const resizeObserver = new ResizeObserver(
+				entries => {
+					if (!Array.isArray(entries)) return;
+					if (!entries.length) return;
+
+					const entry = entries[0];
+
+					if (width !== entry.contentRect.width) setWidth(entry.contentRect.width);
+					if (height !== entry.contentRect.height) setHeight(entry.contentRect.height);
+				}
+			);
+		resizeObserver.observe(element);
+
+		return () => resizeObserver.unobserve(element);
+	}, [dimensions, height, width]);
+
+	const newSettings = combineChartDimensions({
+			...dimensions,
+			width: dimensions.width || width,
+			height: dimensions.height || height,
+	});
+
+	return [ref, newSettings];
+}
+
+export function getPointFromAngleAndDistance(angle, distance)
+{
+	return {
+		x: Math.cos(angle * Math.PI / 180) * distance,
+		y: Math.sin(angle * Math.PI / 180) * distance,
+	};
+}	
 
 export function arrayShiftLeft(array, nshifts)
 {

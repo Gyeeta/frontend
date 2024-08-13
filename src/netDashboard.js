@@ -2213,7 +2213,7 @@ function finalizeFlows(objref, starttime, endtime, maxResolvedUpstream, minResol
 			elem = flowarr[i];
 
 			if (elem.source) {
-				elem.label 		= bytesStrFormat(elem.data.cnetout + elem.data.cnetin, 0, 'b');
+				elem.label 		= bytesStrFormat(elem.data.cnetout + elem.data.cnetin, 0);
 				elem.labelStyle		= { fill: 'blue', fontWeight: 600 }; 
 				// elem.labelBgStyle 	= { opacity: 0.6 };
 			}
